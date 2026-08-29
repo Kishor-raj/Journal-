@@ -251,14 +251,7 @@ export async function updateAuthor(authorId, data, userId) {
   return result.rows[0]
 }
 
-export async function removeAuthor(arg1, arg2, arg3) {
-  let authorId = arg1
-  let userId = arg2
-  if (arg3 !== undefined) {
-    authorId = arg2
-    userId = arg3
-  }
-
+export async function removeAuthor(authorId, userId) {
   const authorResult = await pool.query(
     `SELECT ma.*, m.submitted_by
      FROM manuscript_authors ma
