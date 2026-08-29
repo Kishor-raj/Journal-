@@ -6,13 +6,16 @@ const router = Router()
 
 router.get('/me', authenticate, async (req, res) => {
   const result = await pool.query(
-    `SELECT u.*, r.name as role_name
-     FROM users u JOIN roles r ON r.id = u.role_id
+    `SELECT u.*, COALESCE(r.name, 'author') as role_name
+     FROM users u LEFT JOIN roles r ON r.id = u.role_id
      WHERE u.id = $1`,
     [req.user.uid]
   )
   if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' })
   const user = result.rows[0]
+  if (user.display_name && user.display_name.includes('undefined')) {
+    user.display_name = user.display_name.replace(/\bundefined\b/g, '').trim() || user.first_name || user.email?.split('@')[0]
+  }
   const profileComplete = user.institution && user.department && user.country
   res.json({ ...user, profile_complete: !!profileComplete })
 })

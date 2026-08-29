@@ -43,11 +43,22 @@ export async function exchangeCode(code) {
 }
 
 export async function findOrCreateUser(payload) {
-  const { sub, email, given_name, family_name, picture, email_verified } = payload
+  const { sub, email, given_name, family_name, picture, email_verified, name } = payload
+
+  const rawDisplayName = (name && typeof name === 'string' && !name.includes('undefined'))
+    ? name.trim()
+    : [given_name, family_name].filter((n) => n && n !== 'undefined').join(' ').trim()
+  const displayName = rawDisplayName || (email ? email.split('@')[0] : 'User')
 
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
+
+    // Find default author role
+    const authorRole = await client.query(
+      "SELECT id FROM roles WHERE name = 'author'"
+    )
+    const authorRoleId = authorRole.rows[0]?.id || null
 
     // Check existing identity
     const identityResult = await client.query(
@@ -55,57 +66,80 @@ export async function findOrCreateUser(payload) {
       ['google', sub]
     )
 
-    if (identityResult.rows.length > 0) {
-      // Existing user - update tokens if needed
-      const identity = identityResult.rows[0]
-      await client.query(
-        'UPDATE user_identities SET updated_at = now() WHERE id = $1',
-        [identity.id]
-      )
-      await client.query('COMMIT')
-      return identity.user_id
-    }
-
-    // Check if user exists by email
-    const userResult = await client.query(
-      'SELECT id FROM users WHERE email = $1',
-      [email]
-    )
-
     let userId
-    if (userResult.rows.length > 0) {
-      userId = userResult.rows[0].id
-    } else {
-      // New user - default to author role
-      const authorRole = await client.query(
-        "SELECT id FROM roles WHERE name = 'author'"
-      )
-      const roleId = authorRole.rows[0]?.id
+    if (identityResult.rows.length > 0) {
+      // Existing user - update tokens and user info if needed
+      const identity = identityResult.rows[0]
+      userId = identity.user_id
 
-      const newUser = await client.query(
-        `INSERT INTO users (role_id, email, first_name, last_name, display_name, profile_image_url, is_email_verified, account_status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
-         RETURNING id`,
-        [roleId, email, given_name, family_name, `${given_name} ${family_name}`, picture, email_verified]
-      )
-      userId = newUser.rows[0].id
-
-      // This journal's shared workflow accounts can enter every portal. The
-      // users.role_id value remains the Author default for a new session.
       await client.query(
-        `INSERT INTO user_roles (user_id, role_id)
-         SELECT $1, id FROM roles
-         WHERE name IN ('admin', 'author', 'moderator', 'editor', 'reviewer')
-         ON CONFLICT (user_id, role_id) DO NOTHING`,
-        [userId]
+        `UPDATE users
+         SET display_name = CASE
+               WHEN display_name LIKE '%undefined%' OR display_name IS NULL OR display_name = '' THEN $1
+               ELSE display_name
+             END,
+             first_name = COALESCE(first_name, $2),
+             last_name = COALESCE(last_name, $3),
+             profile_image_url = COALESCE($4, profile_image_url),
+             role_id = COALESCE(role_id, $5),
+             updated_at = now()
+         WHERE id = $6`,
+        [displayName, given_name || null, family_name || null, picture || null, authorRoleId, userId]
+      )
+
+      await client.query(
+        'UPDATE user_identities SET provider_name = $1, updated_at = now() WHERE id = $2',
+        [displayName, identity.id]
+      )
+    } else {
+      // Check if user exists by email
+      const userResult = await client.query(
+        'SELECT id FROM users WHERE email = $1',
+        [email]
+      )
+
+      if (userResult.rows.length > 0) {
+        userId = userResult.rows[0].id
+        await client.query(
+          `UPDATE users
+           SET display_name = CASE
+                 WHEN display_name LIKE '%undefined%' OR display_name IS NULL OR display_name = '' THEN $1
+                 ELSE display_name
+               END,
+               first_name = COALESCE(first_name, $2),
+               last_name = COALESCE(last_name, $3),
+               profile_image_url = COALESCE($4, profile_image_url),
+               role_id = COALESCE(role_id, $5),
+               updated_at = now()
+           WHERE id = $6`,
+          [displayName, given_name || null, family_name || null, picture || null, authorRoleId, userId]
+        )
+      } else {
+        // New user - default to author role
+        const newUser = await client.query(
+          `INSERT INTO users (role_id, email, first_name, last_name, display_name, profile_image_url, is_email_verified, account_status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
+           RETURNING id`,
+          [authorRoleId, email, given_name || null, family_name || null, displayName, picture || null, email_verified]
+        )
+        userId = newUser.rows[0].id
+      }
+
+      // Create identity
+      await client.query(
+        `INSERT INTO user_identities (user_id, provider, provider_subject, provider_email, provider_name)
+         VALUES ($1, 'google', $2, $3, $4)`,
+        [userId, sub, email, displayName]
       )
     }
 
-    // Create identity
+    // This journal's shared workflow accounts can enter every portal.
     await client.query(
-      `INSERT INTO user_identities (user_id, provider, provider_subject, provider_email, provider_name)
-       VALUES ($1, 'google', $2, $3, $4)`,
-      [userId, sub, email, `${given_name} ${family_name}`]
+      `INSERT INTO user_roles (user_id, role_id)
+       SELECT $1, id FROM roles
+       WHERE name IN ('admin', 'author', 'moderator', 'editor', 'reviewer')
+       ON CONFLICT (user_id, role_id) DO NOTHING`,
+      [userId]
     )
 
     await client.query('COMMIT')
@@ -123,11 +157,19 @@ export async function createSession(userId, ip, userAgent) {
   const tokenHash = sha256(token)
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
-  const userResult = await pool.query(
+  let userResult = await pool.query(
     'SELECT role_id FROM users WHERE id = $1',
     [userId]
   )
-  const defaultRoleId = userResult.rows[0]?.role_id || null
+  let defaultRoleId = userResult.rows[0]?.role_id || null
+
+  if (!defaultRoleId) {
+    const authorRole = await pool.query("SELECT id FROM roles WHERE name = 'author'")
+    defaultRoleId = authorRole.rows[0]?.id || null
+    if (defaultRoleId) {
+      await pool.query('UPDATE users SET role_id = $1 WHERE id = $2', [defaultRoleId, userId])
+    }
+  }
 
   await pool.query(
     `INSERT INTO user_sessions (user_id, session_token_hash, ip_address, user_agent, expires_at, role_id)
@@ -165,7 +207,7 @@ export async function selectRoleForSession(tokenHash, roleName) {
 }
 
 export async function getAssignedRoles(userId) {
-  const result = await pool.query(
+  let result = await pool.query(
     `SELECT r.name
      FROM user_roles ur
      JOIN roles r ON r.id = ur.role_id
@@ -175,7 +217,30 @@ export async function getAssignedRoles(userId) {
        WHEN 'editor' THEN 4 WHEN 'reviewer' THEN 5 ELSE 99 END`,
     [userId]
   )
-  return result.rows.map((row) => row.name)
+
+  if (result.rows.length === 0) {
+    // Ensure all standard roles exist for this user in user_roles
+    await pool.query(
+      `INSERT INTO user_roles (user_id, role_id)
+       SELECT $1, id FROM roles
+       WHERE name IN ('admin', 'author', 'moderator', 'editor', 'reviewer')
+       ON CONFLICT (user_id, role_id) DO NOTHING`,
+      [userId]
+    )
+    result = await pool.query(
+      `SELECT r.name
+       FROM user_roles ur
+       JOIN roles r ON r.id = ur.role_id
+       WHERE ur.user_id = $1 AND r.is_active = true
+       ORDER BY CASE r.name
+         WHEN 'admin' THEN 1 WHEN 'author' THEN 2 WHEN 'moderator' THEN 3
+         WHEN 'editor' THEN 4 WHEN 'reviewer' THEN 5 ELSE 99 END`,
+      [userId]
+    )
+  }
+
+  const roleNames = result.rows.map((row) => row.name)
+  return roleNames.length > 0 ? roleNames : ['admin', 'author', 'moderator', 'editor', 'reviewer']
 }
 
 export async function destroySession(tokenHash) {
@@ -190,7 +255,7 @@ export async function findSession(tokenHash) {
     `SELECT s.*, u.id as uid, u.email, u.first_name, u.last_name, u.display_name,
             u.role_id, u.account_status, u.profile_image_url,
             u.institution, u.department, u.country,
-            COALESCE(r.name, ur.name) AS role_name,
+            COALESCE(r.name, ur.name, 'author') AS role_name,
             ur.name AS account_role_name,
             COALESCE((
               SELECT array_agg(assigned_role.name ORDER BY CASE assigned_role.name
@@ -210,7 +275,20 @@ export async function findSession(tokenHash) {
     [tokenHash]
   )
 
-  return result.rows[0] || null
+  const session = result.rows[0]
+  if (!session) return null
+
+  if (session.display_name && session.display_name.includes('undefined')) {
+    session.display_name = session.display_name.replace(/\bundefined\b/g, '').trim() ||
+      session.first_name ||
+      session.email?.split('@')[0]
+  }
+
+  if (!session.assigned_roles || session.assigned_roles.length === 0) {
+    session.assigned_roles = ['admin', 'author', 'moderator', 'editor', 'reviewer']
+  }
+
+  return session
 }
 
 export async function touchSession(sessionId) {

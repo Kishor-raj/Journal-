@@ -74,29 +74,46 @@ const styles = {
   },
   label: {
     display: 'block',
-    marginBottom: '6px',
+    marginBottom: '8px',
     fontSize: '0.875rem',
     fontWeight: 600,
     color: 'var(--color-ink-navy)',
   },
+  selectWrapper: {
+    position: 'relative',
+    marginBottom: '24px',
+  },
   select: {
     width: '100%',
-    padding: '10px 14px',
+    padding: '12px 16px',
     fontFamily: 'var(--font-body)',
     fontSize: 'var(--text-sm)',
     color: 'var(--color-ink-black)',
-    border: 'none',
-    borderRadius: '4px',
+    border: '1.5px solid var(--color-rule-grey)',
+    borderRadius: '6px',
     outline: 'none',
-    background: 'transparent',
+    background: 'var(--color-surface)',
     cursor: 'pointer',
     boxSizing: 'border-box',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 14px center',
+    backgroundSize: '16px',
   },
   error: {
-    marginTop: '8px',
+    marginTop: '-12px',
+    marginBottom: '16px',
     fontSize: '0.8125rem',
     color: 'var(--color-danger)',
   },
+}
+
+function sanitizeName(name) {
+  if (!name || typeof name !== 'string') return ''
+  return name.replace(/\bundefined\b/g, '').trim()
 }
 
 export default function RoleSelect() {
@@ -106,15 +123,18 @@ export default function RoleSelect() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  const userRoles = (user?.available_roles?.length ? user.available_roles : user?.role ? [user.role] : []).filter(Boolean)
+  const roles = userRoles.length > 0 ? userRoles : ROLE_LABELS.map((item) => item.value)
+
   useEffect(() => {
     if (!loading && !user) {
       navigate('/login', { replace: true })
       return
     }
-    if (user) setRole(user.role || '')
+    if (user) {
+      setRole(user.role || roles[0] || 'author')
+    }
   }, [user, loading, navigate])
-
-  const roles = (user?.available_roles || [user?.role]).filter(Boolean)
 
   const handleSelect = async () => {
     if (!role) {
@@ -133,8 +153,15 @@ export default function RoleSelect() {
     }
   }
 
-  const initials = user?.display_name
-    ? user.display_name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+  const rawName = sanitizeName(user?.display_name) || sanitizeName(user?.name)
+  const fallbackName = [user?.first_name, user?.last_name]
+    .filter((n) => n && n !== 'undefined')
+    .join(' ')
+    .trim()
+  const displayName = rawName || fallbackName || (user?.email ? user.email.split('@')[0] : 'User')
+
+  const initials = displayName
+    ? displayName.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : user?.email?.[0]?.toUpperCase() || '?'
 
   return (
@@ -149,7 +176,7 @@ export default function RoleSelect() {
           {user?.profile_image_url ? (
             <img
               src={user.profile_image_url}
-              alt={user.display_name || 'avatar'}
+              alt={displayName}
               style={styles.avatar}
             />
           ) : (
@@ -157,20 +184,14 @@ export default function RoleSelect() {
           )}
           <div>
             <div style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-ink-navy)' }}>
-              {user?.display_name || 'User'}
+              {displayName}
             </div>
             <div style={styles.userEmail}>{user?.email}</div>
           </div>
         </div>
 
         <label style={styles.label}>Login as</label>
-        <div
-          style={{
-            border: '1px solid var(--color-rule-grey)',
-            borderRadius: '6px',
-            marginBottom: '20px',
-          }}
-        >
+        <div style={styles.selectWrapper}>
           <select
             value={role}
             onChange={(e) => {
@@ -186,7 +207,7 @@ export default function RoleSelect() {
               const roleInfo = ROLE_LABELS.find((item) => item.value === value)
               return (
                 <option key={value} value={value}>
-                  {roleInfo?.label || value}
+                  {roleInfo?.label || (typeof value === 'string' ? value.charAt(0).toUpperCase() + value.slice(1) : value)}
                 </option>
               )
             })}

@@ -327,9 +327,10 @@ export default function ReviewerProfile() {
     }
   }
 
-  if (loading) return <div style={S.loading}>Loading profile…</div>
-
-  const displayName = form.display_name || `${form.first_name} ${form.last_name}`.trim() || user?.name || 'User'
+  const rawDisplayName = (form.display_name || '').replace(/\bundefined\b/g, '').trim()
+  const formFullName = [form.first_name, form.last_name].filter((n) => n && n !== 'undefined').join(' ').trim()
+  const cleanUserName = (user?.name || '').replace(/\bundefined\b/g, '').trim()
+  const displayName = rawDisplayName || formFullName || cleanUserName || 'User'
   const roleLabel = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''
 
   return (
