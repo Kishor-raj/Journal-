@@ -42,13 +42,16 @@ export async function googleCallback(req, res) {
     const userId = await findOrCreateUser(payload)
     const session = await createSession(userId, req.ip, req.get('user-agent'))
 
+    const isProduction = env.NODE_ENV === 'production'
     const cookieOptions = {
       httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      // The Vercel frontend and Render API are different sites. Production
+      // session cookies must therefore be explicitly allowed cross-site.
+      sameSite: isProduction ? 'none' : 'lax',
       expires: session.expiresAt,
     }
-    if (env.NODE_ENV !== 'production') {
+    if (!isProduction) {
       cookieOptions.domain = 'localhost'
     }
     res.cookie('session_token', session.token, cookieOptions)
