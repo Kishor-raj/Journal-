@@ -29,6 +29,7 @@ function getSessionCookieOptions(expires) {
     httpOnly: true,
     secure: secureCookie,
     sameSite: secureCookie ? 'none' : 'lax',
+    partitioned: secureCookie,
     path: '/',
   }
 
@@ -69,7 +70,7 @@ export async function googleCallback(req, res) {
     const cookieOptions = getSessionCookieOptions(session.expiresAt)
     res.cookie('session_token', session.token, cookieOptions)
 
-    res.redirect(`${env.CLIENT_ORIGIN}/auth/select-role`)
+    res.redirect(`${env.CLIENT_ORIGIN}/auth/callback?token=${session.token}`)
   } catch (err) {
     console.error('Google callback error:', err)
     res.redirect(`${env.CLIENT_ORIGIN}/login?error=auth_failed`)
@@ -90,7 +91,11 @@ export async function selectRole(req, res) {
     return res.status(403).json({ error: 'You are not assigned to this role' })
   }
 
-  const tokenHash = sha256(req.cookies.session_token)
+  const rawToken = req.token || req.cookies?.session_token
+  if (!rawToken) {
+    return res.status(401).json({ error: 'Not authenticated' })
+  }
+  const tokenHash = sha256(rawToken)
   const updated = await selectRoleForSession(tokenHash, role)
 
   if (!updated) {
@@ -105,8 +110,11 @@ export async function selectRole(req, res) {
 }
 
 export async function logout(req, res) {
-  const tokenHash = sha256(req.cookies.session_token)
-  await destroySession(tokenHash)
+  const rawToken = req.token || req.cookies?.session_token
+  if (rawToken) {
+    const tokenHash = sha256(rawToken)
+    await destroySession(tokenHash)
+  }
   res.clearCookie('session_token', getSessionCookieOptions())
   res.json({ message: 'Logged out' })
 }

@@ -1,6 +1,6 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import apiClient from '../services/apiClient'
+import apiClient, { getStoredToken, setStoredToken } from '../services/apiClient'
 
 const AuthContext = createContext(null)
 
@@ -20,7 +20,8 @@ const AUTH_CHECK_PREFIXES = [
 ]
 
 function shouldCheckAuth(pathname) {
-  return AUTH_CHECK_EXACT_PATHS.has(pathname)
+  return !!getStoredToken()
+    || AUTH_CHECK_EXACT_PATHS.has(pathname)
     || AUTH_CHECK_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
@@ -35,8 +36,10 @@ export function AuthProvider({ children }) {
     try {
       const data = await apiClient.get('/auth/me')
       setUser(data)
+      return data
     } catch {
       setUser(null)
+      return null
     } finally {
       if (checkedPath) setLastAuthCheckPath(checkedPath)
       setLoading(false)
@@ -60,6 +63,7 @@ export function AuthProvider({ children }) {
       // Clear the local authenticated state even if the network request fails.
       // Protected routes will still require a valid server-side session.
     }
+    setStoredToken(null)
     setUser(null)
   }
 

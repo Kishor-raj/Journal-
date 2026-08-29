@@ -1,14 +1,38 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
+export function getStoredToken() {
+  try {
+    return localStorage.getItem('auth_token')
+  } catch {
+    return null
+  }
+}
+
+export function setStoredToken(token) {
+  try {
+    if (token) {
+      localStorage.setItem('auth_token', token)
+    } else {
+      localStorage.removeItem('auth_token')
+    }
+  } catch {
+    // Ignore storage quota or disabled storage errors
+  }
+}
+
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`
+  const token = getStoredToken()
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  }
+
   const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    credentials: 'include',
     ...options,
+    headers,
+    credentials: 'include',
   }
 
   const response = await fetch(url, config)
