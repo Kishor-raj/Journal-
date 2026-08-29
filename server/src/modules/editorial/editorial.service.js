@@ -28,6 +28,7 @@ export async function getDashboardStats(editorId) {
     awaiting_reviewers: 0,
     under_review: 0,
     decision_due: 0,
+    accepted_manuscripts: 0,
   }
 
   const urgent = {
@@ -69,6 +70,16 @@ export async function getDashboardStats(editorId) {
       kpi.decision_due += 1
     }
   }
+
+  const acceptedCountResult = await pool.query(
+    `SELECT COUNT(DISTINCT m.id)::int AS count
+     FROM manuscripts m
+     JOIN editorial_assignments ea ON ea.manuscript_id = m.id
+     WHERE ea.editor_id = $1
+       AND m.current_status = 'accepted'`,
+    [editorId]
+  )
+  kpi.accepted_manuscripts = acceptedCountResult.rows[0]?.count ?? 0
 
   const overdueResult = await pool.query(
     `SELECT
@@ -762,6 +773,12 @@ export async function submitDecision(manuscriptId, editorId, decisionData) {
       case 'major_revision':
         newStatus = 'revision_requested'
         break
+    }
+
+    // Block changes to finalized (accepted/rejected) decisions
+    const terminalStatuses = ['accepted', 'rejected']
+    if (terminalStatuses.includes(manuscript.current_status)) {
+      throw new AppError('A final decision has already been made for this manuscript and cannot be changed', 409)
     }
 
     const decisionResult = await client.query(

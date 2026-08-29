@@ -174,10 +174,10 @@ router.delete('/users/:id', authenticate, requireRole('admin'), async (req, res)
 
   await pool.query('BEGIN')
   try {
-    // Soft delete: anonymize PII, mark as deleted, revoke sessions
+    // Soft delete: anonymize PII, mark as disabled, revoke sessions
     await pool.query(
       `UPDATE users SET
-        account_status = 'deleted',
+        account_status = 'disabled',
         email = $1,
         first_name = '[Deleted]',
         last_name = '[User]',
@@ -201,7 +201,7 @@ router.delete('/users/:id', authenticate, requireRole('admin'), async (req, res)
         req.user.uid,
         userId,
         JSON.stringify({ email: targetUser.email, role: targetUser.role_name, status: targetUser.account_status }),
-        JSON.stringify({ account_status: 'deleted' }),
+        JSON.stringify({ account_status: 'disabled', anonymized: true }),
         req.ip,
       ]
     )

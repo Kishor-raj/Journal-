@@ -137,6 +137,12 @@ function formatRecommendation(val) {
   return val.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+function getFinalDecisionDisplay(status) {
+  if (status === 'accepted') return { label: 'Accepted', color: '#2B7A4B', bg: '#E8F5EC', icon: 'fa-circle-check' }
+  if (status === 'rejected') return { label: 'Rejected', color: '#B83333', bg: '#FCECEC', icon: 'fa-circle-xmark' }
+  return null
+}
+
 export default function DecisionPanel() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -191,6 +197,9 @@ export default function DecisionPanel() {
       </div>
     )
   }
+
+  const isFinal = manuscript && ['accepted', 'rejected'].includes(manuscript.current_status)
+  const finalDisplay = isFinal ? getFinalDecisionDisplay(manuscript.current_status) : null
 
   return (
     <div style={styles.page}>
@@ -257,55 +266,91 @@ export default function DecisionPanel() {
       <div style={styles.decisionCard}>
         <h2 style={styles.decisionTitle}>Your Decision</h2>
 
-        <FormField label="Decision" required>
-          <select
-            value={form.decision}
-            onChange={(e) => updateField('decision', e.target.value)}
-            style={{
-              ...styles.input,
-              background: 'var(--color-surface)',
-              cursor: 'pointer',
-            }}
-          >
-            <option value="">Select a decision...</option>
-            <option value="accept">Accept</option>
-            <option value="minor_revision">Minor Revision</option>
-            <option value="major_revision">Major Revision</option>
-            <option value="reject">Reject</option>
-          </select>
-        </FormField>
+        {isFinal && finalDisplay ? (
+          // Read-only final decision view
+          <div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '16px 20px',
+              borderRadius: '8px',
+              background: finalDisplay.bg,
+              marginBottom: '16px',
+            }}>
+              <i
+                className={`fas ${finalDisplay.icon}`}
+                style={{ fontSize: '20px', color: finalDisplay.color }}
+              />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: finalDisplay.color }}>
+                  {finalDisplay.label}
+                </div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                  This decision is final and cannot be changed.
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <Button variant="ghost" onClick={() => navigate(-1)}>
+                Back
+              </Button>
+            </div>
+          </div>
+        ) : (
+          // Editable decision form
+          <>
+            <FormField label="Decision" required>
+              <select
+                value={form.decision}
+                onChange={(e) => updateField('decision', e.target.value)}
+                style={{
+                  ...styles.input,
+                  background: 'var(--color-surface)',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">Select a decision...</option>
+                <option value="accept">Accept</option>
+                <option value="minor_revision">Minor Revision</option>
+                <option value="major_revision">Major Revision</option>
+                <option value="reject">Reject</option>
+              </select>
+            </FormField>
 
-        <FormField label="Comments to Author">
-          <textarea
-            value={form.comments_to_author}
-            onChange={(e) => updateField('comments_to_author', e.target.value)}
-            placeholder="Feedback to include with the decision letter..."
-            style={styles.textarea}
-          />
-        </FormField>
+            <FormField label="Comments to Author">
+              <textarea
+                value={form.comments_to_author}
+                onChange={(e) => updateField('comments_to_author', e.target.value)}
+                placeholder="Feedback to include with the decision letter..."
+                style={styles.textarea}
+              />
+            </FormField>
 
-        <FormField label="Internal Notes">
-          <textarea
-            value={form.internal_notes}
-            onChange={(e) => updateField('internal_notes', e.target.value)}
-            placeholder="Private notes for editorial records..."
-            style={styles.textarea}
-          />
-        </FormField>
+            <FormField label="Internal Notes">
+              <textarea
+                value={form.internal_notes}
+                onChange={(e) => updateField('internal_notes', e.target.value)}
+                placeholder="Private notes for editorial records..."
+                style={styles.textarea}
+              />
+            </FormField>
 
-        <div style={styles.actions}>
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            loading={submitting}
-            disabled={!form.decision}
-            onClick={handleSubmit}
-          >
-            Submit Decision
-          </Button>
-        </div>
+            <div style={styles.actions}>
+              <Button variant="ghost" onClick={() => navigate(-1)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                loading={submitting}
+                disabled={!form.decision}
+                onClick={handleSubmit}
+              >
+                Submit Decision
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
