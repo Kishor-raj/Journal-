@@ -47,9 +47,12 @@ const S = {
 }
 
 /* ─── KPI Card ───────────────────────────────────────────────────────────── */
-function KpiCard({ label, value, sub, icon, accentColor, iconBg, loading }) {
+function KpiCard({ label, value, sub, icon, accentColor, iconBg, loading, onClick }) {
   return (
-    <div style={{ ...S.card, borderTop: `3px solid ${accentColor}` }}>
+    <div
+      style={{ ...S.card, borderTop: `3px solid ${accentColor}`, cursor: onClick ? 'pointer' : 'default' }}
+      onClick={onClick}
+    >
       <div style={{ padding: '20px 22px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <span style={{ fontSize: '12px', fontWeight: 600, color: '#8B8F9A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
@@ -230,6 +233,16 @@ export default function EditorDashboard() {
         <KpiCard loading={loading} label="Awaiting Reviewers" value={kpi.awaiting_reviewers ?? 0} icon="fa-hourglass-half"  accentColor="#C48B1E" iconBg="#FEF7E8" sub="Need reviewer invites" />
         <KpiCard loading={loading} label="Under Review"       value={kpi.under_review ?? 0}       icon="fa-magnifying-glass" accentColor="#2B7A4B" iconBg="#E8F5EC" sub="Reviews in progress" />
         <KpiCard loading={loading} label="Decision Due"       value={kpi.decision_due ?? 0}       icon="fa-gavel"           accentColor="#B83333" iconBg="#FCECEC" sub="Await your decision" />
+        <KpiCard
+          loading={loading}
+          label="Accepted Manuscripts"
+          value={kpi.accepted_manuscripts ?? 0}
+          icon="fa-circle-check"
+          accentColor="#2B7A4B"
+          iconBg="#E8F5EC"
+          sub="Final accepted decisions"
+          onClick={() => navigate('/editor/accepted')}
+        />
       </div>
 
       {/* Urgent items */}
