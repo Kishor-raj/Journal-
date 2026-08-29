@@ -29,8 +29,21 @@ if (isProductionLike) {
 }
 
 app.use(helmet())
+const allowedOrigins = new Set([
+  env.CLIENT_ORIGIN,
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://ijidcr-asgard.vercel.app',
+].filter(Boolean))
+
 app.use(cors({
-  origin: env.CLIENT_ORIGIN,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.has(origin) || origin.endsWith('.vercel.app') || origin.includes('localhost:')) {
+      return callback(null, origin || true)
+    }
+    return callback(null, origin)
+  },
   credentials: true,
 }))
 app.use(express.json())
