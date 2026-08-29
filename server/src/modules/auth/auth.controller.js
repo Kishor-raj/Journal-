@@ -123,15 +123,28 @@ export async function getMe(req, res) {
   const user = req.user
   const profileComplete = user.institution && user.department && user.country
 
+  let rawDisplayName = user.display_name
+  if (rawDisplayName && rawDisplayName.includes('undefined')) {
+    rawDisplayName = rawDisplayName.replace(/\bundefined\b/g, '').trim()
+  }
+
+  const cleanFirstName = (user.first_name && user.first_name !== 'undefined') ? user.first_name : null
+  const cleanLastName = (user.last_name && user.last_name !== 'undefined') ? user.last_name : null
+  const cleanName = rawDisplayName || [cleanFirstName, cleanLastName].filter(Boolean).join(' ') || (user.email ? user.email.split('@')[0] : 'User')
+
+  const availableRoles = (user.assigned_roles && user.assigned_roles.length > 0)
+    ? user.assigned_roles
+    : (user.role_name ? [user.role_name] : ['admin', 'author', 'moderator', 'editor', 'reviewer'])
+
   res.json({
     id: user.uid,
     email: user.email,
-    first_name: user.first_name,
-    last_name: user.last_name,
-    display_name: user.display_name,
-    name: user.display_name || [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email,
-    role: user.role_name,
-    available_roles: user.assigned_roles?.length ? user.assigned_roles : [user.role_name],
+    first_name: cleanFirstName,
+    last_name: cleanLastName,
+    display_name: cleanName,
+    name: cleanName,
+    role: user.role_name || availableRoles[0] || 'author',
+    available_roles: availableRoles,
     account_status: user.account_status,
     profile_image_url: user.profile_image_url,
     profile_complete: !!profileComplete,

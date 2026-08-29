@@ -110,10 +110,13 @@ export default function CompleteProfile() {
   useEffect(() => {
     getMyProfile()
       .then((profile) => {
+        const fn = (profile.first_name && profile.first_name !== 'undefined') ? profile.first_name : ''
+        const ln = (profile.last_name && profile.last_name !== 'undefined') ? profile.last_name : ''
+        const dn = (profile.display_name || '').replace(/\bundefined\b/g, '').trim() || [fn, ln].filter(Boolean).join(' ')
         setFormData({
-          first_name: profile.first_name || '',
-          last_name: profile.last_name || '',
-          display_name: profile.display_name || '',
+          first_name: fn,
+          last_name: ln,
+          display_name: dn,
           phone: profile.phone || '',
           institution: profile.institution || '',
           department: profile.department || '',
@@ -124,11 +127,14 @@ export default function CompleteProfile() {
       })
       .catch(() => {
         if (user) {
+          const fn = (user.first_name && user.first_name !== 'undefined') ? user.first_name : ''
+          const ln = (user.last_name && user.last_name !== 'undefined') ? user.last_name : ''
+          const dn = (user.display_name || user.name || '').replace(/\bundefined\b/g, '').trim() || [fn, ln].filter(Boolean).join(' ')
           setFormData((prev) => ({
             ...prev,
-            first_name: user.first_name || '',
-            last_name: user.last_name || '',
-            display_name: user.display_name || '',
+            first_name: fn,
+            last_name: ln,
+            display_name: dn,
           }))
         }
       })

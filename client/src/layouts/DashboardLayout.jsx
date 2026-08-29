@@ -172,7 +172,9 @@ const BADGE = {
    ═══════════════════════════════════════════════════════════════════════════ */
 function initials(name) {
   if (!name) return '?'
-  const p = name.trim().split(/\s+/)
+  const clean = name.replace(/\bundefined\b/g, '').trim()
+  if (!clean) return '?'
+  const p = clean.split(/\s+/)
   return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
 }
 
