@@ -3,6 +3,7 @@ import { env } from './env.js'
 
 const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
+  ssl: env.DATABASE_SSL ? { rejectUnauthorized: false } : undefined,
 })
 
 pool.on('error', (err) => {

@@ -8,12 +8,6 @@ node_modules/
 !.env.example
 *.env
 
-# Production build outputs
-dist/
-*/dist/
-dist-ssr/
-build/
-
 # Logs
 logs/
 *.log

@@ -19,6 +19,7 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   SERVER_ORIGIN: process.env.SERVER_ORIGIN || `http://localhost:${parseInt(process.env.PORT || '3001', 10)}`,
   DATABASE_URL: process.env.DATABASE_URL,
+  DATABASE_SSL: process.env.DATABASE_SSL === 'true',
   SESSION_SECRET: process.env.SESSION_SECRET,
   CLIENT_ORIGIN: process.env.CLIENT_ORIGIN,
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
