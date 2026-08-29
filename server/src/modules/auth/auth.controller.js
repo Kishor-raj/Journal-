@@ -15,6 +15,20 @@ function sha256(str) {
   return crypto.createHash('sha256').update(str).digest('hex')
 }
 
+function getSessionCookieOptions(expires) {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+  }
+
+  if (expires) {
+    cookieOptions.expires = expires
+  }
+
+  return cookieOptions
+}
+
 export async function googleAuth(req, res) {
   try {
     const { url } = getGoogleAuthUrl()
@@ -42,15 +56,7 @@ export async function googleCallback(req, res) {
     const userId = await findOrCreateUser(payload)
     const session = await createSession(userId, req.ip, req.get('user-agent'))
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      expires: session.expiresAt,
-    }
-    if (env.NODE_ENV !== 'production') {
-      cookieOptions.domain = 'localhost'
-    }
+    const cookieOptions = getSessionCookieOptions(session.expiresAt)
     res.cookie('session_token', session.token, cookieOptions)
 
     res.redirect(`${env.CLIENT_ORIGIN}/auth/select-role`)
@@ -91,11 +97,7 @@ export async function selectRole(req, res) {
 export async function logout(req, res) {
   const tokenHash = sha256(req.cookies.session_token)
   await destroySession(tokenHash)
-  const clearOptions = {}
-  if (env.NODE_ENV !== 'production') {
-    clearOptions.domain = 'localhost'
-  }
-  res.clearCookie('session_token', clearOptions)
+  res.clearCookie('session_token', getSessionCookieOptions())
   res.json({ message: 'Logged out' })
 }
 
