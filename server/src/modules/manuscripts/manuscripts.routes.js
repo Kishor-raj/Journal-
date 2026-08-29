@@ -36,7 +36,7 @@ router.patch('/:id/authors/:authorId', authenticate, async (req, res) => {
 })
 
 router.delete('/:id/authors/:authorId', authenticate, async (req, res) => {
-  await manuscriptsService.removeAuthor(req.params.id, req.params.authorId, req.user.uid)
+  await manuscriptsService.removeAuthor(req.params.authorId, req.user.uid)
   res.status(204).end()
 })
 
