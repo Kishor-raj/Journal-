@@ -6,7 +6,7 @@ import pool from '../../config/db.js'
 const googleClient = new OAuth2Client(
   env.GOOGLE_CLIENT_ID,
   env.GOOGLE_CLIENT_SECRET,
-  `${env.SERVER_ORIGIN || 'http://localhost:3001'}/api/auth/google/callback`
+  `${env.AUTH_CALLBACK_ORIGIN || 'http://localhost:3001'}/api/auth/google/callback`
 )
 
 function sha256(str) {
@@ -23,7 +23,7 @@ function generateState() {
 
 export function getGoogleAuthUrl() {
   const state = generateState()
-  const redirectUri = `${env.SERVER_ORIGIN}/api/auth/google/callback`
+  const redirectUri = `${env.AUTH_CALLBACK_ORIGIN}/api/auth/google/callback`
   const url = googleClient.generateAuthUrl({
     access_type: 'offline',
     scope: ['openid', 'email', 'profile'],
