@@ -22,7 +22,9 @@ import auditRoutes from './modules/audit/audit.routes.js'
 
 const app = express()
 
-if (env.NODE_ENV === 'production') {
+const isProductionLike = env.NODE_ENV === 'production' || env.SERVER_ORIGIN.startsWith('https://') || process.env.RENDER === 'true'
+
+if (isProductionLike) {
   app.set('trust proxy', 1)
 }
 

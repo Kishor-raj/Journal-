@@ -15,11 +15,21 @@ function sha256(str) {
   return crypto.createHash('sha256').update(str).digest('hex')
 }
 
+function isHttpsOrigin(origin) {
+  try {
+    return new URL(origin).protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 function getSessionCookieOptions(expires) {
+  const secureCookie = env.NODE_ENV === 'production' || isHttpsOrigin(env.SERVER_ORIGIN)
   const cookieOptions = {
     httpOnly: true,
-    secure: env.NODE_ENV === 'production',
-    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: secureCookie,
+    sameSite: secureCookie ? 'none' : 'lax',
+    path: '/',
   }
 
   if (expires) {
