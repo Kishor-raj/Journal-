@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin:0; padding:0; font-family:'Segoe UI', system-ui, sans-serif; }
+    * { box-sizing:border-box; }
+    a { color:inherit; text-decoration:none; }
+    ::-webkit-scrollbar { width:8px; height:8px; }
+    ::-webkit-scrollbar-thumb { background:#DDE2EE; border-radius:4px; }
+  </style>
+</helmet>
+
+<div style="background:#F7F8FC;color:#1A2340;font-size:14px;line-height:1.5;min-height:100vh;">
+
+  <sc-if value="{{ showBackdrop }}">
+    <div onClick="{{ closeSidebar }}" style="position:fixed;inset:0;background:rgba(13,27,62,.45);z-index:150;"></div>
+  </sc-if>
+
+  <div style="position:fixed;top:0;left:0;right:0;height:60px;background:#0D1B3E;display:flex;align-items:center;padding:0 20px;z-index:200;border-bottom:2px solid #C9A227;overflow:hidden;">
+    <sc-if value="{{ isMobile }}">
+      <button onClick="{{ toggleSidebar }}" style="background:none;border:none;color:#fff;font-size:20px;padding:0 16px 0 0;cursor:pointer;flex-shrink:0;">☰</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:28px;height:28px;background:#C9A227;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#0D1B3E;font-size:12px;flex-shrink:0;">IJ</div>
+        <div style="color:#fff;font-size:13px;font-weight:700;white-space:nowrap;">IJIDCR</div>
+      </div>
+    </sc-if>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+      <sc-if value="{{ !isMobile }}">
+        <select value="{{ role }}" onChange="{{ onRoleChange }}" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:none;background:#1E3468;color:#fff;cursor:pointer;">
+          <option value="admin">Admin</option>
+          <option value="author">Author</option>
+          <option value="moderator">Moderator</option>
+          <option value="editor">Editor</option>
+          <option value="reviewer">Reviewer</option>
+        </select>
+      </sc-if>
+      <button onClick="{{ openNotifModal }}" style="width:36px;height:36px;border-radius:50%;background:#1E3468;border:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;position:relative;cursor:pointer;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;flex-shrink:0;"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 01-3.46 0"></path></svg><span style="position:absolute;top:5px;right:6px;width:8px;height:8px;background:#C9A227;border-radius:50%;"></span>
+      </button>
+      <sc-if value="{{ !isMobile }}">
+        <div style="display:flex;align-items:center;gap:8px;color:#fff;font-size:13px;white-space:nowrap;">
+          <div style="width:32px;height:32px;border-radius:50%;background:#C9A227;display:flex;align-items:center;justify-content:center;color:#0D1B3E;font-weight:700;font-size:12px;flex-shrink:0;">RS</div>
+          <span style="white-space:nowrap;">Dr. R. Sundaram</span>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="{{ sidebarStyle }}">
+    <div style="height:60px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 20px;border-bottom:1px solid rgba(201,162,39,.2);">
+      <div style="width:32px;height:32px;background:#C9A227;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#0D1B3E;font-size:13px;flex-shrink:0;">IJ</div>
+      <div style="color:#fff;font-size:13px;font-weight:700;line-height:1.3;white-space:nowrap;">IJIDCR<span style="color:#E4BC4F;font-size:10px;font-weight:400;display:block;white-space:nowrap;">Asgard Research Publication</span></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 0;">
+      <sc-if value="{{ isMobile }}">
+        <select value="{{ role }}" onChange="{{ onRoleChange }}" style="display:block;width:calc(100% - 32px);margin:0 16px 16px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;border:none;background:#1E3468;color:#fff;cursor:pointer;">
+          <option value="admin">Admin</option>
+          <option value="author">Author</option>
+          <option value="moderator">Moderator</option>
+          <option value="editor">Editor</option>
+          <option value="reviewer">Reviewer</option>
+        </select>
+      </sc-if>
+      <div style="padding:10px 20px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.35);">{{ roleLabel }}</div>
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="5">
+        <div onClick="{{ item.handler }}" style="{{ item.style }}">
+          <span style="width:18px;display:inline-flex;align-items:center;justify-content:center;">
+            <sc-if value="{{ item.isDashboard }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg></sc-if>
+            <sc-if value="{{ item.isFile }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6"></path></svg></sc-if>
+            <sc-if value="{{ item.isPlus }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></sc-if>
+            <sc-if value="{{ item.isEdit }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></sc-if>
+            <sc-if value="{{ item.isUsers }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87"></path><path d="M16 3.13a4 4 0 010 7.75"></path></svg></sc-if>
+            <sc-if value="{{ item.isMail }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M22 6l-10 7L2 6"></path></svg></sc-if>
+            <sc-if value="{{ item.isClipboard }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1"></rect></svg></sc-if>
+            <sc-if value="{{ item.isCheck }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path><path d="M22 4L12 14.01l-3-3"></path></svg></sc-if>
+          </span>
+          <span style="margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;">{{ item.label }}</span>
+          <sc-if value="{{ item.hasBadge }}">
+            <span style="margin-left:auto;background:#C9A227;color:#0D1B3E;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px;">{{ item.badge }}</span>
+          </sc-if>
+        </div>
+      </sc-for>
+      <div style="padding:10px 20px 4px;margin-top:16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,.35);">Account</div>
+      <div onClick="{{ goProfile }}" style="{{ profileNavStyle }}">
+        <span style="font-size:15px;width:18px;text-align:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span> Profile
+      </div>
+    </div>
+    <div style="flex-shrink:0;border-top:1px solid rgba(201,162,39,.2);padding:12px;">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 8px;margin-bottom:8px;">
+        <div style="width:30px;height:30px;border-radius:50%;background:#C9A227;display:flex;align-items:center;justify-content:center;color:#0D1B3E;font-weight:700;font-size:11px;flex-shrink:0;">RS</div>
+        <div style="min-width:0;">
+          <div style="color:#fff;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dr. R. Sundaram</div>
+          <div style="color:rgba(255,255,255,.45);font-size:11px;">{{ roleLabel }}</div>
+        </div>
+      </div>
+      <button onClick="{{ logout }}" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;border-radius:8px;font-size:13px;font-weight:600;background:rgba(192,57,43,.12);color:#E8897C;border:1px solid rgba(192,57,43,.3);cursor:pointer;">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;margin-right:6px;"><path d="M18.36 6.64a9 9 0 11-12.73 0"></path><path d="M12 2v10"></path></svg></span> Log Out
+      </button>
+    </div>
+  </div>
+
+  <div style="{{ mainStyle }}">
+  <div style="max-width:1180px;margin:0 auto;">
+
+    <sc-if value="{{ isAuthorDashboardPage }}">
+      <div style="{{ pageHeaderStyle }}">
+        <div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Dashboard</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">Welcome back, Dr. Sundaram — here's your submission overview</div></div>
+        <button onClick="{{ goNewSubmission }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;white-space:nowrap;">➕ New Submission</button>
+      </div>
+      <div style="background:linear-gradient(135deg,#FBF3DC,#FFF8E1);border:1.5px solid #C9A227;border-radius:14px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div style="font-size:22px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;margin-right:0;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div>
+        <div style="flex:1;min-width:180px;"><strong style="font-size:13px;color:#0D1B3E;display:block;">Action Required — Revision Due</strong><span style="font-size:12px;color:#5A6480;">IJIDCR-2026-0042 · Major revision · Due 10 Sep 2026</span></div>
+        <button onClick="{{ goRevisions }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Respond Now</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;margin-bottom:24px;">
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #C9A227;">
+          <div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Total Submissions</div>
+          <div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">7</div>
+          <div style="font-size:11px;color:#5A6480;margin-top:4px;">Since Jan 2025</div>
+        </div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #1565C0;">
+          <div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Under Review</div>
+          <div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">2</div>
+          <div style="font-size:11px;color:#5A6480;margin-top:4px;">Active manuscripts</div>
+        </div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #B45309;">
+          <div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Revision Required</div>
+          <div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">1</div>
+          <div style="font-size:11px;color:#5A6480;margin-top:4px;">Due in 16 days</div>
+        </div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #1A7F4B;">
+          <div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Accepted</div>
+          <div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">3</div>
+          <div style="font-size:11px;color:#5A6480;margin-top:4px;">Published / In press</div>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;">
+          <div style="font-size:14px;font-weight:700;color:#0D1B3E;">Recent Submissions</div>
+          <button onClick="{{ goMySubmissions }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">View All</button>
+        </div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:560px;">
+          <thead><tr>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Sub. Number</th>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Title</th>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Status</th>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Last Updated</th>
+            <th style="background:#F7F8FC;border-bottom:1px solid #DDE2EE;"></th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><strong>IJIDCR-2026-0042</strong></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">Deep Learning Approaches for Edge Computing Optimization</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ badgeRevision }}">● Revision Required</span></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">22 Aug 2026</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><button onClick="{{ goSubmissionDetail }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">View</button></td></tr>
+            <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><strong>IJIDCR-2026-0038</strong></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">Federated Learning in IoT Networks: A Survey</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ badgeReview }}">● Under Review</span></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">18 Aug 2026</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><button onClick="{{ goSubmissionDetail }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">View</button></td></tr>
+            <tr><td style="padding:12px 16px;"><strong>IJIDCR-2025-0091</strong></td><td style="padding:12px 16px;">Quantum-Inspired Algorithms for NP-Hard Problems</td><td style="padding:12px 16px;"><span style="{{ badgeAccepted }}">● Accepted</span></td><td style="padding:12px 16px;">10 Jul 2026</td><td style="padding:12px 16px;"><button onClick="{{ goSubmissionDetail }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">View</button></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isMySubmissionsPage }}">
+      <div style="{{ pageHeaderStyle }}">
+        <div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">My Submissions</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">All manuscripts you have submitted to IJIDCR</div></div>
+        <button onClick="{{ goNewSubmission }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;white-space:nowrap;">➕ New Submission</button>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;">
+          <div style="font-size:14px;font-weight:700;color:#0D1B3E;">All Manuscripts</div><span style="font-size:12px;color:#5A6480;">7 total</span>
+        </div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:760px;">
+          <thead><tr>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Number</th>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Title</th>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Type</th>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Status</th>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Submitted</th>
+            <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;border-bottom:1px solid #DDE2EE;">Updated</th>
+            <th style="background:#F7F8FC;border-bottom:1px solid #DDE2EE;"></th>
+          </tr></thead>
+          <tbody>
+            <sc-for list="{{ submissionRows }}" as="row" hint-placeholder-count="5">
+              <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><strong>{{ row.code }}</strong></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ row.title }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ row.type }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ row.badgeStyle }}">● {{ row.status }}</span></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ row.submitted }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ row.updated }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><button onClick="{{ goSubmissionDetail }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">View</button></td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSubmissionDetailPage }}">
+      <div style="{{ pageHeaderStyle }}">
+        <div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">IJIDCR-2026-0042</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">Deep Learning Approaches for Edge Computing Optimization</div></div>
+        <div style="display:flex;gap:8px;">
+          <button onClick="{{ goMySubmissions }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">← Back</button>
+          <button onClick="{{ goRevisions }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg> Submit Revision</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0;border-bottom:2px solid #DDE2EE;margin-bottom:24px;overflow-x:auto;">
+        <sc-for list="{{ detailTabs }}" as="t" hint-placeholder-count="5">
+          <div onClick="{{ t.handler }}" style="{{ t.style }}">{{ t.label }}</div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ isOverviewTab }}">
+        <div style="display:grid;grid-template-columns:{{ detailGridColumns }};gap:20px;">
+          <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:20px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;display:flex;align-items:center;gap:10px;">Manuscript Info</div>
+            <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Submission Number</div><div style="font-size:13px;"><strong>IJIDCR-2026-0042</strong></div></div>
+            <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Article Type</div><div style="font-size:13px;">Research Article</div></div>
+            <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Current Status</div><div style="font-size:13px;"><span style="{{ badgeRevision }}">● Revision Required</span></div></div>
+            <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Submitted</div><div style="font-size:13px;">2 August 2026</div></div>
+            <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Keywords</div><div style="font-size:13px;">deep learning, edge computing, optimization, neural networks, inference</div></div>
+            <div style="display:flex;gap:8px;padding:8px 0;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Abstract</div><div style="font-size:13px;line-height:1.7;">This paper presents novel deep learning architectures optimized for resource-constrained edge devices, achieving 40% latency reduction while maintaining 98.2% accuracy across benchmark datasets...</div></div>
+          </div>
+          <div>
+            <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:16px 18px;">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Workflow</div>
+              <sc-for list="{{ timelineSteps }}" as="ts" hint-placeholder-count="6">
+                <div style="display:flex;gap:14px;padding-bottom:20px;">
+                  <div style="display:flex;flex-direction:column;align-items:center;">
+                    <div style="{{ ts.dotStyle }}">{{ ts.dotContent }}</div>
+                    <sc-if value="{{ ts.showLine }}"><div style="{{ ts.lineStyle }}"></div></sc-if>
+                  </div>
+                  <div style="padding-top:4px;"><div style="{{ ts.titleStyle }}">{{ ts.title }}</div><div style="font-size:12px;color:#5A6480;">{{ ts.meta }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+              <button onClick="{{ goRevisions }}" style="width:100%;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg> Upload Revision</button>
+              <button onClick="{{ openWithdrawModal }}" style="width:100%;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M9 14l-4-4 4-4"></path><path d="M5 10h11a4 4 0 010 8h-1"></path></svg> Withdraw</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isFilesTab }}">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid #DDE2EE;font-size:14px;font-weight:700;color:#0D1B3E;">Manuscript Versions</div>
+          <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;min-width:520px;">
+            <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Version</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Label</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Filename</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Uploaded</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Size</th></tr></thead>
+            <tbody>
+              <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><strong>v1</strong></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">Initial Submission</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6"></path></svg> IJIDCR_2026_0042_v1.pdf</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">2 Aug 2026</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">2.4 MB</td></tr>
+              <tr><td style="padding:12px 16px;"><strong>v2</strong></td><td style="padding:12px 16px;">Revision 1</td><td style="padding:12px 16px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6"></path></svg> IJIDCR_2026_0042_v2.pdf</td><td style="padding:12px 16px;">— (pending)</td><td style="padding:12px 16px;">—</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;margin-top:16px;">
+          <div style="padding:16px 20px;border-bottom:1px solid #DDE2EE;font-size:14px;font-weight:700;color:#0D1B3E;">Supplementary Files</div>
+          <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;min-width:400px;">
+            <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Filename</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Type</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Uploaded</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Size</th></tr></thead>
+<tbody><tr><td style="padding:12px 16px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;"><path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path></svg> dataset_appendix.xlsx</td><td style="padding:12px 16px;">Supplementary Data</td><td style="padding:12px 16px;">2 Aug 2026</td><td style="padding:12px 16px;">840 KB</td></tr></tbody>
+          </table>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isReviewsTab }}">
+        <div style="display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1E40AF;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg> Reviewer identities are anonymized — only public comments are shown here</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Reviewer 1 — Public Comments</div>
+        <div style="background:#F7F8FC;border-radius:8px;border:1px solid #DDE2EE;padding:14px 16px;margin-bottom:12px;">
+          <div style="font-size:11px;color:#5A6480;margin-bottom:8px;">Round 1 · Received 18 Aug 2026 · Recommendation: <strong>Major Revision</strong></div>
+          <div style="font-size:13px;line-height:1.6;">The proposed architecture shows promise, but the experimental validation lacks comparison with recent 2025 state-of-the-art edge inference models. The energy consumption analysis (Section 4.2) needs to be expanded with power profiling on actual hardware platforms such as NVIDIA Jetson and Raspberry Pi 4.</div>
+        </div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Reviewer 2 — Public Comments</div>
+        <div style="background:#F7F8FC;border-radius:8px;border:1px solid #DDE2EE;padding:14px 16px;margin-bottom:12px;">
+          <div style="font-size:11px;color:#5A6480;margin-bottom:8px;">Round 1 · Received 20 Aug 2026 · Recommendation: <strong>Minor Revision</strong></div>
+          <div style="font-size:13px;line-height:1.6;">Overall a solid contribution. Minor improvements needed: (1) cite more recent federated edge learning papers from 2024–2025, (2) Figure 3 resolution insufficient for print, (3) clarify the training/test split rationale.</div>
+        </div>
+        <button onClick="{{ goRevisions }}" style="margin-top:16px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Respond to Reviews →</button>
+      </sc-if>
+
+      <sc-if value="{{ isRevisionsTab }}">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:20px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Revision Request — Round 1</div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Type</div><div style="font-size:13px;"><span style="{{ badgeRevision }}">● Major Revision</span></div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Due Date</div><div style="font-size:13px;">10 September 2026</div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Editor Instructions</div><div style="font-size:13px;">Please address all reviewer comments and provide a point-by-point response document.</div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Response Status</div><div style="font-size:13px;"><span style="{{ badgePending }}">● Not Started</span></div></div>
+          <button onClick="{{ goRevisions }}" style="margin-top:16px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Start Revision →</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isCoauthorsTab }}">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;"><div style="font-size:14px;font-weight:700;color:#0D1B3E;">Authors</div><button style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">+ Add Co-Author</button></div>
+          <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;min-width:600px;">
+            <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">#</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Name</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Email</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Institution</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Role</th></tr></thead>
+            <tbody>
+              <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">1</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><strong>Dr. R. Sundaram</strong></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">r.sundaram@nit.ac.in</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">NIT Tiruchirappalli</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ badgeSubmitted }}">● Corresponding</span></td></tr>
+              <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">2</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">M. Priya</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">m.priya@nit.ac.in</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">NIT Tiruchirappalli</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">Co-Author</td></tr>
+              <tr><td style="padding:12px 16px;">3</td><td style="padding:12px 16px;">Dr. K. Anand</td><td style="padding:12px 16px;">k.anand@iitm.ac.in</td><td style="padding:12px 16px;">IIT Madras</td><td style="padding:12px 16px;">Co-Author</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isNewSubmissionPage }}">
+      <div style="{{ pageHeaderStyle }}"><div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">New Submission</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">Submit a manuscript to the International Journal of Intelligent Digital Computing Research</div></div></div>
+      <div style="display:flex;margin-bottom:28px;">
+        <sc-for list="{{ wizardSteps }}" as="ws" hint-placeholder-count="5">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;">
+            <sc-if value="{{ ws.showLine }}"><div style="{{ ws.lineStyle }}"></div></sc-if>
+            <div style="{{ ws.numStyle }}">{{ ws.numContent }}</div>
+            <div style="{{ ws.labelStyle }}">{{ ws.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ isNsStep1 }}">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:24px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Manuscript Details</div>
+          <div style="display:grid;grid-template-columns:{{ formGridColumns }};gap:16px;">
+            <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Title *</label><input value="{{ form.title }}" onChange="{{ setTitle }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+            <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Article Type *</label><select style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;background:#fff;"><option>Research Article</option><option>Review Article</option><option>Short Communication</option><option>Case Study</option></select></div>
+            <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Keywords * (comma-separated)</label><input value="{{ form.keywords }}" onChange="{{ setKeywords }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+            <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Abstract *</label><textarea value="{{ form.abstract }}" onChange="{{ setAbstract }}" rows="5" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+          </div>
+          <div style="margin-top:20px;display:flex;justify-content:flex-end;"><button onClick="{{ nsGoStep2 }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Next: Authors →</button></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isNsStep2 }}">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:24px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Author Information</div>
+          <div style="background:#F7F8FC;border-radius:8px;padding:14px;margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:700;color:#0D1B3E;margin-bottom:10px;">Corresponding Author</div>
+            <div style="display:grid;grid-template-columns:{{ formGridColumns }};gap:16px;">
+              <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">First Name</label><input value="Ramasamy" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+              <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Last Name</label><input value="Sundaram" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+              <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Email</label><input value="r.sundaram@nit.ac.in" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+              <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">ORCID</label><input value="0000-0002-1234-5678" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+              <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Institution / Affiliation</label><input value="NIT Tiruchirappalli" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+            </div>
+          </div>
+          <button style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">+ Add Co-Author</button>
+          <div style="margin-top:20px;display:flex;justify-content:space-between;"><button onClick="{{ nsGoStep1 }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#5A6480;border:none;cursor:pointer;">← Back</button><button onClick="{{ nsGoStep3 }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Next: Manuscript →</button></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isNsStep3 }}">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:24px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Upload Manuscript</div>
+          <label style="display:block;border:2px dashed #DDE2EE;border-radius:14px;padding:32px;text-align:center;color:#5A6480;cursor:pointer;">
+            <input type="file" onChange="{{ setMainFile }}" style="display:none;"></input>
+            <div style="font-size:32px;margin-bottom:8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6"></path></svg></div>
+            <div style="font-weight:600;color:#0D1B3E;margin-bottom:4px;">{{ mainFileLabel }}</div>
+            <div style="font-size:12px;">or click to browse · PDF only · Max 20 MB</div>
+          </label>
+          <div style="margin-top:16px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Supplementary Files (optional)</div>
+            <label style="display:block;border:2px dashed #DDE2EE;border-radius:14px;padding:20px;text-align:center;color:#5A6480;cursor:pointer;">
+              <input type="file" style="display:none;"></input>
+              <div style="font-size:20px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path></svg></div>
+              <div style="font-size:12px;">Datasets, code, appendices — any format · Max 50 MB per file</div>
+            </label>
+          </div>
+          <div style="margin-top:20px;display:flex;justify-content:space-between;"><button onClick="{{ nsGoStep2 }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#5A6480;border:none;cursor:pointer;">← Back</button><button onClick="{{ nsGoStep4 }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Next: Review →</button></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isNsStep4 }}">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:24px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Review Before Submitting</div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;align-items:center;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Title</div><div style="font-size:13px;flex:1;">{{ form.title }}</div><button onClick="{{ nsGoStep1 }}" style="padding:4px 10px;font-size:12px;background:transparent;color:#5A6480;border:none;cursor:pointer;">Edit</button></div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Keywords</div><div style="font-size:13px;">{{ form.keywords }}</div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Abstract</div><div style="font-size:13px;">{{ form.abstract }}</div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;align-items:center;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Authors</div><div style="font-size:13px;flex:1;">Dr. R. Sundaram (Corresponding), M. Priya, Dr. K. Anand</div><button onClick="{{ nsGoStep2 }}" style="padding:4px 10px;font-size:12px;background:transparent;color:#5A6480;border:none;cursor:pointer;">Edit</button></div>
+          <div style="display:flex;gap:8px;padding:8px 0;align-items:center;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Manuscript File</div><div style="font-size:13px;flex:1;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6"></path></svg> {{ mainFileLabel }}</div><button onClick="{{ nsGoStep3 }}" style="padding:4px 10px;font-size:12px;background:transparent;color:#5A6480;border:none;cursor:pointer;">Edit</button></div>
+          <div style="margin-top:20px;display:flex;justify-content:space-between;"><button onClick="{{ nsGoStep3 }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#5A6480;border:none;cursor:pointer;">← Back</button><button onClick="{{ submitManuscript }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg> Submit Manuscript</button></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isNsStep5 }}">
+        <div style="text-align:center;padding:60px 20px;">
+          <div style="font-size:56px;margin-bottom:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;width:1.4em;height:1.4em;margin-right:0;"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path><path d="M22 4L12 14.01l-3-3"></path></svg></div>
+          <div style="font-size:22px;font-weight:800;color:#0D1B3E;margin-bottom:8px;">Manuscript Submitted!</div>
+          <div style="color:#5A6480;margin-bottom:4px;">Your submission number is</div>
+          <div style="font-size:20px;font-weight:700;color:#C9A227;margin-bottom:24px;">IJIDCR-2026-0051</div>
+          <div style="font-size:13px;color:#5A6480;max-width:400px;margin:0 auto 24px;">A confirmation email has been sent to r.sundaram@nit.ac.in. You can track status from My Submissions.</div>
+          <button onClick="{{ goMySubmissions }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">View My Submissions →</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isRevisionsPage }}">
+      <div style="{{ pageHeaderStyle }}">
+        <div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Revision Workspace</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">IJIDCR-2026-0042 · Round 1 · Major Revision · Due 10 Sep 2026</div></div>
+        <span style="{{ badgeRevision }}align-self:center;">● Major Revision</span>
+      </div>
+      <div style="background:linear-gradient(135deg,#FBF3DC,#FFF8E1);border:1.5px solid #C9A227;border-radius:14px;padding:14px 18px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div style="font-size:22px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg></div>
+        <div><strong style="font-size:13px;color:#0D1B3E;display:block;">Deadline: 10 September 2026</strong><span style="font-size:12px;color:#5A6480;">16 days remaining · Respond to all reviewer points and upload revised manuscript</span></div>
+      </div>
+      <div style="display:flex;gap:0;border-bottom:2px solid #DDE2EE;margin-bottom:24px;overflow-x:auto;">
+        <sc-for list="{{ revTabsList }}" as="t" hint-placeholder-count="3">
+          <div onClick="{{ t.handler }}" style="{{ t.style }}">{{ t.label }}</div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ isRequestTab }}">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:20px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Editor's Revision Request</div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Round</div><div style="font-size:13px;">Round 1</div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Revision Type</div><div style="font-size:13px;"><span style="{{ badgeRevision }}">● Major Revision</span></div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Due Date</div><div style="font-size:13px;">10 September 2026</div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Editor Instructions</div><div style="font-size:13px;">Address all reviewer comments. Expand the experimental evaluation with hardware-level benchmarks.</div></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isCommentsTab }}">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Reviewer 1 — Point-by-Point Response</div>
+        <div style="background:#F7F8FC;border-radius:8px;border:1px solid #DDE2EE;padding:14px 16px;margin-bottom:12px;"><div style="font-size:11px;color:#5A6480;margin-bottom:8px;">Public Comment 1</div><div style="font-size:13px;line-height:1.6;">The experimental validation lacks comparison with recent 2025 state-of-the-art edge inference models.</div></div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Your Response</label><textarea value="{{ form.response1 }}" onChange="{{ setResponse1 }}" rows="4" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea><div style="font-size:11px;color:#5A6480;">Reference the change location (e.g., "See Section 4.3, Table 3")</div></div>
+        <div style="background:#F7F8FC;border-radius:8px;border:1px solid #DDE2EE;padding:14px 16px;margin-bottom:12px;"><div style="font-size:11px;color:#5A6480;margin-bottom:8px;">Public Comment 2</div><div style="font-size:13px;line-height:1.6;">The energy consumption analysis needs to be expanded with power profiling on actual hardware.</div></div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Your Response</label><textarea value="{{ form.response2 }}" onChange="{{ setResponse2 }}" rows="4" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"><button style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg> Save Draft</button><button onClick="{{ goRevTabUpload }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Next: Upload Revision →</button></div>
+      </sc-if>
+
+      <sc-if value="{{ isUploadTab }}">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:24px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Upload Revised Manuscript</div>
+          <label style="display:block;border:2px dashed #DDE2EE;border-radius:14px;padding:32px;text-align:center;color:#5A6480;cursor:pointer;">
+            <input type="file" onChange="{{ setRevisedFile }}" style="display:none;"></input>
+            <div style="font-size:32px;margin-bottom:8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6"></path></svg></div>
+            <div style="font-weight:600;color:#0D1B3E;margin-bottom:4px;">{{ revisedFileLabel }}</div>
+            <div style="font-size:12px;">This becomes Version 2 · PDF only · Max 20 MB</div>
+          </label>
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Cover Letter</label><textarea placeholder="Optional — describe the major changes made in this revision..." rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+            <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Summary of Changes</label><textarea placeholder="Enumerate the key changes made in response to reviewer feedback..." rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+          </div>
+          <div style="margin-top:20px;display:flex;gap:10px;"><button style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg> Save Draft</button><button onClick="{{ openConfirmRevisionModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg> Submit Revision</button></div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isCoauthorsPage }}">
+      <div style="{{ pageHeaderStyle }}"><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Co-Author Management</div></div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;"><div style="font-size:14px;font-weight:700;color:#0D1B3E;">Authors across all submissions</div><button style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">+ Add Co-Author</button></div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:520px;">
+          <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Name</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Email</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Institution</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">ORCID</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Manuscripts</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">M. Priya</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">m.priya@nit.ac.in</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">NIT Tiruchirappalli</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">0000-0003-9876-5432</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">3</td></tr>
+            <tr><td style="padding:12px 16px;">Dr. K. Anand</td><td style="padding:12px 16px;">k.anand@iitm.ac.in</td><td style="padding:12px 16px;">IIT Madras</td><td style="padding:12px 16px;">0000-0001-2468-1357</td><td style="padding:12px 16px;">2</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAuthorProfilePage }}">
+      <div style="{{ pageHeaderStyle }}"><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Profile</div></div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:24px;max-width:540px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Personal Info</div>
+        <div style="display:grid;grid-template-columns:{{ formGridColumns }};gap:16px;">
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">First Name</label><input value="Ramasamy" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Last Name</label><input value="Sundaram" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Email</label><input value="r.sundaram@nit.ac.in" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">ORCID</label><input value="0000-0002-1234-5678" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Institution</label><input value="NIT Tiruchirappalli" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+        </div>
+        <button style="margin-top:20px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Save Changes</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReviewerDashboardPage }}">
+      <div style="{{ pageHeaderStyle }}"><div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Reviewer Dashboard</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">Your pending invitations and active review assignments</div></div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;margin-bottom:24px;">
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #B45309;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Pending Invitations</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">2</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">Response needed</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #1565C0;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Active Assignments</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">1</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">In progress</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #B45309;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Due Soon</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">1</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">Within 7 days</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #1A7F4B;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Completed</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">11</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">All time</div></div>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;"><div style="font-size:14px;font-weight:700;color:#0D1B3E;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M22 6l-10 7L2 6"></path></svg> Pending Invitations</div><button onClick="{{ goInvitations }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">View All</button></div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:640px;">
+          <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Manuscript</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Journal</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Invitation Date</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Respond By</th><th style="background:#F7F8FC;"></th></tr></thead>
+          <tbody>
+            <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">[Anonymized] — ML for Biomedical Signal Processing</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">IJIDCR</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">23 Aug 2026</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">27 Aug 2026</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><div style="display:flex;gap:6px;"><button onClick="{{ goInvitations }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Accept</button><button style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Decline</button></div></td></tr>
+            <tr><td style="padding:12px 16px;">[Anonymized] — Blockchain-Based Supply Chain Transparency</td><td style="padding:12px 16px;">IJIDCR</td><td style="padding:12px 16px;">24 Aug 2026</td><td style="padding:12px 16px;">28 Aug 2026</td><td style="padding:12px 16px;"><div style="display:flex;gap:6px;"><button onClick="{{ goInvitations }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Accept</button><button style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Decline</button></div></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;"><div style="font-size:14px;font-weight:700;color:#0D1B3E;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1"></rect></svg> Active Assignments</div><button onClick="{{ goAssignedReviews }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">View All</button></div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:560px;">
+          <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Manuscript</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Round</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Due Date</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Status</th><th style="background:#F7F8FC;"></th></tr></thead>
+          <tbody><tr><td style="padding:12px 16px;">[Anonymized] — Neural Architecture Search for Embedded Systems</td><td style="padding:12px 16px;">Round 1</td><td style="padding:12px 16px;">30 Aug 2026</td><td style="padding:12px 16px;"><span style="{{ badgeReview }}">● In Progress</span></td><td style="padding:12px 16px;"><button onClick="{{ goReviewWorkspace }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Continue Review</button></td></tr></tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isInvitationsPage }}">
+      <div style="{{ pageHeaderStyle }}"><div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Review Invitations</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">Respond within the deadline shown</div></div></div>
+      <div style="display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1E40AF;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg> Double-blind peer review — Author identities are not disclosed to reviewers</div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);margin-bottom:16px;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;"><div style="font-size:14px;font-weight:700;color:#0D1B3E;">Invitation — IJIDCR-INV-2026-0089</div><span style="{{ badgePending }}">● Awaiting Response</span></div>
+        <div style="padding:20px;">
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Manuscript</div><div style="font-size:13px;">[Anonymized] Machine Learning for Biomedical Signal Processing</div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Article Type</div><div style="font-size:13px;">Research Article</div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Expected Due Date</div><div style="font-size:13px;">15 September 2026</div></div>
+          <div style="display:flex;gap:8px;padding:8px 0;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Invitation Expiry</div><div style="font-size:13px;">27 August 2026</div></div>
+          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button onClick="{{ openAcceptModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M20 6L9 17l-5-5"></path></svg> Accept Review</button>
+            <button onClick="{{ openDeclineModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M18 6L6 18"></path><path d="M6 6l12 12"></path></svg> Decline</button>
+            <button onClick="{{ openExtensionModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Request Extension</button>
+            <button onClick="{{ openSuggestModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#5A6480;border:none;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Suggest Reviewer</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAssignedReviewsPage }}">
+      <div style="{{ pageHeaderStyle }}"><div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Assigned Reviews</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">Manuscripts you have accepted to review</div></div></div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #DDE2EE;font-size:14px;font-weight:700;color:#0D1B3E;">Current Assignments</div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:640px;">
+          <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Manuscript</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Round</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Accepted</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Due Date</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Status</th><th style="background:#F7F8FC;"></th></tr></thead>
+          <tbody><tr><td style="padding:12px 16px;">[Anonymized] — Neural Architecture Search for Embedded Systems</td><td style="padding:12px 16px;">Round 1</td><td style="padding:12px 16px;">21 Aug 2026</td><td style="padding:12px 16px;"><strong style="color:#B45309;">30 Aug 2026</strong></td><td style="padding:12px 16px;"><span style="{{ badgeReview }}">● In Progress</span></td><td style="padding:12px 16px;"><button onClick="{{ goReviewWorkspace }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Continue →</button></td></tr></tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCompletedReviewsPage }}">
+      <div style="{{ pageHeaderStyle }}"><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Completed Reviews</div></div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;"><div style="font-size:14px;font-weight:700;color:#0D1B3E;">Review History</div><span style="font-size:12px;color:#5A6480;">11 reviews</span></div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:600px;">
+          <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Manuscript</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Round</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Submitted</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Recommendation</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Status</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">[Anonymized] — Federated Privacy in Smart Grids</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">Round 2</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">14 Aug 2026</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ badgeAccepted }}">● Accept</span></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ badgeCompleted }}">● Completed</span></td></tr>
+            <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">[Anonymized] — Adversarial Robustness in CV</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">Round 1</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">4 Jul 2026</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ badgeRevision }}">● Major Revision</span></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ badgeCompleted }}">● Completed</span></td></tr>
+            <tr><td style="padding:12px 16px;">[Anonymized] — NLP for Tamil Code-Mixing</td><td style="padding:12px 16px;">Round 1</td><td style="padding:12px 16px;">20 Jun 2026</td><td style="padding:12px 16px;"><span style="{{ badgeReview }}">● Minor Revision</span></td><td style="padding:12px 16px;"><span style="{{ badgeCompleted }}">● Completed</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReviewWorkspacePage }}">
+      <div style="{{ pageHeaderStyle }}">
+        <div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Review Workspace</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">[Anonymized] Neural Architecture Search for Embedded Systems · Round 1 · Due 30 Aug 2026</div></div>
+        <button onClick="{{ goAssignedReviews }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">← Back</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1E40AF;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg> Double-blind review — author identity, institution, and email are hidden. Do not attempt to identify authors.</div>
+      <div style="display:grid;grid-template-columns:{{ reviewGridColumns }};gap:20px;align-items:start;">
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+          <div style="background:#0D1B3E;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div style="color:#fff;font-size:13px;font-weight:600;">[Anonymized Manuscript]</div>
+            <button style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg> Download PDF</button>
+          </div>
+          <div style="padding:24px;background:#F7F8FC;min-height:320px;display:flex;align-items:center;justify-content:center;color:#5A6480;text-align:center;">
+            <div><div style="font-size:36px;margin-bottom:12px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6"></path></svg></div><div style="font-weight:600;">Manuscript PDF Viewer</div><div style="font-size:12px;margin-top:4px;">Author details are redacted from the document</div></div>
+          </div>
+          <div style="padding:16px;border-top:1px solid #DDE2EE;">
+            <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Article Type</div><div style="font-size:13px;">Research Article</div></div>
+            <div style="display:flex;gap:8px;padding:8px 0;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Keywords</div><div style="font-size:13px;">[anonymized]</div></div>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:20px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Evaluation Rubric</div>
+          <sc-for list="{{ rubricRows }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+              <div style="font-size:12px;font-weight:600;color:#5A6480;min-width:140px;">{{ r.label }}</div>
+              <div style="display:flex;gap:4px;">
+                <sc-for list="{{ r.stars }}" as="star" hint-placeholder-count="5">
+                  <span onClick="{{ star.handler }}" style="{{ star.style }}"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none" style="width:1em;height:1em;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin:16px 0 12px;">Comments</div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Public Comments (shared with author)</label><textarea value="{{ form.publicComment }}" onChange="{{ setPublicComment }}" rows="4" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Confidential Comments (editor only)</label><textarea value="{{ form.confidentialComment }}" onChange="{{ setConfidentialComment }}" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Recommendation</div>
+          <div style="display:grid;grid-template-columns:{{ recGridColumns }};gap:10px;margin-top:8px;">
+            <sc-for list="{{ recOptions }}" as="opt" hint-placeholder-count="4">
+              <div onClick="{{ opt.handler }}" style="{{ opt.style }}">
+                <div style="font-size:13px;font-weight:600;color:#0D1B3E;">{{ opt.title }}</div>
+                <div style="font-size:11px;color:#5A6480;margin-top:2px;">{{ opt.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button style="flex:1;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg> Save Draft</button>
+            <button onClick="{{ openSubmitReviewModal }}" style="flex:2;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Submit Review →</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReviewerProfilePage }}">
+      <div style="{{ pageHeaderStyle }}"><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Reviewer Profile</div></div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:24px;max-width:540px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Personal Info</div>
+        <div style="display:grid;grid-template-columns:{{ formGridColumns }};gap:16px;">
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">First Name</label><input value="Ramasamy" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Last Name</label><input value="Sundaram" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Email</label><input value="r.sundaram@nit.ac.in" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">ORCID</label><input value="0000-0002-1234-5678" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Areas of Expertise</label><input value="Machine Learning, Edge Computing, Computer Vision" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+        </div>
+        <button style="margin-top:20px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Save Changes</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAdminDashboardPage }}">
+      <div style="{{ pageHeaderStyle }}"><div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Admin Dashboard</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">Platform-wide overview across all journals</div></div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;margin-bottom:24px;">
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #C9A227;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Total Users</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">318</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">Across all roles</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #1565C0;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Total Manuscripts</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">742</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">All time</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #B45309;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Pending Approvals</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">9</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">Moderation + editorial</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #1A7F4B;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Active Journals</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">1</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">IJIDCR Vol. 01</div></div>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;"><div style="font-size:14px;font-weight:700;color:#0D1B3E;">Recent Activity</div><button onClick="{{ goAdminUsers }}" style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Manage Users</button></div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:560px;">
+          <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Event</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Actor</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Date</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">New manuscript submitted — IJIDCR-2026-0052</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">Dr. R. Sundaram</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">27 Aug 2026</td></tr>
+            <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">Reviewer account approved</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">Dr. N. Fenwick</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">26 Aug 2026</td></tr>
+            <tr><td style="padding:12px 16px;">Editorial decision recorded — IJIDCR-2025-0091</td><td style="padding:12px 16px;">Dr. S. Blake (Editor)</td><td style="padding:12px 16px;">25 Aug 2026</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAdminUsersPage }}">
+      <div style="{{ pageHeaderStyle }}"><div style="font-size:22px;font-weight:700;color:#0D1B3E;">User Management</div></div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #DDE2EE;"><div style="font-size:14px;font-weight:700;color:#0D1B3E;">All Users</div><span style="font-size:12px;color:#5A6480;">318 total</span></div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:560px;">
+          <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Name</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Email</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Role</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Status</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ adminUserRows }}" as="u" hint-placeholder-count="5">
+              <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ u.name }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ u.email }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ u.role }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ u.badgeStyle }}">● {{ u.status }}</span></td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isModeratorDashboardPage }}">
+      <div style="{{ pageHeaderStyle }}"><div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Moderator Dashboard</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">Initial screening queue for new submissions</div></div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;margin-bottom:24px;">
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #B45309;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Awaiting Check</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">4</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">In queue</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #1A7F4B;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Passed Today</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">3</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">Forwarded to editor</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #C0392B;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Flagged</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">1</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">Format / plagiarism issue</div></div>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #DDE2EE;font-size:14px;font-weight:700;color:#0D1B3E;">Submission Queue</div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:620px;">
+          <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Manuscript</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Submitted</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Status</th><th style="background:#F7F8FC;"></th></tr></thead>
+          <tbody>
+            <sc-for list="{{ moderatorQueueRows }}" as="m" hint-placeholder-count="3">
+              <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ m.title }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ m.submitted }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ m.badgeStyle }}">● {{ m.status }}</span></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><div style="display:flex;gap:6px;"><button style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Approve</button><button style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:transparent;color:#C0392B;border:1.5px solid #f5c6c1;cursor:pointer;">Flag</button></div></td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isEditorDashboardPage }}">
+      <div style="{{ pageHeaderStyle }}"><div><div style="font-size:22px;font-weight:700;color:#0D1B3E;">Editor Dashboard</div><div style="color:#5A6480;font-size:13px;margin-top:2px;">Manuscripts under your editorial handling</div></div></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;margin-bottom:24px;">
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #1565C0;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Assigned to Me</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">6</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">Active manuscripts</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #B45309;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Awaiting Decision</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">2</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">Reviews complete</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #7C3AED;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Needs Reviewers</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">1</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">Not yet assigned</div></div>
+        <div style="background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 12px rgba(13,27,62,.09);border-top:3px solid #1A7F4B;"><div style="font-size:11px;font-weight:600;color:#5A6480;text-transform:uppercase;letter-spacing:.6px;">Decisions Made</div><div style="font-size:28px;font-weight:800;color:#0D1B3E;margin-top:6px;">28</div><div style="font-size:11px;color:#5A6480;margin-top:4px;">This year</div></div>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #DDE2EE;font-size:14px;font-weight:700;color:#0D1B3E;">Assigned Manuscripts</div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:640px;">
+          <thead><tr><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Manuscript</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Reviewers</th><th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#5A6480;background:#F7F8FC;">Status</th><th style="background:#F7F8FC;"></th></tr></thead>
+          <tbody>
+            <sc-for list="{{ editorAssignedRows }}" as="m" hint-placeholder-count="3">
+              <tr><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ m.title }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;">{{ m.reviewers }}</td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><span style="{{ m.badgeStyle }}">● {{ m.status }}</span></td><td style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><button style="padding:5px 12px;font-size:12px;border-radius:8px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">{{ m.actionLabel }}</button></td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isStaffProfilePage }}">
+      <div style="{{ pageHeaderStyle }}"><div style="font-size:22px;font-weight:700;color:#0D1B3E;">{{ roleLabel }} Profile</div></div>
+      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(13,27,62,.09);padding:24px;max-width:540px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5A6480;margin-bottom:12px;">Personal Info</div>
+        <div style="display:grid;grid-template-columns:{{ formGridColumns }};gap:16px;">
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">First Name</label><input value="Ramasamy" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Last Name</label><input value="Sundaram" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Email</label><input value="r.sundaram@nit.ac.in" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Role</label><input value="{{ roleLabel }}" readOnly="{{ true }}" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+        </div>
+        <button style="margin-top:20px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Save Changes</button>
+      </div>
+    </sc-if>
+
+  </div>
+  </div>
+
+  <sc-if value="{{ isModalWithdraw }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(13,27,62,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div onClick="{{ stopClick }}" style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #DDE2EE;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:15px;font-weight:700;color:#0D1B3E;">Withdraw Manuscript</div><button onClick="{{ closeModal }}" style="background:none;border:none;font-size:18px;color:#5A6480;cursor:pointer;">✕</button></div>
+        <div style="padding:20px;">
+          <p style="font-size:13px;color:#5A6480;margin:0 0 14px;">Withdrawing <strong>IJIDCR-2026-0042</strong> will halt the review process. This action requires editorial approval.</p>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Reason for Withdrawal *</label><textarea rows="3" placeholder="Provide a reason for your withdrawal request..." style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid #DDE2EE;display:flex;gap:10px;justify-content:flex-end;"><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Cancel</button><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#FDEDEC;color:#C0392B;border:1.5px solid #f5c6c1;cursor:pointer;">Request Withdrawal</button></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isModalConfirmRevision }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(13,27,62,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div onClick="{{ stopClick }}" style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #DDE2EE;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:15px;font-weight:700;color:#0D1B3E;">Confirm Revision Submission</div><button onClick="{{ closeModal }}" style="background:none;border:none;font-size:18px;color:#5A6480;cursor:pointer;">✕</button></div>
+        <div style="padding:20px;"><p style="font-size:13px;color:#5A6480;margin:0;">You are about to submit Revision 1 for <strong>IJIDCR-2026-0042</strong>. Once submitted, the editor will be notified and the manuscript will re-enter review.</p></div>
+        <div style="padding:14px 20px;border-top:1px solid #DDE2EE;display:flex;gap:10px;justify-content:flex-end;"><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Cancel</button><button onClick="{{ confirmRevisionSubmit }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Confirm & Submit</button></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isModalAccept }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(13,27,62,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div onClick="{{ stopClick }}" style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #DDE2EE;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:15px;font-weight:700;color:#0D1B3E;">Accept Review Invitation</div><button onClick="{{ closeModal }}" style="background:none;border:none;font-size:18px;color:#5A6480;cursor:pointer;">✕</button></div>
+        <div style="padding:20px;">
+          <p style="font-size:13px;color:#5A6480;margin:0;">You are accepting to review <em>[Anonymized] Machine Learning for Biomedical Signal Processing</em>. Your review is due <strong>15 September 2026</strong>.</p>
+          <div style="margin-top:12px;padding:10px 14px;background:#E3EEF9;border-radius:8px;font-size:12px;color:#1565C0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg> This is a double-blind review. Author identity will not be disclosed.</div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid #DDE2EE;display:flex;gap:10px;justify-content:flex-end;"><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Cancel</button><button onClick="{{ acceptInvitationConfirm }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M20 6L9 17l-5-5"></path></svg> Accept Review</button></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isModalDecline }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(13,27,62,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div onClick="{{ stopClick }}" style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #DDE2EE;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:15px;font-weight:700;color:#0D1B3E;">Decline Review Invitation</div><button onClick="{{ closeModal }}" style="background:none;border:none;font-size:18px;color:#5A6480;cursor:pointer;">✕</button></div>
+        <div style="padding:20px;">
+          <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Reason for Declining</label><select style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;background:#fff;"><option>Conflict of interest</option><option>Outside my expertise</option><option>Time constraints</option><option>Other</option></select></div>
+          <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Comments (optional)</label><textarea rows="2" placeholder="Any additional comments for the editor..." style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid #DDE2EE;display:flex;gap:10px;justify-content:flex-end;"><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Cancel</button><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#FDEDEC;color:#C0392B;border:1.5px solid #f5c6c1;cursor:pointer;">Decline Invitation</button></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isModalExtension }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(13,27,62,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div onClick="{{ stopClick }}" style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #DDE2EE;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:15px;font-weight:700;color:#0D1B3E;">Request Deadline Extension</div><button onClick="{{ closeModal }}" style="background:none;border:none;font-size:18px;color:#5A6480;cursor:pointer;">✕</button></div>
+        <div style="padding:20px;">
+          <div style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #DDE2EE;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Current Due Date</div><div style="font-size:13px;">15 September 2026</div></div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:14px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Requested New Deadline</label><input placeholder="e.g. 30 September 2026" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Reason</label><textarea rows="2" placeholder="Briefly explain why you need more time..." style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid #DDE2EE;display:flex;gap:10px;justify-content:flex-end;"><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Cancel</button><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Submit Request</button></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isModalSuggest }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(13,27,62,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div onClick="{{ stopClick }}" style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #DDE2EE;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:15px;font-weight:700;color:#0D1B3E;">Suggest an Alternative Reviewer</div><button onClick="{{ closeModal }}" style="background:none;border:none;font-size:18px;color:#5A6480;cursor:pointer;">✕</button></div>
+        <div style="padding:20px;">
+          <div style="display:grid;grid-template-columns:{{ formGridColumns }};gap:16px;">
+            <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Name</label><input placeholder="Full name" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+            <div style="display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Email</label><input placeholder="Email address" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+            <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Institution</label><input placeholder="Institution / University" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;"></input></div>
+            <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px;"><label style="font-size:12px;font-weight:600;color:#5A6480;">Reason for Suggestion</label><textarea rows="2" placeholder="Why is this person a suitable reviewer?" style="width:100%;padding:9px 12px;border:1.5px solid #DDE2EE;border-radius:8px;font-size:13px;resize:vertical;font-family:inherit;"></textarea></div>
+          </div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid #DDE2EE;display:flex;gap:10px;justify-content:flex-end;"><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Cancel</button><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;">Submit Suggestion</button></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isModalSubmitReview }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(13,27,62,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div onClick="{{ stopClick }}" style="background:#fff;border-radius:14px;width:100%;max-width:480px;overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #DDE2EE;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:15px;font-weight:700;color:#0D1B3E;">Submit Review</div><button onClick="{{ closeModal }}" style="background:none;border:none;font-size:18px;color:#5A6480;cursor:pointer;">✕</button></div>
+        <div style="padding:20px;">
+          <p style="font-size:13px;color:#5A6480;margin:0;">You are about to submit your review for <em>[Anonymized] Neural Architecture Search for Embedded Systems</em>. Once submitted, you cannot edit it.</p>
+          <div style="margin-top:12px;display:flex;gap:8px;"><div style="min-width:140px;font-size:12px;font-weight:600;color:#5A6480;">Recommendation</div><div style="font-size:13px;"><span style="{{ selectedRecBadge }}">● {{ selectedRecLabel }}</span></div></div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid #DDE2EE;display:flex;gap:10px;justify-content:flex-end;"><button onClick="{{ closeModal }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:transparent;color:#0D1B3E;border:1.5px solid #DDE2EE;cursor:pointer;">Cancel</button><button onClick="{{ confirmSubmitReview }}" style="padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;background:#C9A227;color:#0D1B3E;border:none;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;"><path d="M20 6L9 17l-5-5"></path></svg> Confirm Submission</button></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isModalNotif }}">
+    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(13,27,62,.55);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
+      <div onClick="{{ stopClick }}" style="background:#fff;border-radius:14px;width:100%;max-width:380px;overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #DDE2EE;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:15px;font-weight:700;color:#0D1B3E;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;vertical-align:-0.15em;margin-right:5px;flex-shrink:0;width:16px;height:16px;margin-right:0;"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 01-3.46 0"></path></svg> Notifications</div><button onClick="{{ closeModal }}" style="background:none;border:none;font-size:18px;color:#5A6480;cursor:pointer;">✕</button></div>
+        <div style="padding:8px 0;">
+          <div style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><div style="font-size:12px;font-weight:600;color:#0D1B3E;">Revision requested — IJIDCR-2026-0042</div><div style="font-size:11px;color:#5A6480;margin-top:2px;">Major revision due 10 Sep 2026 · 22 Aug 2026</div></div>
+          <div style="padding:12px 16px;border-bottom:1px solid #DDE2EE;"><div style="font-size:12px;font-weight:600;color:#0D1B3E;">Review invitation — IJIDCR-INV-2026-0089</div><div style="font-size:11px;color:#5A6480;margin-top:2px;">Respond by 27 Aug 2026 · 23 Aug 2026</div></div>
+          <div style="padding:12px 16px;"><div style="font-size:12px;font-weight:600;color:#0D1B3E;">Manuscript under review — IJIDCR-2026-0038</div><div style="font-size:11px;color:#5A6480;margin-top:2px;">Review process started · 18 Aug 2026</div></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const BADGE = {
+  submitted: 'background:#E3EEF9;color:#1565C0;', review: 'background:#FEF3C7;color:#B45309;',
+  revision: 'background:#F3E8FF;color:#7C3AED;', accepted: 'background:#EAF7F0;color:#1A7F4B;',
+  rejected: 'background:#FDEDEC;color:#C0392B;', pending: 'background:#FFF7ED;color:#C2410C;',
+  completed: 'background:#EAF7F0;color:#1A7F4B;', withdrawn: 'background:#F1F5F9;color:#64748B;'
+};
+const badgeBase = 'display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;';
+const badge = key => badgeBase + BADGE[key];
+
+const AUTHOR_NAV = [
+  { key: 'author-dashboard', icon: 'dashboard', label: 'Dashboard' },
+  { key: 'my-submissions', icon: 'file', label: 'My Submissions', badge: 3 },
+  { key: 'new-submission', icon: 'plus', label: 'New Submission' },
+  { key: 'revisions', icon: 'edit', label: 'Revisions', badge: 1 },
+  { key: 'coauthors', icon: 'users', label: 'Co-Authors' }
+];
+const REVIEWER_NAV = [
+  { key: 'reviewer-dashboard', icon: 'dashboard', label: 'Dashboard' },
+  { key: 'invitations', icon: 'mail', label: 'Invitations', badge: 2 },
+  { key: 'assigned-reviews', icon: 'clipboard', label: 'Assigned Reviews' },
+  { key: 'completed-reviews', icon: 'check', label: 'Completed Reviews' }
+];
+const ADMIN_NAV = [
+  { key: 'admin-dashboard', icon: 'dashboard', label: 'Dashboard' },
+  { key: 'admin-users', icon: 'users', label: 'Users' }
+];
+const MODERATOR_NAV = [
+  { key: 'moderator-dashboard', icon: 'dashboard', label: 'Dashboard' }
+];
+const EDITOR_NAV = [
+  { key: 'editor-dashboard', icon: 'dashboard', label: 'Dashboard' }
+];
+const ROLE_LABELS = { admin: 'Admin', author: 'Author', moderator: 'Moderator', editor: 'Editor', reviewer: 'Reviewer' };
+const ROLE_LANDING = { admin: 'admin-dashboard', author: 'author-dashboard', moderator: 'moderator-dashboard', editor: 'editor-dashboard', reviewer: 'reviewer-dashboard' };
+const ROLE_OPTIONS = [
+  { value: 'admin', label: '⚙ Admin' }, { value: 'author', label: '✍ Author' },
+  { value: 'moderator', label: '🛡 Moderator' }, { value: 'editor', label: '📝 Editor' },
+  { value: 'reviewer', label: '🔍 Reviewer' }
+];
+const ADMIN_USER_ROWS = [
+  { name: 'Dr. R. Sundaram', email: 'r.sundaram@nit.ac.in', role: 'Author', status: 'Active', badgeKey: 'accepted' },
+  { name: 'Dr. S. Blake', email: 's.blake@ed.ijidcr.org', role: 'Editor', status: 'Active', badgeKey: 'accepted' },
+  { name: 'Dr. N. Fenwick', email: 'n.fenwick@rev.ijidcr.org', role: 'Reviewer', status: 'Active', badgeKey: 'accepted' },
+  { name: 'A. Coleman', email: 'a.coleman@mod.ijidcr.org', role: 'Moderator', status: 'Active', badgeKey: 'accepted' },
+  { name: 'M. Priya', email: 'm.priya@nit.ac.in', role: 'Author', status: 'Pending', badgeKey: 'pending' }
+];
+const MODERATOR_QUEUE_ROWS = [
+  { title: 'Adaptive Compression for Satellite Imagery', submitted: '27 Aug 2026', status: 'Awaiting Check', badgeKey: 'pending' },
+  { title: 'Ethical Frameworks for Autonomous Vehicles', submitted: '26 Aug 2026', status: 'Awaiting Check', badgeKey: 'pending' },
+  { title: 'Sparse Attention for Long-Context LLMs', submitted: '25 Aug 2026', status: 'Flagged', badgeKey: 'rejected' }
+];
+const EDITOR_ASSIGNED_ROWS = [
+  { title: 'Deep Learning Approaches for Edge Computing Optimization', reviewers: '2 assigned', status: 'Revision Required', badgeKey: 'revision', actionLabel: 'View' },
+  { title: 'Federated Learning in IoT Networks: A Survey', reviewers: '2 assigned', status: 'Under Review', badgeKey: 'review', actionLabel: 'View' },
+  { title: 'Microplastic Accumulation in Freshwater Ecosystems', reviewers: '0 assigned', status: 'Needs Reviewer', badgeKey: 'pending', actionLabel: 'Assign Reviewer' }
+];
+const SUBMISSION_ROWS = [
+  { code: 'IJIDCR-2026-0042', title: 'Deep Learning Approaches for Edge Computing Optimization', type: 'Research Article', status: 'Revision Required', badgeKey: 'revision', submitted: '2 Aug 2026', updated: '22 Aug 2026' },
+  { code: 'IJIDCR-2026-0038', title: 'Federated Learning in IoT Networks: A Survey', type: 'Review', status: 'Under Review', badgeKey: 'review', submitted: '22 Jul 2026', updated: '18 Aug 2026' },
+  { code: 'IJIDCR-2025-0091', title: 'Quantum-Inspired Algorithms for NP-Hard Problems', type: 'Research Article', status: 'Accepted', badgeKey: 'accepted', submitted: '3 Mar 2025', updated: '10 Jul 2026' },
+  { code: 'IJIDCR-2025-0067', title: 'Blockchain Security in Healthcare Data Management', type: 'Research Article', status: 'Accepted', badgeKey: 'accepted', submitted: '14 Jan 2025', updated: '22 May 2025' },
+  { code: 'IJIDCR-2024-0112', title: 'Transfer Learning for Low-Resource Language NLP', type: 'Research Article', status: 'Rejected', badgeKey: 'rejected', submitted: '8 Oct 2024', updated: '3 Dec 2024' }
+];
+const DETAIL_TABS = [{ key: 'overview', label: 'Overview' }, { key: 'files', label: 'Files & Versions' }, { key: 'reviews', label: 'Reviews' }, { key: 'revisions', label: 'Revisions' }, { key: 'coauthors', label: 'Co-Authors' }];
+const REV_TABS = [{ key: 'request', label: 'Request' }, { key: 'comments', label: 'Reviewer Comments' }, { key: 'upload', label: 'Upload & Submit' }];
+const WIZARD_LABELS = ['Details', 'Authors', 'Manuscript', 'Review', 'Submit'];
+const RUBRIC_DEFS = [{ key: 'orig', label: 'Originality', lit: 4 }, { key: 'meth', label: 'Methodology', lit: 3 }, { key: 'clar', label: 'Clarity of Writing', lit: 4 }, { key: 'lit', label: 'Literature Review', lit: 2 }];
+const REC_OPTIONS = [{ key: 'accept', title: 'Accept', sub: 'Ready for publication' }, { key: 'minor', title: 'Minor Revision', sub: 'Small changes needed' }, { key: 'major', title: 'Major Revision', sub: 'Significant rework' }, { key: 'reject', title: 'Reject', sub: 'Not suitable' }];
+const TIMELINE = [
+  { title: 'Submitted', meta: '2 Aug 2026', state: 'done' },
+  { title: 'Moderator Check', meta: 'Passed — 4 Aug 2026', state: 'done' },
+  { title: 'Editor Assigned', meta: '6 Aug 2026', state: 'done' },
+  { title: 'Peer Review', meta: '2 reviewers, completed', state: 'done' },
+  { title: 'Revision Required', meta: 'Major · Due 10 Sep 2026', state: 'active' },
+  { title: 'Final Decision', meta: 'Pending revision', state: 'todo' }
+];
+
+class Component extends DCLogic {
+  state = {
+    role: 'author', page: 'author-dashboard', detailTab: 'overview', revTab: 'request',
+    nsStep: 1, modal: null, isMobile: false, sidebarOpen: false,
+    stars: { orig: 4, meth: 3, clar: 4, lit: 2 }, rec: 'accept',
+    form: { title: 'Deep Learning Approaches for Edge Computing Optimization', keywords: 'deep learning, edge computing, optimization', abstract: 'This paper presents novel deep learning architectures optimized for resource-constrained edge devices...', mainFile: null, revisedFile: null, response1: 'We have added comparisons with MobileViT-v3 and EfficientDet-Lite4 (2025) in Table 3, along with corresponding ablation results in Appendix B.', response2: '', publicComment: 'The paper addresses an important problem in neural architecture search. The proposed method shows clear improvements over baselines, however the computational cost analysis should be extended.', confidentialComment: '' }
+  };
+
+  componentDidMount() {
+    this.mq = window.matchMedia('(max-width: 860px)');
+    this.onMq = () => this.setState({ isMobile: this.mq.matches, sidebarOpen: false });
+    this.onMq();
+    this.mq.addEventListener('change', this.onMq);
+  }
+  componentWillUnmount() { this.mq && this.mq.removeEventListener('change', this.onMq); }
+
+  renderVals() {
+    const s = this.state;
+    const isAuthor = s.role === 'author';
+    const sidebarWidth = 230;
+
+    const navList = { admin: ADMIN_NAV, author: AUTHOR_NAV, moderator: MODERATOR_NAV, editor: EDITOR_NAV, reviewer: REVIEWER_NAV }[s.role];
+    const navItems = navList.map(n => ({
+      isDashboard: n.icon === 'dashboard', isFile: n.icon === 'file', isPlus: n.icon === 'plus',
+      isEdit: n.icon === 'edit', isUsers: n.icon === 'users', isMail: n.icon === 'mail',
+      isClipboard: n.icon === 'clipboard', isCheck: n.icon === 'check',
+      label: n.label, hasBadge: !!n.badge, badge: n.badge,
+      handler: () => this.setState({ page: n.key, sidebarOpen: false }),
+      style: `display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;cursor:pointer;border-left:3px solid ${s.page===n.key?'#C9A227':'transparent'};color:${s.page===n.key?'#E4BC4F':'rgba(255,255,255,.65)'};background:${s.page===n.key?'rgba(201,162,39,.12)':'transparent'};white-space:nowrap;`
+    }));
+
+    const sidebarStyle = s.isMobile
+      ? `display:flex;flex-direction:column;position:fixed;top:60px;left:0;bottom:0;width:${sidebarWidth}px;background:#162650;z-index:160;border-right:1px solid rgba(201,162,39,.2);transition:transform .2s ease;transform:translateX(${s.sidebarOpen?'0':'-100%'});`
+      : `display:flex;flex-direction:column;position:fixed;top:60px;left:0;bottom:0;width:${sidebarWidth}px;background:#162650;z-index:100;border-right:1px solid rgba(201,162,39,.2);`;
+    const mainStyle = `margin-left:${s.isMobile?0:sidebarWidth}px;margin-top:60px;padding:${s.isMobile?'16px':'28px'};min-height:calc(100vh - 60px);box-sizing:border-box;`;
+
+    const pillStyle = active => `padding:4px 14px;border-radius:16px;font-size:12px;font-weight:600;border:none;cursor:pointer;color:${active?'#0D1B3E':'rgba(255,255,255,.6)'};background:${active?'#C9A227':'transparent'};`;
+
+    const rubricRows = RUBRIC_DEFS.map(def => {
+      const lit = s.stars[def.key];
+      return {
+        label: def.label,
+        stars: [1, 2, 3, 4, 5].map(n => ({ handler: () => this.setState(st => ({ stars: { ...st.stars, [def.key]: n } })), style: `font-size:18px;cursor:pointer;color:${n<=lit?'#C9A227':'#DDE2EE'};` }))
+      };
+    });
+
+    const recOptions = REC_OPTIONS.map(opt => ({
+      key: opt.key, title: opt.title, sub: opt.sub,
+      handler: () => this.setState({ rec: opt.key }),
+      style: `border:2px solid ${s.rec===opt.key?'#C9A227':'#DDE2EE'};border-radius:8px;padding:10px 14px;cursor:pointer;background:${s.rec===opt.key?'#FBF3DC':'transparent'};`
+    }));
+    const selectedRec = REC_OPTIONS.find(o => o.key === s.rec);
+
+    const timelineSteps = TIMELINE.map((t, i) => ({
+      title: t.title, meta: t.meta, showLine: i < TIMELINE.length - 1,
+      dotContent: t.state === 'done' ? '✓' : t.state === 'active' ? '!' : '',
+      dotStyle: `width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;font-weight:700;border:2px solid ${t.state==='done'?'#1A7F4B':t.state==='active'?'#C9A227':'#DDE2EE'};background:${t.state==='done'?'#1A7F4B':t.state==='active'?'#C9A227':'#fff'};color:${t.state==='done'?'#fff':t.state==='active'?'#0D1B3E':'#5A6480'};`,
+      lineStyle: `width:2px;flex:1;min-height:14px;background:${t.state==='done'?'#1A7F4B':'#DDE2EE'};margin:2px 0;`,
+      titleStyle: `font-size:13px;font-weight:600;color:${t.state==='active'?'#C9A227':'#0D1B3E'};`
+    }));
+
+    const wizardSteps = WIZARD_LABELS.map((label, i) => {
+      const n = i + 1, done = n < s.nsStep, active = n === s.nsStep;
+      return {
+        label, showLine: i > 0,
+        lineStyle: `position:absolute;top:14px;right:50%;left:-50%;height:2px;background:${done||active?'#1A7F4B':'#DDE2EE'};z-index:0;`,
+        numStyle: `width:28px;height:28px;border-radius:50%;border:2px solid ${done?'#1A7F4B':active?'#C9A227':'#DDE2EE'};background:${done?'#1A7F4B':active?'#C9A227':'#fff'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${done?'#fff':active?'#0D1B3E':'#5A6480'};z-index:1;position:relative;`,
+        numContent: done ? '✓' : String(n),
+        labelStyle: `font-size:11px;font-weight:600;color:${active?'#C9A227':done?'#1A7F4B':'#5A6480'};text-align:center;`
+      };
+    });
+
+    const detailTabs = DETAIL_TABS.map(t => ({ label: t.label, handler: () => this.setState({ detailTab: t.key }), style: `padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid ${s.detailTab===t.key?'#C9A227':'transparent'};margin-bottom:-2px;white-space:nowrap;color:${s.detailTab===t.key?'#C9A227':'#5A6480'};` }));
+    const revTabsList = REV_TABS.map(t => ({ label: t.label, handler: () => this.setState({ revTab: t.key }), style: `padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid ${s.revTab===t.key?'#C9A227':'transparent'};margin-bottom:-2px;white-space:nowrap;color:${s.revTab===t.key?'#C9A227':'#5A6480'};` }));
+
+    const submissionRows = SUBMISSION_ROWS.map(r => ({ ...r, badgeStyle: badge(r.badgeKey) }));
+
+    return {
+      isMobile: s.isMobile, showBackdrop: s.isMobile && s.sidebarOpen,
+      toggleSidebar: () => this.setState(st => ({ sidebarOpen: !st.sidebarOpen })),
+      closeSidebar: () => this.setState({ sidebarOpen: false }),
+      sidebarStyle, mainStyle,
+      roleLabel: ROLE_LABELS[s.role],
+      role: s.role,
+      onRoleChange: e => { const r = e.target.value; this.setState({ role: r, page: ROLE_LANDING[r] }); },
+      navItems,
+      profileNavStyle: (() => { const active = s.page === 'author-profile' || s.page === 'reviewer-profile' || s.page === 'staff-profile'; return `display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;cursor:pointer;border-left:3px solid ${active?'#C9A227':'transparent'};color:${active?'#E4BC4F':'rgba(255,255,255,.65)'};background:${active?'rgba(201,162,39,.12)':'transparent'};`; })(),
+      goProfile: () => this.setState({ page: s.role === 'author' ? 'author-profile' : s.role === 'reviewer' ? 'reviewer-profile' : 'staff-profile', sidebarOpen: false }),
+      logout: () => this.setState({ role: 'author', page: 'author-dashboard', sidebarOpen: false }),
+
+      isAuthorDashboardPage: s.page === 'author-dashboard',
+      isMySubmissionsPage: s.page === 'my-submissions',
+      isSubmissionDetailPage: s.page === 'submission-detail',
+      isNewSubmissionPage: s.page === 'new-submission',
+      isRevisionsPage: s.page === 'revisions',
+      isCoauthorsPage: s.page === 'coauthors',
+      isAuthorProfilePage: s.page === 'author-profile',
+      isReviewerDashboardPage: s.page === 'reviewer-dashboard',
+      isInvitationsPage: s.page === 'invitations',
+      isAssignedReviewsPage: s.page === 'assigned-reviews',
+      isCompletedReviewsPage: s.page === 'completed-reviews',
+      isReviewWorkspacePage: s.page === 'review-workspace',
+      isReviewerProfilePage: s.page === 'reviewer-profile',
+      isAdminDashboardPage: s.page === 'admin-dashboard',
+      isAdminUsersPage: s.page === 'admin-users',
+      isModeratorDashboardPage: s.page === 'moderator-dashboard',
+      isEditorDashboardPage: s.page === 'editor-dashboard',
+      isStaffProfilePage: s.page === 'staff-profile',
+      goAdminUsers: () => this.setState({ page: 'admin-users' }),
+      adminUserRows: ADMIN_USER_ROWS.map(u => ({ ...u, badgeStyle: badge(u.badgeKey) })),
+      moderatorQueueRows: MODERATOR_QUEUE_ROWS.map(m => ({ ...m, badgeStyle: badge(m.badgeKey) })),
+      editorAssignedRows: EDITOR_ASSIGNED_ROWS.map(m => ({ ...m, badgeStyle: badge(m.badgeKey) })),
+      pageHeaderStyle: 'display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap;',
+      formGridColumns: s.isMobile ? '1fr' : '1fr 1fr',
+      detailGridColumns: s.isMobile ? '1fr' : '1fr 280px',
+      reviewGridColumns: s.isMobile ? '1fr' : '1fr 420px',
+      recGridColumns: s.isMobile ? '1fr' : '1fr 1fr',
+
+      badgeRevision: badge('revision'), badgeReview: badge('review'), badgeAccepted: badge('accepted'),
+      badgeRejected: badge('rejected'), badgePending: badge('pending'), badgeCompleted: badge('completed'),
+      badgeSubmitted: badge('submitted'), badgeWithdrawn: badge('withdrawn'),
+
+      goNewSubmission: () => this.setState({ page: 'new-submission', nsStep: 1 }),
+      goMySubmissions: () => this.setState({ page: 'my-submissions' }),
+      goRevisions: () => this.setState({ page: 'revisions', revTab: 'request' }),
+      goSubmissionDetail: () => this.setState({ page: 'submission-detail', detailTab: 'overview' }),
+      goInvitations: () => this.setState({ page: 'invitations' }),
+      goAssignedReviews: () => this.setState({ page: 'assigned-reviews' }),
+      goReviewWorkspace: () => this.setState({ page: 'review-workspace' }),
+
+      submissionRows,
+      detailTabs,
+      isOverviewTab: s.detailTab === 'overview', isFilesTab: s.detailTab === 'files',
+      isReviewsTab: s.detailTab === 'reviews', isRevisionsTab: s.detailTab === 'revisions',
+      isCoauthorsTab: s.detailTab === 'coauthors',
+      timelineSteps,
+      openWithdrawModal: () => this.setState({ modal: 'withdraw' }),
+
+      wizardSteps,
+      isNsStep1: s.nsStep === 1, isNsStep2: s.nsStep === 2, isNsStep3: s.nsStep === 3, isNsStep4: s.nsStep === 4, isNsStep5: s.nsStep === 5,
+      nsGoStep1: () => this.setState({ nsStep: 1 }), nsGoStep2: () => this.setState({ nsStep: 2 }),
+      nsGoStep3: () => this.setState({ nsStep: 3 }), nsGoStep4: () => this.setState({ nsStep: 4 }),
+      form: s.form,
+      setTitle: e => this.setState(st => ({ form: { ...st.form, title: e.target.value } })),
+      setKeywords: e => this.setState(st => ({ form: { ...st.form, keywords: e.target.value } })),
+      setAbstract: e => this.setState(st => ({ form: { ...st.form, abstract: e.target.value } })),
+      setMainFile: e => this.setState(st => ({ form: { ...st.form, mainFile: e.target.files && e.target.files[0] ? e.target.files[0].name : null } })),
+      mainFileLabel: s.form.mainFile || 'Drag & drop your manuscript PDF',
+      submitManuscript: () => this.setState({ nsStep: 5 }),
+
+      revTabsList,
+      isRequestTab: s.revTab === 'request', isCommentsTab: s.revTab === 'comments', isUploadTab: s.revTab === 'upload',
+      goRevTabUpload: () => this.setState({ revTab: 'upload' }),
+      setResponse1: e => this.setState(st => ({ form: { ...st.form, response1: e.target.value } })),
+      setResponse2: e => this.setState(st => ({ form: { ...st.form, response2: e.target.value } })),
+      setRevisedFile: e => this.setState(st => ({ form: { ...st.form, revisedFile: e.target.files && e.target.files[0] ? e.target.files[0].name : null } })),
+      revisedFileLabel: s.form.revisedFile || 'Upload Revised PDF',
+      openConfirmRevisionModal: () => this.setState({ modal: 'confirmRevision' }),
+
+      rubricRows, recOptions,
+      setPublicComment: e => this.setState(st => ({ form: { ...st.form, publicComment: e.target.value } })),
+      setConfidentialComment: e => this.setState(st => ({ form: { ...st.form, confidentialComment: e.target.value } })),
+      openSubmitReviewModal: () => this.setState({ modal: 'submitReview' }),
+      selectedRecBadge: badgeBase + 'background:#EAF7F0;color:#1A7F4B;', selectedRecLabel: selectedRec ? selectedRec.title : '',
+
+      openAcceptModal: () => this.setState({ modal: 'accept' }),
+      openDeclineModal: () => this.setState({ modal: 'decline' }),
+      openExtensionModal: () => this.setState({ modal: 'extension' }),
+      openSuggestModal: () => this.setState({ modal: 'suggest' }),
+      openNotifModal: () => this.setState({ modal: 'notif' }),
+
+      isModalWithdraw: s.modal === 'withdraw', isModalConfirmRevision: s.modal === 'confirmRevision',
+      isModalAccept: s.modal === 'accept', isModalDecline: s.modal === 'decline',
+      isModalExtension: s.modal === 'extension', isModalSuggest: s.modal === 'suggest',
+      isModalSubmitReview: s.modal === 'submitReview', isModalNotif: s.modal === 'notif',
+      closeModal: () => this.setState({ modal: null }),
+      stopClick: e => e.stopPropagation(),
+      confirmRevisionSubmit: () => this.setState({ modal: null, page: 'submission-detail', detailTab: 'overview' }),
+      acceptInvitationConfirm: () => this.setState({ modal: null, page: 'review-workspace' }),
+      confirmSubmitReview: () => this.setState({ modal: null, page: 'reviewer-dashboard' })
+    };
+  }
+}
+</script>
+</body>
+</html>

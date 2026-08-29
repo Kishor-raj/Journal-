@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Journal Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --primary:#1B2A4A;--primary-light:#2A3F6B;--primary-dark:#0F1A30;
+  --secondary:#3D7A8A;--secondary-light:#5A9DAD;
+  --accent:#C4922E;--accent-light:#D9A94A;
+  --bg:#F4F5F7;--surface:#FFFFFF;--surface-border:#E2E4E8;--surface-hover:#F9FAFB;
+  --text-primary:#1A1A2E;--text-secondary:#5A5E6B;--text-muted:#8B8F9A;--text-inverse:#FFFFFF;
+  --success:#2B7A4B;--success-bg:#E8F5EC;--success-border:#B8DCC8;
+  --warning:#C48B1E;--warning-bg:#FEF7E8;--warning-border:#F0DCA0;
+  --danger:#B83333;--danger-bg:#FCECEC;--danger-border:#E8B8B8;
+  --info:#2E6B9E;--info-bg:#EBF4FB;--info-border:#A8CCE8;
+  --purple:#7C3AED;--purple-bg:#F3E8FF;--purple-border:#D8B4FE;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
+  --shadow-sm:0 1px 2px rgba(27,42,74,0.06);--shadow-md:0 2px 8px rgba(27,42,74,0.08);--shadow-lg:0 8px 24px rgba(27,42,74,0.12);--shadow-xl:0 16px 48px rgba(27,42,74,0.16);
+  --sidebar-width:256px;--sidebar-collapsed:64px;--header-height:64px;
+  --spacing-xs:4px;--spacing-sm:8px;--spacing-md:16px;--spacing-lg:24px;--spacing-xl:32px;--spacing-2xl:48px;
+  --transition-fast:150ms ease;--transition-base:250ms ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6;overflow:hidden;height:100vh}
+.app-shell{display:flex;height:100vh;overflow:hidden}
+
+.sidebar{width:var(--sidebar-width);min-width:var(--sidebar-width);background:var(--primary);display:flex;flex-direction:column;transition:width var(--transition-base),min-width var(--transition-base);z-index:100;overflow:hidden}
+.sidebar.collapsed{width:var(--sidebar-collapsed);min-width:var(--sidebar-collapsed)}
+.sidebar-brand{height:var(--header-height);display:flex;align-items:center;padding:0 var(--spacing-md);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;gap:var(--spacing-sm);overflow:hidden;white-space:nowrap}
+.sidebar-brand-icon{width:32px;height:32px;min-width:32px;background:var(--accent);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:800;font-size:16px;color:var(--primary-dark)}
+.sidebar-brand-text{display:flex;flex-direction:column;overflow:hidden;transition:opacity var(--transition-fast)}
+.sidebar.collapsed .sidebar-brand-text{opacity:0;pointer-events:none}
+.sidebar-brand-title{font-size:13px;font-weight:700;color:var(--text-inverse);letter-spacing:0.02em;line-height:1.2}
+.sidebar-brand-sub{font-size:10px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;font-weight:500}
+.sidebar-role-badge{margin:var(--spacing-md) var(--spacing-md) 0;padding:6px 12px;background:rgba(196,146,46,0.15);border:1px solid rgba(196,146,46,0.3);border-radius:var(--radius-sm);font-size:11px;font-weight:600;color:var(--accent-light);text-transform:uppercase;letter-spacing:0.06em;display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap;transition:opacity var(--transition-fast)}
+.sidebar.collapsed .sidebar-role-badge{opacity:0;height:0;margin:0;padding:0}
+.sidebar-nav{flex:1;padding:var(--spacing-md) var(--spacing-sm);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent}
+.sidebar-nav::-webkit-scrollbar{width:4px}
+.sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
+.nav-section-label{font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;padding:var(--spacing-md) var(--spacing-sm) var(--spacing-xs);overflow:hidden;white-space:nowrap;transition:opacity var(--transition-fast)}
+.sidebar.collapsed .nav-section-label{opacity:0;height:0;padding:0;margin:0}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-md);color:rgba(255,255,255,0.6);font-size:14px;font-weight:500;cursor:pointer;transition:all var(--transition-fast);text-decoration:none;position:relative;overflow:hidden;white-space:nowrap;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9)}
+.nav-item.active{background:rgba(255,255,255,0.12);color:var(--text-inverse)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-item i{width:20px;min-width:20px;text-align:center;font-size:15px}
+.nav-item-text{overflow:hidden;transition:opacity var(--transition-fast)}
+.sidebar.collapsed .nav-item-text{opacity:0;pointer-events:none}
+.nav-item .badge-count{margin-left:auto;background:var(--danger);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center;transition:opacity var(--transition-fast)}
+.nav-item .badge-warning{background:var(--warning);color:var(--primary-dark)}
+.sidebar.collapsed .badge-count{opacity:0}
+.sidebar-footer{padding:var(--spacing-md);border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+.sidebar-collapse-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-family:inherit;transition:all var(--transition-fast);overflow:hidden;white-space:nowrap}
+.sidebar-collapse-btn:hover{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8)}
+.sidebar-collapse-btn i{transition:transform var(--transition-base)}
+.sidebar.collapsed .sidebar-collapse-btn i{transform:rotate(180deg)}
+.sidebar.collapsed .collapse-text{opacity:0;display:none}
+
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.app-header{height:var(--header-height);min-height:var(--header-height);background:var(--surface);border-bottom:1px solid var(--surface-border);display:flex;align-items:center;padding:0 var(--spacing-lg);gap:var(--spacing-md);z-index:50}
+.header-breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);min-width:0}
+.header-breadcrumb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-breadcrumb .bc-sep{color:var(--surface-border);font-size:11px}
+.header-breadcrumb .bc-current{color:var(--text-primary);font-weight:600}
+.header-spacer{flex:1}
+.header-search{position:relative;width:280px}
+.header-search input{width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--bg);font-family:inherit;font-size:13px;color:var(--text-primary);outline:none;transition:all var(--transition-fast)}
+.header-search input::placeholder{color:var(--text-muted)}
+.header-search input:focus{border-color:var(--secondary);background:var(--surface);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+.header-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none}
+.header-actions{display:flex;align-items:center;gap:4px}
+.header-icon-btn{width:36px;height:36px;border:none;background:transparent;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--text-secondary);cursor:pointer;position:relative;transition:all var(--transition-fast);font-size:16px}
+.header-icon-btn:hover{background:var(--bg);color:var(--text-primary)}
+.header-icon-btn .notif-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;background:var(--danger);border-radius:50%;border:2px solid var(--surface)}
+.header-profile{display:flex;align-items:center;gap:10px;margin-left:var(--spacing-sm);padding:4px 8px 4px 4px;border-radius:var(--radius-md);cursor:pointer;transition:background var(--transition-fast)}
+.header-profile:hover{background:var(--bg)}
+.header-avatar{width:32px;height:32px;border-radius:50%;background:var(--primary);color:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.header-profile-info{display:flex;flex-direction:column}
+.header-profile-name{font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.2}
+.header-profile-role{font-size:11px;color:var(--text-muted);line-height:1.2}
+
+.content-area{flex:1;overflow-y:auto;padding:var(--spacing-lg);scrollbar-width:thin;scrollbar-color:var(--surface-border) transparent}
+.content-area::-webkit-scrollbar{width:6px}
+.content-area::-webkit-scrollbar-thumb{background:var(--surface-border);border-radius:3px}
+.page{display:none;max-width:1360px;animation:pageIn 300ms ease}
+.page.active{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:var(--spacing-lg)}
+.page-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--spacing-md);margin-bottom:var(--spacing-sm)}
+.page-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--text-primary);line-height:1.2}
+.page-subtitle{font-size:14px;color:var(--text-secondary);margin-top:4px}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:var(--radius-md);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all var(--transition-fast);white-space:nowrap;text-decoration:none;line-height:1.3}
+.btn i{font-size:13px}
+.btn-primary{background:var(--primary);color:var(--text-inverse)}
+.btn-primary:hover{background:var(--primary-light);box-shadow:var(--shadow-md)}
+.btn-secondary{background:var(--surface);color:var(--text-primary);border:1px solid var(--surface-border)}
+.btn-secondary:hover{background:var(--surface-hover);border-color:var(--text-muted)}
+.btn-ghost{background:transparent;color:var(--text-secondary);padding:8px 12px}
+.btn-ghost:hover{background:var(--bg);color:var(--text-primary)}
+.btn-danger{background:var(--danger);color:white}
+.btn-danger:hover{background:#A02B2B}
+.btn-success{background:var(--success);color:white}
+.btn-success:hover{background:#236B3F}
+.btn-warning{background:var(--warning);color:var(--primary-dark)}
+.btn-warning:hover{background:#B07E18}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-sm i{font-size:11px}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center}
+.btn:disabled{opacity:0.5;cursor:not-allowed;pointer-events:none}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--spacing-md);margin-bottom:var(--spacing-lg)}
+.kpi-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius-lg);padding:var(--spacing-lg);transition:all var(--transition-fast);position:relative;overflow:hidden;cursor:default}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-md)}
+.kpi-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em}
+.kpi-icon{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:15px}
+.kpi-value{font-size:32px;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px}
+.kpi-trend{font-size:12px;color:var(--text-muted)}
+
+.card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius-lg);overflow:hidden}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-md) var(--spacing-lg);border-bottom:1px solid var(--surface-border)}
+.card-title{font-size:15px;font-weight:700;color:var(--text-primary)}
+.card-body{padding:var(--spacing-lg)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-lg);margin-bottom:var(--spacing-lg)}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--spacing-lg);margin-bottom:var(--spacing-lg)}
+
+.table-wrapper{overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table thead th{text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;background:var(--bg);border-bottom:1px solid var(--surface-border);white-space:nowrap}
+.data-table tbody tr{border-bottom:1px solid var(--surface-border);transition:background var(--transition-fast);cursor:pointer}
+.data-table tbody tr:last-child{border-bottom:none}
+.data-table tbody tr:hover{background:var(--surface-hover)}
+.data-table tbody td{padding:12px 16px;color:var(--text-primary);vertical-align:middle}
+.data-table .cell-muted{color:var(--text-secondary)}
+.data-table .cell-name{font-weight:600;color:var(--text-primary)}
+.data-table .cell-sub{font-size:12px;color:var(--text-muted)}
+
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.status-badge i{font-size:10px}
+.status-active{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+.status-locked{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border)}
+.status-pending{background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning-border)}
+.status-info{background:var(--info-bg);color:var(--info);border:1px solid var(--info-border)}
+.status-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+.status-disabled{background:var(--bg);color:var(--text-muted);border:1px solid var(--surface-border)}
+
+.alert-banner{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:var(--radius-md);font-size:13px;margin-bottom:var(--spacing-md)}
+.alert-banner i{margin-top:2px;font-size:15px}
+.alert-warning{background:var(--warning-bg);border:1px solid var(--warning-border);color:#7A5A10}
+.alert-info{background:var(--info-bg);border:1px solid var(--info-border);color:#1A4A6E}
+.alert-danger{background:var(--danger-bg);border:1px solid var(--danger-border);color:#7A1A1A}
+.alert-success{background:var(--success-bg);border:1px solid var(--success-border);color:#1A5A30}
+
+.form-group{margin-bottom:var(--spacing-lg)}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+.form-label .required{color:var(--danger);margin-left:2px}
+.form-input,.form-textarea,.form-select-full{width:100%;padding:9px 12px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--surface);font-family:inherit;font-size:14px;color:var(--text-primary);outline:none;transition:all var(--transition-fast)}
+.form-textarea{min-height:100px;resize:vertical}
+.form-input:focus,.form-textarea:focus,.form-select-full:focus{border-color:var(--secondary);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+.form-hint{font-size:12px;color:var(--text-muted);margin-top:4px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--spacing-md)}
+
+.filter-bar{display:flex;align-items:center;gap:var(--spacing-sm);margin-bottom:var(--spacing-md);flex-wrap:wrap}
+.filter-search{position:relative;flex:1;min-width:200px;max-width:320px}
+.filter-search input{width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--surface);font-family:inherit;font-size:13px;color:var(--text-primary);outline:none;transition:all var(--transition-fast)}
+.filter-search input:focus{border-color:var(--secondary);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+.filter-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px}
+.filter-select{height:36px;padding:0 32px 0 12px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238B8F9A' d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E") right 10px center no-repeat;font-family:inherit;font-size:13px;color:var(--text-primary);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;transition:all var(--transition-fast)}
+.filter-select:focus{border-color:var(--secondary);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-md) var(--spacing-lg);border-top:1px solid var(--surface-border);font-size:13px;color:var(--text-secondary)}
+.pagination-pages{display:flex;align-items:center;gap:4px}
+.pagination-btn{width:32px;height:32px;border:1px solid var(--surface-border);background:var(--surface);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:13px;font-family:inherit;color:var(--text-secondary);cursor:pointer;transition:all var(--transition-fast)}
+.pagination-btn:hover{border-color:var(--primary);color:var(--primary)}
+.pagination-btn.active{background:var(--primary);border-color:var(--primary);color:white}
+.pagination-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+.activity-list{list-style:none}
+.activity-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--surface-border)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:8px;height:8px;min-width:8px;border-radius:50%;margin-top:7px}
+.activity-dot.dot-info{background:var(--info)}
+.activity-dot.dot-success{background:var(--success)}
+.activity-dot.dot-warning{background:var(--warning)}
+.activity-dot.dot-danger{background:var(--danger)}
+.activity-dot.dot-purple{background:var(--purple)}
+.activity-content{flex:1;min-width:0}
+.activity-text{font-size:13px;color:var(--text-primary);line-height:1.5}
+.activity-text strong{font-weight:600}
+.activity-time{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+.tab-bar{display:flex;gap:0;border-bottom:2px solid var(--surface-border);padding:0 var(--spacing-lg);background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow-x:auto}
+.tab-btn{padding:12px 20px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;position:relative;transition:all var(--transition-fast);white-space:nowrap}
+.tab-btn:hover{color:var(--text-primary)}
+.tab-btn.active{color:var(--primary);font-weight:700}
+.tab-btn.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--primary)}
+.tab-content{display:none;padding:var(--spacing-lg);animation:pageIn 200ms ease}
+.tab-content.active{display:block}
+
+.profile-header-card{display:flex;align-items:center;gap:var(--spacing-lg);padding:var(--spacing-xl);background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);border-radius:var(--radius-lg);color:white;margin-bottom:var(--spacing-lg);position:relative;overflow:hidden}
+.profile-header-card::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:rgba(196,146,46,0.1);border-radius:50%}
+.profile-header-card::after{content:'';position:absolute;bottom:-30px;right:80px;width:100px;height:100px;background:rgba(255,255,255,0.04);border-radius:50%}
+.profile-avatar-lg{width:72px;height:72px;border-radius:50%;background:rgba(196,146,46,0.2);border:3px solid rgba(196,146,46,0.4);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;font-family:'Playfair Display',serif;flex-shrink:0;color:var(--accent-light)}
+.profile-header-info{position:relative;z-index:1}
+.profile-header-name{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;margin-bottom:4px}
+.profile-header-email{font-size:14px;opacity:0.7;margin-bottom:var(--spacing-sm)}
+.profile-header-meta{display:flex;gap:var(--spacing-lg);font-size:12px;opacity:0.6}
+
+.user-cell{display:flex;align-items:center;gap:10px}
+.user-cell-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0}
+.user-cell-info{min-width:0}
+.user-cell-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-cell-sub{font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.role-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius-lg);padding:var(--spacing-lg);transition:all var(--transition-fast);position:relative;overflow:hidden}
+.role-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.role-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.role-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-sm)}
+.role-card-name{font-size:16px;font-weight:700;color:var(--text-primary)}
+.role-card-count{font-size:12px;font-weight:600;padding:3px 10px;border-radius:12px;background:var(--bg);color:var(--text-secondary)}
+.role-card-desc{font-size:13px;color:var(--text-secondary);margin-bottom:var(--spacing-md);line-height:1.6}
+.role-card-perms{display:flex;flex-wrap:wrap;gap:6px}
+.role-card-perm{font-size:11px;padding:3px 8px;border-radius:var(--radius-sm);background:var(--bg);color:var(--text-muted);font-weight:500}
+
+.quick-action{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--surface-border);border-radius:var(--radius-md);cursor:pointer;transition:all var(--transition-fast);background:var(--surface)}
+.quick-action:hover{background:var(--surface-hover);border-color:var(--primary);box-shadow:var(--shadow-sm)}
+.quick-action-icon{width:40px;height:40px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.quick-action-text{font-size:13px;font-weight:600;color:var(--text-primary)}
+.quick-action-sub{font-size:11px;color:var(--text-muted)}
+
+.toast-container{position:fixed;top:var(--spacing-lg);right:var(--spacing-lg);z-index:9999;display:flex;flex-direction:column;gap:var(--spacing-sm)}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--primary-dark);color:white;border-radius:var(--radius-md);font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn 300ms ease,toastOut 300ms ease 2700ms forwards;max-width:380px}
+.toast i{font-size:16px}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(15,26,48,0.5);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;animation:fadeIn 200ms ease}
+.modal-overlay.open{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);width:90%;max-width:520px;animation:modalIn 250ms ease;overflow:hidden}
+@keyframes modalIn{from{opacity:0;transform:scale(0.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-lg);border-bottom:1px solid var(--surface-border)}
+.modal-title{font-size:17px;font-weight:700}
+.modal-close{width:32px;height:32px;border:none;background:var(--bg);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);font-size:14px;transition:all var(--transition-fast)}
+.modal-close:hover{background:var(--danger-bg);color:var(--danger)}
+.modal-body{padding:var(--spacing-lg)}
+.modal-footer{display:flex;justify-content:flex-end;gap:var(--spacing-sm);padding:var(--spacing-md) var(--spacing-lg);border-top:1px solid var(--surface-border);background:var(--bg)}
+
+.chart-container{position:relative;width:100%;height:220px}
+.chart-container canvas{width:100%!important;height:100%!important}
+
+.severity-high{color:var(--danger);font-weight:600}
+.severity-medium{color:var(--warning);font-weight:600}
+.severity-low{color:var(--info);font-weight:600}
+
+.text-truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mb-md{margin-bottom:var(--spacing-md)}
+.mb-lg{margin-bottom:var(--spacing-lg)}
+.mt-md{margin-top:var(--spacing-md)}
+.mt-lg{margin-top:var(--spacing-lg)}
+
+.empty-state{text-align:center;padding:var(--spacing-2xl) var(--spacing-lg);color:var(--text-muted)}
+.empty-state i{font-size:40px;margin-bottom:var(--spacing-md);opacity:0.4}
+.empty-state-title{font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:4px}
+.empty-state-text{font-size:13px}
+
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}.form-row,.form-row-3{grid-template-columns:1fr}.header-search{display:none}}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><div class="sidebar-brand-icon">J</div><div class="sidebar-brand-text"><div class="sidebar-brand-title">Journal MS</div><div class="sidebar-brand-sub">Admin Portal</div></div></div>
+    <div class="sidebar-role-badge"><i class="fas fa-shield-halved"></i> Administrator</div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard',this)"><i class="fas fa-grid-2"></i><span class="nav-item-text">Dashboard</span></a>
+      <div class="nav-section-label">User Management</div>
+      <a class="nav-item" data-page="users" onclick="navigateTo('users',this)"><i class="fas fa-users"></i><span class="nav-item-text">Users</span><span class="badge-count">15</span></a>
+      <a class="nav-item" data-page="roles" onclick="navigateTo('roles',this)"><i class="fas fa-user-shield"></i><span class="nav-item-text">Roles</span></a>
+      <div class="nav-section-label">Journal Configuration</div>
+      <a class="nav-item" data-page="journal-settings" onclick="navigateTo('journal-settings',this)"><i class="fas fa-gear"></i><span class="nav-item-text">Journal Settings</span></a>
+      <a class="nav-item" data-page="email-templates" onclick="navigateTo('email-templates',this)"><i class="fas fa-envelope-open-text"></i><span class="nav-item-text">Email Templates</span></a>
+      <div class="nav-section-label">System Logs</div>
+      <a class="nav-item" data-page="audit-logs" onclick="navigateTo('audit-logs',this)"><i class="fas fa-clipboard-list"></i><span class="nav-item-text">Audit Logs</span><span class="badge-count">18</span></a>
+      <a class="nav-item" data-page="security-logs" onclick="navigateTo('security-logs',this)"><i class="fas fa-shield-halved"></i><span class="nav-item-text">Security Logs</span><span class="badge-count badge-warning">3</span></a>
+      <a class="nav-item" data-page="workflow-logs" onclick="navigateTo('workflow-logs',this)"><i class="fas fa-arrows-spin"></i><span class="nav-item-text">Workflow Logs</span></a>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" data-page="profile" onclick="navigateTo('profile',this)"><i class="fas fa-user-circle"></i><span class="nav-item-text">Profile</span></a>
+      <a class="nav-item" data-page="help" onclick="navigateTo('help',this)"><i class="fas fa-circle-question"></i><span class="nav-item-text">Help</span></a>
+    </nav>
+    <div class="sidebar-footer"><button class="sidebar-collapse-btn" onclick="toggleSidebar()"><i class="fas fa-chevron-left"></i><span class="collapse-text">Collapse</span></button></div>
+  </aside>
+
+  <div class="main-area">
+    <header class="app-header">
+      <div class="header-breadcrumb"><span>Admin</span><i class="fas fa-chevron-right bc-sep"></i><span class="bc-current" id="breadcrumb-current">Dashboard</span></div>
+      <div class="header-spacer"></div>
+      <div class="header-search"><i class="fas fa-search"></i><input type="text" placeholder="Search users, manuscripts, logs..." aria-label="Global search" onkeyup="handleGlobalSearch(this.value)"></div>
+      <div class="header-actions">
+        <button class="header-icon-btn" title="Notifications"><i class="fas fa-bell"></i><span class="notif-dot"></span></button>
+      </div>
+      <div class="header-profile" onclick="navigateTo('profile',document.querySelector('[data-page=profile]'))"><div class="header-avatar">SO</div><div class="header-profile-info"><div class="header-profile-name">Dr. Sarah Okonkwo</div><div class="header-profile-role">Administrator</div></div></div>
+    </header>
+
+    <main class="content-area">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div class="page-header-row"><div><h1 class="page-title">Admin Dashboard</h1><p class="page-subtitle">System overview, user activity, and items requiring administrative attention</p></div></div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card" style="--c:var(--primary)"><div class="kpi-card::after" style="background:var(--primary)"></div><style>#kpi-total::after{background:var(--primary)}</style><div class="kpi-header"><span class="kpi-label">Total Users</span><div class="kpi-icon" style="background:var(--info-bg);color:var(--info)"><i class="fas fa-users"></i></div></div><div class="kpi-value">15</div><div class="kpi-trend">Across 5 roles</div></div>
+          <div class="kpi-card" id="kpi-active"><div class="kpi-header"><span class="kpi-label">Active Users</span><div class="kpi-icon" style="background:var(--success-bg);color:var(--success)"><i class="fas fa-user-check"></i></div></div><div class="kpi-value">11</div><div class="kpi-trend" style="color:var(--success)"><i class="fas fa-arrow-up" style="font-size:10px"></i> 2 joined this week</div></div>
+          <div class="kpi-card" id="kpi-disabled"><div class="kpi-header"><span class="kpi-label">Disabled Accounts</span><div class="kpi-icon" style="background:var(--danger-bg);color:var(--danger)"><i class="fas fa-user-xmark"></i></div></div><div class="kpi-value">2</div><div class="kpi-trend">Requires review</div></div>
+          <div class="kpi-card" id="kpi-pending"><div class="kpi-header"><span class="kpi-label">Pending Approval</span><div class="kpi-icon" style="background:var(--warning-bg);color:var(--warning)"><i class="fas fa-user-clock"></i></div></div><div class="kpi-value">2</div><div class="kpi-trend" style="color:var(--warning)"><i class="fas fa-exclamation" style="font-size:10px"></i> Awaiting action</div></div>
+        </div>
+        <div class="grid-2 mb-lg">
+          <div class="card"><div class="card-header"><span class="card-title">User Registrations</span><span style="font-size:12px;color:var(--text-muted)">Last 8 months</span></div><div class="card-body"><div class="chart-container"><canvas id="chartRegistrations"></canvas></div></div></div>
+          <div class="card"><div class="card-header"><span class="card-title">Role Distribution</span></div><div class="card-body"><div class="chart-container"><canvas id="chartRoles"></canvas></div></div></div>
+        </div>
+        <div class="grid-2 mb-lg">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Recent Activity</span><button class="btn btn-ghost btn-sm" onclick="navigateTo('audit-logs',document.querySelector('[data-page=audit-logs]'))">View All <i class="fas fa-arrow-right" style="font-size:11px;margin-left:4px"></i></button></div>
+            <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg)">
+              <ul class="activity-list" id="dashActivity"></ul>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Security Alerts</span><span class="status-badge status-locked" style="font-size:11px"><i class="fas fa-circle"></i> 3 active</span></div>
+            <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg)">
+              <ul class="activity-list" id="dashSecurity"></ul>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Quick Actions</span></div>
+          <div class="card-body" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--spacing-md)">
+            <div class="quick-action" onclick="navigateTo('users',document.querySelector('[data-page=users]'))"><div class="quick-action-icon" style="background:var(--info-bg);color:var(--info)"><i class="fas fa-user-plus"></i></div><div><div class="quick-action-text">Manage Users</div><div class="quick-action-sub">View, enable, disable accounts</div></div></div>
+            <div class="quick-action" onclick="navigateTo('roles',document.querySelector('[data-page=roles]'))"><div class="quick-action-icon" style="background:var(--purple-bg);color:var(--purple)"><i class="fas fa-user-shield"></i></div><div><div class="quick-action-text">Assign Roles</div><div class="quick-action-sub">Modify user permissions</div></div></div>
+            <div class="quick-action" onclick="navigateTo('journal-settings',document.querySelector('[data-page=journal-settings]'))"><div class="quick-action-icon" style="background:var(--success-bg);color:var(--success)"><i class="fas fa-gear"></i></div><div><div class="quick-action-text">Journal Settings</div><div class="quick-action-sub">Configure journal information</div></div></div>
+            <div class="quick-action" onclick="navigateTo('audit-logs',document.querySelector('[data-page=audit-logs]'))"><div class="quick-action-icon" style="background:var(--warning-bg);color:var(--warning)"><i class="fas fa-clipboard-list"></i></div><div><div class="quick-action-text">View Audit Logs</div><div class="quick-action-sub">Inspect system activity</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== USERS ===== -->
+      <div class="page" id="page-users">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">User Management</h1><p class="page-subtitle">All registered users, their roles, statuses, and account actions</p></div></div></div>
+        <div class="card">
+          <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg)">
+            <div class="filter-bar" style="margin-bottom:0">
+              <div class="filter-search"><i class="fas fa-search"></i><input type="text" placeholder="Search by name or email..." id="userSearch" oninput="renderUsers()" aria-label="Search users"></div>
+              <select class="filter-select" id="userRoleFilter" onchange="renderUsers()"><option value="">All Roles</option><option>Admin</option><option>Author</option><option>Editor</option><option>Moderator</option><option>Reviewer</option></select>
+              <select class="filter-select" id="userStatusFilter" onchange="renderUsers()"><option value="">All Statuses</option><option>Active</option><option>Disabled</option><option>Pending</option></select>
+            </div>
+          </div>
+          <div class="table-wrapper"><table class="data-table"><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last Login</th><th>Joined</th><th style="text-align:right">Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+          <div class="pagination"><span id="usersPaginationInfo">Showing 1–15 of 15</span><div class="pagination-pages"><button class="pagination-btn active">1</button></div></div>
+        </div>
+      </div>
+
+      <!-- ===== USER DETAIL ===== -->
+      <div class="page" id="page-user-detail">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:var(--spacing-md)">
+          <button class="btn btn-ghost btn-sm" onclick="navigateTo('users',document.querySelector('[data-page=users]'))"><i class="fas fa-arrow-left"></i> Back to Users</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:var(--spacing-lg)">
+          <div class="user-cell-avatar" id="udAvatar" style="width:56px;height:56px;font-size:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700"></div>
+          <div>
+            <h1 class="page-title" style="font-size:22px;margin-bottom:2px" id="udName"></h1>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <span class="status-badge" id="udRole"></span>
+              <span class="status-badge" id="udStatus"></span>
+            </div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px" id="udActions"></div>
+        </div>
+        <div class="tab-bar" id="udTabBar">
+          <button class="tab-btn active" onclick="switchTab(this,'ud-overview')">Overview</button>
+          <button class="tab-btn" onclick="switchTab(this,'ud-activity')">Activity</button>
+          <button class="tab-btn" onclick="switchTab(this,'ud-role')">Role &amp; Access</button>
+        </div>
+        <div class="card" style="border-radius:0 0 var(--radius-lg) var(--radius-lg)">
+          <div class="tab-content active" id="ud-overview"><div id="udOverviewContent"></div></div>
+          <div class="tab-content" id="ud-activity"><ul class="activity-list" id="udActivityList"></ul></div>
+          <div class="tab-content" id="ud-role"><div id="udRoleContent"></div></div>
+        </div>
+      </div>
+
+      <!-- ===== ROLES ===== -->
+      <div class="page" id="page-roles">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Roles &amp; Permissions</h1><p class="page-subtitle">System roles, their capabilities, and assigned user counts</p></div></div></div>
+        <div class="alert-banner alert-info mb-lg"><i class="fas fa-info-circle"></i><div>Each user holds exactly one system role. Role changes are immediate and audited. Co-author access is modeled as a manuscript-level relationship, not a system role.</div></div>
+        <div class="grid-3" id="rolesGrid"></div>
+      </div>
+
+      <!-- ===== JOURNAL SETTINGS ===== -->
+      <div class="page" id="page-journal-settings">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Journal Settings</h1><p class="page-subtitle">Configure journal information, submission guidelines, and branding</p></div><button class="btn btn-primary" onclick="showToast('Settings saved successfully','fa-check')"><i class="fas fa-save"></i> Save Changes</button></div></div>
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(this,'js-info')">Journal Information</button>
+          <button class="tab-btn" onclick="switchTab(this,'js-guidelines')">Submission Guidelines</button>
+          <button class="tab-btn" onclick="switchTab(this,'js-branding')">Branding</button>
+        </div>
+        <div class="card" style="border-radius:0 0 var(--radius-lg) var(--radius-lg)">
+          <div class="tab-content active" id="js-info">
+            <div class="form-row"><div class="form-group"><label class="form-label">Journal Name <span class="required">*</span></label><input class="form-input" value="African Journal of Computational Linguistics"></div><div class="form-group"><label class="form-label">Abbreviation <span class="required">*</span></label><input class="form-input" value="AJCL"></div></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">ISSN (Print)</label><input class="form-input" value="2784-1056"></div><div class="form-group"><label class="form-label">ISSN (Online)</label><input class="form-input" value="2784-1064"></div></div>
+            <div class="form-group"><label class="form-label">Publisher</label><input class="form-input" value="Pan-African Academic Press"></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Contact Email</label><input class="form-input" type="email" value="editorial@ajcl.org"></div><div class="form-group"><label class="form-label">Access Model</label><select class="form-select-full"><option selected>Open Access</option><option>Hybrid</option><option>Subscription</option></select></div></div>
+            <div class="form-group"><label class="form-label">Journal Scope</label><textarea class="form-textarea" rows="4">The African Journal of Computational Linguistics publishes original research on computational approaches to African languages, including NLP, speech processing, corpus linguistics, and language technology for low-resource languages.</textarea></div>
+          </div>
+          <div class="tab-content" id="js-guidelines">
+            <div class="form-group"><label class="form-label">Submission Guidelines Content <span class="required">*</span></label><textarea class="form-textarea" rows="16" style="font-size:13px;line-height:1.8">1. GENERAL REQUIREMENTS
+Manuscripts must be original, unpublished, and not under consideration elsewhere. All submissions must be in English. Authors are required to use the journal manuscript template available for download.
+
+2. MANUSCRIPT PREPARATION
+- Use the AJCL LaTeX or Word template
+- Maximum length: 10,000 words (inclusive of references)
+- Abstract: 150–250 words
+- Keywords: 3–6 terms
+- Figures and tables must be numbered and cited in text
+- References follow APA 7th edition format
+
+3. AUTHOR REQUIREMENTS
+- All authors must have an ORCID ID
+- Corresponding author must be identified
+- Conflict of interest statement required
+- Ethics approval documentation where applicable
+- Data availability statement required
+
+4. FILE REQUIREMENTS
+- Manuscript: PDF format, under 20 MB
+- Supplementary materials: ZIP archive, under 50 MB
+- Figures: 300 DPI minimum, TIFF or PNG preferred
+
+5. DOUBLE-BLIND REVIEW
+This journal uses double-blind peer review. Remove all identifying information from the manuscript, including author names, affiliations, and self-citations that reveal identity.</textarea></div>
+            <div class="form-group"><label class="form-label">Effective Date</label><input class="form-input" type="date" value="2026-01-01"></div>
+          </div>
+          <div class="tab-content" id="js-branding">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Journal Logo</label>
+                <div style="border:2px dashed var(--surface-border);border-radius:var(--radius-lg);padding:32px;text-align:center;cursor:pointer;transition:all var(--transition-fast);background:var(--bg)" onmouseover="this.style.borderColor='var(--secondary)'" onmouseout="this.style.borderColor='var(--surface-border)'">
+                  <i class="fas fa-image" style="font-size:28px;color:var(--text-muted);margin-bottom:8px;display:block"></i>
+                  <div style="font-size:13px;font-weight:600;color:var(--text-primary)">Click to upload logo</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:4px">SVG or PNG, recommended 200x60px</div>
+                </div>
+              </div>
+              <div>
+                <div class="form-group"><label class="form-label">Primary Color</label><div style="display:flex;gap:8px;align-items:center"><input type="color" value="#1B2A4A" style="width:40px;height:36px;border:1px solid var(--surface-border);border-radius:var(--radius-sm);cursor:pointer;padding:2px"><input class="form-input" value="#1B2A4A" style="max-width:140px;font-family:monospace;font-size:13px"></div></div>
+                <div class="form-group"><label class="form-label">Accent Color</label><div style="display:flex;gap:8px;align-items:center"><input type="color" value="#C4922E" style="width:40px;height:36px;border:1px solid var(--surface-border);border-radius:var(--radius-sm);cursor:pointer;padding:2px"><input class="form-input" value="#C4922E" style="max-width:140px;font-family:monospace;font-size:13px"></div></div>
+                <div class="form-group"><label class="form-label">Favicon</label><div style="border:1px solid var(--surface-border);border-radius:var(--radius-md);padding:12px 16px;background:var(--bg);font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:8px;cursor:pointer"><i class="fas fa-globe"></i> favicon.ico — 32x32, 1.2 KB</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== EMAIL TEMPLATES ===== -->
+      <div class="page" id="page-email-templates">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Email Templates</h1><p class="page-subtitle">Manage notification and workflow email templates with variable substitution</p></div></div></div>
+        <div class="alert-banner alert-info mb-lg"><i class="fas fa-info-circle"></i><div>Available variables: <strong>{{manuscript_id}}</strong>, <strong>{{manuscript_title}}</strong>, <strong>{{author_name}}</strong>, <strong>{{editor_name}}</strong>, <strong>{{reviewer_name}}</strong>, <strong>{{decision}}</strong>, <strong>{{deadline}}</strong>, <strong>{{journal_name}}</strong></div></div>
+        <div class="card">
+          <div class="table-wrapper"><table class="data-table"><thead><tr><th>Template Name</th><th>Subject</th><th>Status</th><th>Last Modified</th><th style="text-align:right">Actions</th></tr></thead><tbody id="templatesBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ===== AUDIT LOGS ===== -->
+      <div class="page" id="page-audit-logs">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Audit Logs</h1><p class="page-subtitle">Complete record of administrative actions, configuration changes, and system events</p></div><button class="btn btn-secondary" onclick="showToast('Logs exported as CSV','fa-download')"><i class="fas fa-download"></i> Export</button></div></div>
+        <div class="card">
+          <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg)">
+            <div class="filter-bar" style="margin-bottom:0">
+              <div class="filter-search"><i class="fas fa-search"></i><input type="text" placeholder="Search actor or entity..." id="auditSearch" oninput="renderLogs('audit')" aria-label="Search audit logs"></div>
+              <select class="filter-select" id="auditActionFilter" onchange="renderLogs('audit')"><option value="">All Actions</option><option>Updated user role</option><option>Disabled account</option><option>Enabled account</option><option>Updated journal settings</option><option>Updated email template</option><option>Approved user</option></select>
+              <select class="filter-select" id="auditResultFilter" onchange="renderLogs('audit')"><option value="">All Results</option><option>Success</option><option>Failed</option></select>
+            </div>
+          </div>
+          <div class="table-wrapper"><table class="data-table"><thead><tr><th>Timestamp</th><th>Actor</th><th>Action</th><th>Entity</th><th>Result</th><th>Details</th></tr></thead><tbody id="auditBody"></tbody></table></div>
+          <div class="pagination"><span>Showing 1–18 of 18</span><div class="pagination-pages"><button class="pagination-btn active">1</button></div></div>
+        </div>
+      </div>
+
+      <!-- ===== SECURITY LOGS ===== -->
+      <div class="page" id="page-security-logs">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Security Logs</h1><p class="page-subtitle">Authentication events, access anomalies, and security-relevant system events</p></div><button class="btn btn-secondary" onclick="showToast('Logs exported as CSV','fa-download')"><i class="fas fa-download"></i> Export</button></div></div>
+        <div class="alert-banner alert-danger mb-lg"><i class="fas fa-triangle-exclamation"></i><div><strong>3 active security alerts.</strong> Review the flagged entries below. Failed login attempts from unrecognized IPs may indicate credential attacks.</div></div>
+        <div class="card">
+          <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg)">
+            <div class="filter-bar" style="margin-bottom:0">
+              <div class="filter-search"><i class="fas fa-search"></i><input type="text" placeholder="Search events..." id="secSearch" oninput="renderLogs('security')" aria-label="Search security logs"></div>
+              <select class="filter-select" id="secSeverityFilter" onchange="renderLogs('security')"><option value="">All Severities</option><option>High</option><option>Medium</option><option>Low</option></select>
+              <select class="filter-select" id="secEventFilter" onchange="renderLogs('security')"><option value="">All Events</option><option>Failed login</option><option>Suspicious IP</option><option>Session anomaly</option><option>Successful login</option><option>Password reset</option><option>Account locked</option></select>
+            </div>
+          </div>
+          <div class="table-wrapper"><table class="data-table"><thead><tr><th>Timestamp</th><th>Event</th><th>User</th><th>IP Address</th><th>Severity</th><th>Details</th></tr></thead><tbody id="securityBody"></tbody></table></div>
+          <div class="pagination"><span>Showing 1–15 of 15</span><div class="pagination-pages"><button class="pagination-btn active">1</button></div></div>
+        </div>
+      </div>
+
+      <!-- ===== WORKFLOW LOGS ===== -->
+      <div class="page" id="page-workflow-logs">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Workflow Logs</h1><p class="page-subtitle">Manuscript lifecycle events: submissions, screenings, reviews, decisions, and revisions</p></div><button class="btn btn-secondary" onclick="showToast('Logs exported as CSV','fa-download')"><i class="fas fa-download"></i> Export</button></div></div>
+        <div class="card">
+          <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg)">
+            <div class="filter-bar" style="margin-bottom:0">
+              <div class="filter-search"><i class="fas fa-search"></i><input type="text" placeholder="Search manuscript ID or actor..." id="wfSearch" oninput="renderLogs('workflow')" aria-label="Search workflow logs"></div>
+              <select class="filter-select" id="wfActionFilter" onchange="renderLogs('workflow')"><option value="">All Actions</option><option>Submitted</option><option>Moderation approved</option><option>Reviewer invited</option><option>Review submitted</option><option>Decision sent</option><option>Revision submitted</option><option>Withdrawn</option></select>
+              <select class="filter-select" id="wfRoleFilter" onchange="renderLogs('workflow')"><option value="">All Roles</option><option>Author</option><option>Moderator</option><option>Editor</option><option>Reviewer</option><option>System</option></select>
+            </div>
+          </div>
+          <div class="table-wrapper"><table class="data-table"><thead><tr><th>Timestamp</th><th>Manuscript</th><th>Action</th><th>Actor</th><th>Role</th><th>Result</th></tr></thead><tbody id="workflowBody"></tbody></table></div>
+          <div class="pagination"><span>Showing 1–15 of 15</span><div class="pagination-pages"><button class="pagination-btn active">1</button></div></div>
+        </div>
+      </div>
+
+      <!-- ===== PROFILE ===== -->
+      <div class="page" id="page-profile">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Admin Profile</h1><p class="page-subtitle">Your administrator account information and preferences</p></div><button class="btn btn-primary" onclick="showToast('Profile updated','fa-check')"><i class="fas fa-save"></i> Save Changes</button></div></div>
+        <div class="profile-header-card">
+          <div class="profile-avatar-lg">SO</div>
+          <div class="profile-header-info">
+            <div class="profile-header-name">Dr. Sarah Okonkwo</div>
+            <div class="profile-header-email">s.okonkwo@ajcl.org</div>
+            <div class="profile-header-meta"><span><i class="fas fa-shield-halved" style="margin-right:4px"></i> Administrator</span><span><i class="fas fa-calendar" style="margin-right:4px"></i> Joined Oct 2025</span><span><i class="fas fa-clock" style="margin-right:4px"></i> Last login: Today</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Account Information</span></div>
+          <div class="card-body">
+            <div class="form-row"><div class="form-group"><label class="form-label">Full Name</label><input class="form-input" value="Dr. Sarah Okonkwo"></div><div class="form-group"><label class="form-label">Email Address</label><input class="form-input" type="email" value="s.okonkwo@ajcl.org"></div></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Phone</label><input class="form-input" value="+234 801 234 5678"></div><div class="form-group"><label class="form-label">OAuth Provider</label><input class="form-input" value="Google (s.okonkwo@gmail.com)" disabled style="background:var(--bg);color:var(--text-muted)"></div></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Department</label><input class="form-input" value="Information Systems"></div><div class="form-group"><label class="form-label">Institution</label><input class="form-input" value="University of Lagos"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== HELP ===== -->
+      <div class="page" id="page-help">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Help Center</h1><p class="page-subtitle">Guides and documentation for system administrators</p></div></div></div>
+        <div class="grid-2">
+          <div class="card"><div class="card-body"><h3 style="font-size:16px;font-weight:700;margin-bottom:8px"><i class="fas fa-users" style="color:var(--info);margin-right:8px"></i>User Management</h3><p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px">Learn how to create, enable, disable user accounts and assign system roles. Each user holds exactly one role.</p><ul style="font-size:13px;color:var(--text-secondary);line-height:2;padding-left:20px"><li>Viewing and searching users</li><li>Enabling and disabling accounts</li><li>Role assignment and replacement</li><li>Handling pending approvals</li></ul></div></div>
+          <div class="card"><div class="card-body"><h3 style="font-size:16px;font-weight:700;margin-bottom:8px"><i class="fas fa-gear" style="color:var(--success);margin-right:8px"></i>Journal Configuration</h3><p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px">Configure journal metadata, submission guidelines, email templates, and branding elements.</p><ul style="font-size:13px;color:var(--text-secondary);line-height:2;padding-left:20px"><li>Updating journal information</li><li>Editing submission guidelines</li><li>Customizing email templates</li><li>Managing branding assets</li></ul></div></div>
+          <div class="card"><div class="card-body"><h3 style="font-size:16px;font-weight:700;margin-bottom:8px"><i class="fas fa-clipboard-list" style="color:var(--warning);margin-right:8px"></i>System Logs</h3><p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px">Understand the three log types and how to use them for auditing, security monitoring, and workflow debugging.</p><ul style="font-size:13px;color:var(--text-secondary);line-height:2;padding-left:20px"><li>Audit logs: admin actions</li><li>Security logs: auth events</li><li>Workflow logs: manuscript lifecycle</li><li>Filtering and exporting logs</li></ul></div></div>
+          <div class="card"><div class="card-body"><h3 style="font-size:16px;font-weight:700;margin-bottom:8px"><i class="fas fa-shield-halved" style="color:var(--danger);margin-right:8px"></i>Security Practices</h3><p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px">Best practices for maintaining system security, responding to alerts, and handling compromised accounts.</p><ul style="font-size:13px;color:var(--text-secondary);line-height:2;padding-left:20px"><li>Reviewing security alerts</li><li>Responding to failed logins</li><li>Disabling compromised accounts</li><li>Session management policies</li></ul></div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Modal: Confirm Disable/Enable -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="modalConfirmTitle">Confirm Action</span><button class="modal-close" onclick="closeModal('modalConfirm')"><i class="fas fa-xmark"></i></button></div>
+    <div class="modal-body" id="modalConfirmBody"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalConfirm')">Cancel</button><button class="btn btn-danger" id="modalConfirmAction" onclick="">Confirm</button></div>
+  </div>
+</div>
+
+<!-- Modal: Role Assignment -->
+<div class="modal-overlay" id="modalRole">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Change User Role</span><button class="modal-close" onclick="closeModal('modalRole')"><i class="fas fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--spacing-md)">Assigning a new role will <strong>replace</strong> the user's current role. This action is audited.</p>
+      <div class="form-group"><label class="form-label">User</label><input class="form-input" id="roleUserName" disabled></div>
+      <div class="form-group"><label class="form-label">Current Role</label><input class="form-input" id="roleCurrentRole" disabled style="background:var(--bg);color:var(--text-muted)"></div>
+      <div class="form-group"><label class="form-label">New Role <span class="required">*</span></label><select class="form-select-full" id="roleNewRole"><option value="Admin">Admin</option><option value="Author">Author</option><option value="Editor">Editor</option><option value="Moderator">Moderator</option><option value="Reviewer">Reviewer</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalRole')">Cancel</button><button class="btn btn-primary" onclick="confirmRoleChange()">Assign Role</button></div>
+  </div>
+</div>
+
+<!-- Modal: Email Template Editor -->
+<div class="modal-overlay" id="modalTemplate">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header"><span class="modal-title" id="templateModalTitle">Edit Template</span><button class="modal-close" onclick="closeModal('modalTemplate')"><i class="fas fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Subject Line</label><input class="form-input" id="templateSubject"></div>
+      <div class="form-group"><label class="form-label">Email Body</label><textarea class="form-textarea" rows="10" id="templateBody" style="font-size:13px;line-height:1.8;font-family:'DM Sans',monospace"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modalTemplate')">Cancel</button><button class="btn btn-primary" onclick="saveTemplate()"><i class="fas fa-save"></i> Save Template</button></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ===== DATA ===== */
+const users = [
+  {id:1,name:"Prof. Amara Osei",email:"a.osei@unilag.edu.ng",role:"Author",status:"Active",lastLogin:"2026-08-25 09:30",joined:"2026-01-15",avatar:"AO",color:"#2B7A4B",department:"Computer Science",institution:"University of Lagos",oauth:"Google"},
+  {id:2,name:"Dr. Lena Vogt",email:"l.vogt@hu-berlin.de",role:"Editor",status:"Active",lastLogin:"2026-08-25 14:20",joined:"2025-11-03",avatar:"LV",color:"#2E6B9E",department:"Linguistics",institution:"Humboldt University Berlin",oauth:"Google"},
+  {id:3,name:"Dr. Sarah Okonkwo",email:"s.okonkwo@ajcl.org",role:"Admin",status:"Active",lastLogin:"2026-08-25 16:45",joined:"2025-10-01",avatar:"SO",color:"#1B2A4A",department:"Information Systems",institution:"University of Lagos",oauth:"Google"},
+  {id:4,name:"Dr. David Mensah",email:"d.mensah@ug.edu.gh",role:"Author",status:"Active",lastLogin:"2026-08-24 11:00",joined:"2026-02-20",avatar:"DM",color:"#3D7A8A",department:"Linguistics",institution:"University of Ghana",oauth:"Google"},
+  {id:5,name:"James Liu",email:"j.liu@pku.edu.cn",role:"Reviewer",status:"Active",lastLogin:"2026-08-23 08:15",joined:"2026-03-10",avatar:"JL",color:"#7C3AED",department:"Computational Linguistics",institution:"Peking University",oauth:"Google"},
+  {id:6,name:"Dr. Priya Sharma",email:"p.sharma@iitb.ac.in",role:"Moderator",status:"Active",lastLogin:"2026-08-25 10:30",joined:"2025-12-12",avatar:"PS",color:"#C4922E",department:"Humanities",institution:"IIT Bombay",oauth:"Google"},
+  {id:7,name:"Dr. Kwame Asante",email:"k.asante@ug.edu.gh",role:"Author",status:"Disabled",lastLogin:"2026-07-15 14:00",joined:"2026-01-28",avatar:"KA",color:"#8B8F9A",department:"African Studies",institution:"University of Ghana",oauth:"Google"},
+  {id:8,name:"Maria Fernandez",email:"m.fernandez@unam.mx",role:"Author",status:"Pending",lastLogin:"—",joined:"2026-08-25",avatar:"MF",color:"#C48B1E",department:"Linguistics",institution:"UNAM Mexico",oauth:"Google"},
+  {id:9,name:"Dr. Kenji Tanaka",email:"k.tanaka@tokyo-u.ac.jp",role:"Reviewer",status:"Active",lastLogin:"2026-08-22 17:40",joined:"2026-04-05",avatar:"KT",color:"#2E6B9E",department:"NLP",institution:"University of Tokyo",oauth:"Google"},
+  {id:10,name:"Dr. Fatima Al-Rashid",email:"f.alrashid@qatar.tamu.edu",role:"Editor",status:"Active",lastLogin:"2026-08-25 12:10",joined:"2025-12-20",avatar:"FA",color:"#2B7A4B",department:"Computer Science",institution:"Texas A&M Qatar",oauth:"Google"},
+  {id:11,name:"Thomas Eriksson",email:"t.eriksson@gu.se",role:"Author",status:"Active",lastLogin:"2026-08-21 09:50",joined:"2026-05-14",avatar:"TE",color:"#3D7A8A",department:"Swedish Language",institution:"University of Gothenburg",oauth:"Google"},
+  {id:12,name:"Dr. Naledi Mokoena",email:"n.mokoena@wits.ac.za",role:"Moderator",status:"Disabled",lastLogin:"2026-06-30 16:20",joined:"2026-02-01",avatar:"NM",color:"#8B8F9A",department:"African Languages",institution:"Wits University",oauth:"Google"},
+  {id:13,name:"Chen Wei",email:"c.wei@tsinghua.edu.cn",role:"Author",status:"Active",lastLogin:"2026-08-24 07:30",joined:"2026-06-20",avatar:"CW",color:"#7C3AED",department:"Computer Science",institution:"Tsinghua University",oauth:"Google"},
+  {id:14,name:"Dr. Isabella Rossi",email:"i.rossi@uniroma1.it",role:"Reviewer",status:"Pending",lastLogin:"—",joined:"2026-08-25",avatar:"IR",color:"#C48B1E",department:"Linguistics",institution:"Sapienza University of Rome",oauth:"Google"},
+  {id:15,name:"Dr. Oluwaseun Adeyemi",email:"o.adeyemi@ui.edu.ng",role:"Admin",status:"Active",lastLogin:"2026-08-24 15:00",joined:"2025-10-15",avatar:"OA",color:"#1B2A4A",department:"Computer Science",institution:"University of Ibadan",oauth:"Google"}
+];
+
+const roles = [
+  {name:"Admin",desc:"Full system control including user management, journal configuration, template editing, and access to all audit, security, and workflow logs.",count:2,perms:["Manage users","Configure journal","Edit templates","View all logs","Assign roles","System settings"],color:"var(--primary)",bg:"var(--info-bg)"},
+  {name:"Author",desc:"Create, submit, revise, and track manuscript submissions. View own manuscripts, upload files, respond to revision requests, and withdraw submissions.",count:6,perms:["Create submissions","Edit own drafts","Track manuscripts","Respond to revisions","Withdraw submissions","View decisions"],color:"var(--success)",bg:"var(--success-bg)"},
+  {name:"Editor",desc:"Manage editorial assignments, select and invite reviewers, monitor review progress, make editorial decisions, and communicate with authors.",count:2,perms:["View assigned manuscripts","Assign reviewers","Monitor reviews","Make editorial decisions","Send decisions","View review content"],color:"var(--info)",bg:"var(--info-bg)"},
+  {name:"Moderator",desc:"Screen new submissions for scope, completeness, formatting, ethics compliance, plagiarism, and anonymization. Make auditable screening decisions.",count:2,perms:["View moderation queue","Screen submissions","Check completeness","Check formatting","Verify ethics","Make screening decision"],color:"var(--warning)",bg:"var(--warning-bg)"},
+  {name:"Reviewer",desc:"Respond to review invitations, access assigned manuscripts, complete review forms with recommendations, and request deadline extensions.",count:3,perms:["View invitations","Accept/decline reviews","Access manuscripts","Complete review forms","Request extensions","Save draft reviews"],color:"var(--purple)",bg:"var(--purple-bg)"}
+];
+
+const auditLogs = [
+  {ts:"2026-08-25 16:42:18",actor:"Dr. Sarah Okonkwo",action:"Updated user role",entity:"James Liu",result:"Success",details:"Changed role from Reviewer to Editor"},
+  {ts:"2026-08-25 15:30:05",actor:"Dr. Oluwaseun Adeyemi",action:"Disabled account",entity:"Dr. Naledi Mokoena",result:"Success",details:"Reason: Inactive for 60+ days"},
+  {ts:"2026-08-25 14:15:42",actor:"Dr. Sarah Okonkwo",action:"Updated journal settings",entity:"Journal: AJCL",result:"Success",details:"Updated submission guidelines content"},
+  {ts:"2026-08-25 12:08:33",actor:"Dr. Sarah Okonkwo",action:"Updated email template",entity:"Template: Review Invitation",result:"Success",details:"Modified subject line and body text"},
+  {ts:"2026-08-25 11:45:20",actor:"Dr. Oluwaseun Adeyemi",action:"Approved user",entity:"Maria Fernandez",result:"Success",details:"Verified academic email and profile"},
+  {ts:"2026-08-24 16:22:10",actor:"Dr. Sarah Okonkwo",action:"Updated user role",entity:"Dr. Priya Sharma",result:"Success",details:"Changed role from Author to Moderator"},
+  {ts:"2026-08-24 14:10:55",actor:"Dr. Oluwaseun Adeyemi",action:"Disabled account",entity:"Dr. Kwame Asante",result:"Success",details:"Reason: Requested by user"},
+  {ts:"2026-08-24 10:33:18",actor:"Dr. Sarah Okonkwo",action:"Updated journal settings",entity:"Journal: AJCL",result:"Success",details:"Updated journal scope description"},
+  {ts:"2026-08-23 17:45:02",actor:"Dr. Oluwaseun Adeyemi",action:"Approved user",entity:"Chen Wei",result:"Success",details:"Verified institutional email"},
+  {ts:"2026-08-23 15:20:38",actor:"Dr. Sarah Okonkwo",action:"Updated email template",entity:"Template: Editorial Decision",result:"Success",details:"Added revision deadline variable"},
+  {ts:"2026-08-23 11:05:14",actor:"Dr. Oluwaseun Adeyemi",action:"Updated user role",entity:"Dr. Fatima Al-Rashid",result:"Success",details:"Changed role from Reviewer to Editor"},
+  {ts:"2026-08-22 16:40:50",actor:"Dr. Sarah Okonkwo",action:"Updated email template",entity:"Template: Submission Confirmation",result:"Success",details:"Updated formatting guidelines link"},
+  {ts:"2026-08-22 14:18:33",actor:"Dr. Oluwaseun Adeyemi",action:"Approved user",entity:"Thomas Eriksson",result:"Success",details:"Profile complete, verified"},
+  {ts:"2026-08-22 09:55:20",actor:"Dr. Sarah Okonkwo",action:"Updated journal settings",entity:"Journal: AJCL",result:"Success",details:"Changed access model to Open Access"},
+  {ts:"2026-08-21 15:30:10",actor:"Dr. Oluwaseun Adeyemi",action:"Approved user",entity:"Dr. Kenji Tanaka",result:"Success",details:"Verified NLP expertise"},
+  {ts:"2026-08-21 11:22:45",actor:"Dr. Sarah Okonkwo",action:"Updated user role",entity:"James Liu",result:"Success",details:"Changed role from Author to Reviewer"},
+  {ts:"2026-08-20 14:10:30",actor:"Dr. Oluwaseun Adeyemi",action:"Approved user",entity:"Dr. David Mensah",result:"Success",details:"Verified University of Ghana email"},
+  {ts:"2026-08-20 10:05:18",actor:"Dr. Sarah Okonkwo",action:"Updated email template",entity:"Template: Moderation Decision",result:"Failed",details:"Template validation error: missing {{manuscript_id}} variable"}
+];
+
+const securityLogs = [
+  {ts:"2026-08-25 15:12:03",event:"Failed login",user:"Unknown",ip:"203.45.167.89",severity:"High",details:"5 consecutive failed attempts for email s.okonkwo@ajcl.org"},
+  {ts:"2026-08-25 13:45:22",event:"Suspicious IP",user:"Dr. Kenji Tanaka",ip:"185.92.40.117",severity:"High",details:"Login from IP in restricted region (unrecognized geolocation)"},
+  {ts:"2026-08-25 10:30:15",event:"Session anomaly",user:"Dr. Lena Vogt",ip:"141.42.18.95",severity:"High",details:"Simultaneous sessions from two different countries detected"},
+  {ts:"2026-08-25 09:30:05",event:"Successful login",user:"Prof. Amara Osei",ip:"102.89.45.12",severity:"Low",details:"Normal login via Google OAuth from Lagos, Nigeria"},
+  {ts:"2026-08-25 08:15:10",event:"Successful login",user:"James Liu",ip:"111.13.101.88",severity:"Low",details:"Normal login via Google OAuth from Beijing, China"},
+  {ts:"2026-08-24 17:40:22",event:"Successful login",user:"Dr. Kenji Tanaka",ip:"131.112.34.56",severity:"Low",details:"Normal login via Google OAuth from Tokyo, Japan"},
+  {ts:"2026-08-24 15:00:08",event:"Successful login",user:"Dr. Oluwaseun Adeyemi",ip:"102.89.45.14",severity:"Low",details:"Normal login via Google OAuth from Ibadan, Nigeria"},
+  {ts:"2026-08-24 11:00:33",event:"Successful login",user:"Dr. David Mensah",ip:"196.28.22.10",severity:"Low",details:"Normal login via Google OAuth from Accra, Ghana"},
+  {ts:"2026-08-24 07:30:18",event:"Successful login",user:"Chen Wei",ip:"101.6.15.200",severity:"Low",details:"Normal login via Google OAuth from Beijing, China"},
+  {ts:"2026-08-23 16:20:45",event:"Failed login",user:"Unknown",ip:"203.45.167.89",severity:"Medium",details:"3 failed attempts for email l.vogt@hu-berlin.de"},
+  {ts:"2026-08-23 14:10:20",event:"Password reset",user:"Dr. Kwame Asante",ip:"196.28.22.45",severity:"Low",details:"Password reset requested via Google OAuth recovery"},
+  {ts:"2026-08-22 12:30:55",event:"Account locked",user:"Dr. Kwame Asante",ip:"—",severity:"Medium",details:"Account auto-locked after 10 failed login attempts"},
+  {ts:"2026-08-22 09:50:10",event:"Successful login",user:"Thomas Eriksson",ip:"130.241.28.90",severity:"Low",details:"Normal login via Google OAuth from Gothenburg, Sweden"},
+  {ts:"2026-08-21 14:20:33",event:"Failed login",user:"Unknown",ip:"93.184.216.34",severity:"Medium",details:"2 failed attempts, email not found in system"},
+  {ts:"2026-08-20 16:45:18",event:"Successful login",user:"Dr. Fatima Al-Rashid",ip:"78.100.45.67",severity:"Low",details:"Normal login via Google OAuth from Doha, Qatar"}
+];
+
+const workflowLogs = [
+  {ts:"2026-08-25 14:30:00",ms:"MS-2026-0901",action:"Submitted",actor:"Prof. Amara Osei",role:"Author",result:"Success"},
+  {ts:"2026-08-25 10:45:12",ms:"MS-2026-0878",action:"Review submitted",actor:"Dr. Kenji Tanaka",role:"Reviewer",result:"Success"},
+  {ts:"2026-08-24 16:20:05",ms:"MS-2026-0840",action:"Decision sent",actor:"Dr. Lena Vogt",role:"Editor",result:"Success"},
+  {ts:"2026-08-24 11:10:33",ms:"MS-2026-0878",action:"Moderation approved",actor:"Dr. Priya Sharma",role:"Moderator",result:"Success"},
+  {ts:"2026-08-23 17:30:20",ms:"MS-2026-0878",action:"Reviewer invited",actor:"Dr. Fatima Al-Rashid",role:"Editor",result:"Success"},
+  {ts:"2026-08-23 14:15:45",ms:"MS-2026-0878",action:"Reviewer invited",actor:"Dr. Fatima Al-Rashid",role:"Editor",result:"Success"},
+  {ts:"2026-08-23 10:00:10",ms:"MS-2026-0878",action:"Reviewer invited",actor:"Dr. Fatima Al-Rashid",role:"Editor",result:"Success"},
+  {ts:"2026-08-22 15:40:30",ms:"MS-2026-0840",action:"Review submitted",actor:"Dr. Kenji Tanaka",role:"Reviewer",result:"Success"},
+  {ts:"2026-08-22 09:30:18",ms:"MS-2026-0840",action:"Review submitted",actor:"James Liu",role:"Reviewer",result:"Success"},
+  {ts:"2026-08-21 14:20:55",ms:"MS-2026-0840",action:"Moderation approved",actor:"Dr. Priya Sharma",role:"Moderator",result:"Success"},
+  {ts:"2026-08-20 16:10:40",ms:"MS-2026-0840",action:"Reviewer invited",actor:"Dr. Lena Vogt",role:"Editor",result:"Success"},
+  {ts:"2026-08-20 11:05:22",ms:"MS-2026-0840",action:"Reviewer invited",actor:"Dr. Lena Vogt",role:"Editor",result:"Success"},
+  {ts:"2026-08-15 09:30:00",ms:"MS-2026-0810",action:"Decision sent",actor:"Dr. Fatima Al-Rashid",role:"Editor",result:"Success"},
+  {ts:"2026-08-12 14:20:10",ms:"MS-2026-0795",action:"Withdrawn",actor:"Dr. David Mensah",role:"Author",result:"Success"},
+  {ts:"2026-08-10 11:00:30",ms:"MS-2026-0780",action:"Revision submitted",actor:"Thomas Eriksson",role:"Author",result:"Success"}
+];
+
+const emailTemplates = [
+  {id:1,name:"Submission Confirmation",subject:"[{{journal_name}}] Manuscript Submitted: {{manuscript_id}}",status:"Enabled",modified:"2026-08-22",body:"Dear {{author_name}},\n\nYour manuscript \"{{manuscript_title}}\" has been successfully submitted to {{journal_name}} and assigned ID {{manuscript_id}}.\n\nIt will undergo initial screening by our moderation team. You will receive further updates via email and your author dashboard.\n\nThank you for your submission.\n\n{{journal_name}} Editorial Office"},
+  {id:2,name:"Moderation Decision",subject:"[{{journal_name}}] Moderation Outcome: {{manuscript_id}}",status:"Enabled",modified:"2026-08-20",body:"Dear {{author_name}},\n\nThe initial screening of your manuscript {{manuscript_id}} has been completed.\n\n[Decision details and next steps will be inserted here based on the moderation outcome.]\n\nIf your manuscript has been returned for correction, please address the moderator's notes and resubmit.\n\n{{journal_name}} Editorial Office"},
+  {id:3,name:"Review Invitation",subject:"[{{journal_name}}] Invitation to Review: {{manuscript_id}}",status:"Enabled",modified:"2026-08-25",body:"Dear {{reviewer_name}},\n\nYou are invited to review the manuscript \"{{manuscript_title}}\" ({{manuscript_id}}) for {{journal_name}}.\n\nPlease log in to your reviewer dashboard to view the manuscript details and accept or decline this invitation.\n\nReview deadline: {{deadline}}\n\nThank you for your contribution to the peer review process.\n\n{{editor_name}}\n{{journal_name}}"},
+  {id:4,name:"Editorial Decision",subject:"[{{journal_name}}] Editorial Decision: {{manuscript_id}} — {{decision}}",status:"Enabled",modified:"2026-08-23",body:"Dear {{author_name}},\n\nThe editorial team has reached a decision on your manuscript \"{{manuscript_title}}\" ({{manuscript_id}}).\n\nDecision: {{decision}}\n\n[Detailed decision letter and instructions will follow.]\n\n{{editor_name}}\n{{journal_name}}"},
+  {id:5,name:"Revision Request",subject:"[{{journal_name}}] Revision Request: {{manuscript_id}}",status:"Enabled",modified:"2026-08-24",body:"Dear {{author_name}},\n\nYour manuscript {{manuscript_id}} requires revision before a final decision can be made.\n\nPlease address all reviewer comments and editor instructions in a point-by-point response letter. Submit your revised manuscript and cover letter by {{deadline}}.\n\n{{editor_name}}\n{{journal_name}}"},
+  {id:6,name:"Account Status Change",subject:"[{{journal_name}}] Account Status Update",status:"Disabled",modified:"2026-07-15",body:"Dear user,\n\nYour account status has been changed. If you believe this is an error, please contact the journal administrative office.\n\n{{journal_name}} System"}
+];
+
+/* ===== NAVIGATION ===== */
+const pageNames = {
+  'dashboard':'Dashboard','users':'User Management','user-detail':'User Detail','roles':'Roles & Permissions',
+  'journal-settings':'Journal Settings','email-templates':'Email Templates','audit-logs':'Audit Logs',
+  'security-logs':'Security Logs','workflow-logs':'Workflow Logs','profile':'Admin Profile','help':'Help Center'
+};
+
+function navigateTo(pageId, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + pageId);
+  if (page) page.classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  else {
+    const navItem = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+    if (navItem) navItem.classList.add('active');
+  }
+  document.getElementById('breadcrumb-current').textContent = pageNames[pageId] || pageId;
+  document.querySelector('.content-area').scrollTop = 0;
+  if (pageId === 'dashboard') { setTimeout(drawRegistrationChart, 50); setTimeout(drawRoleChart, 50); }
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+function switchTab(btn, tabId) {
+  const bar = btn.closest('.tab-bar') || btn.parentElement;
+  bar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const card = bar.nextElementSibling;
+  card.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+}
+
+/* ===== TOAST ===== */
+function showToast(msg, icon) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<i class="fas ${icon || 'fa-check'}"></i> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+/* ===== MODAL ===== */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+/* ===== USERS ===== */
+function renderUsers() {
+  const search = (document.getElementById('userSearch').value || '').toLowerCase();
+  const roleF = document.getElementById('userRoleFilter').value;
+  const statusF = document.getElementById('userStatusFilter').value;
+  let filtered = users.filter(u => {
+    if (search && !u.name.toLowerCase().includes(search) && !u.email.toLowerCase().includes(search)) return false;
+    if (roleF && u.role !== roleF) return false;
+    if (statusF && u.status !== statusF) return false;
+    return true;
+  });
+  const body = document.getElementById('usersBody');
+  body.innerHTML = filtered.map(u => {
+    const statusClass = u.status === 'Active' ? 'status-active' : u.status === 'Disabled' ? 'status-disabled' : 'status-pending';
+    const roleClass = u.role === 'Admin' ? 'status-purple' : u.role === 'Editor' ? 'status-info' : u.role === 'Moderator' ? 'status-pending' : u.role === 'Reviewer' ? 'status-info' : 'status-active';
+    return `<tr onclick="openUserDetail(${u.id})">
+      <td><div class="user-cell"><div class="user-cell-avatar" style="background:${u.color}">${u.avatar}</div><div class="user-cell-info"><div class="user-cell-name">${u.name}</div><div class="user-cell-sub">${u.email}</div></div></div></td>
+      <td><span class="status-badge ${roleClass}"><i class="fas fa-circle"></i> ${u.role}</span></td>
+      <td><span class="status-badge ${statusClass}"><i class="fas fa-circle"></i> ${u.status}</span></td>
+      <td class="cell-muted">${u.lastLogin}</td>
+      <td class="cell-muted">${u.joined}</td>
+      <td style="text-align:right" onclick="event.stopPropagation()">
+        <button class="btn btn-ghost btn-sm btn-icon" title="Change role" onclick="openRoleModal(${u.id})"><i class="fas fa-user-shield"></i></button>
+        ${u.status === 'Active'
+          ? `<button class="btn btn-ghost btn-sm btn-icon" title="Disable" onclick="confirmDisable(${u.id})" style="color:var(--danger)"><i class="fas fa-ban"></i></button>`
+          : u.status === 'Disabled'
+          ? `<button class="btn btn-ghost btn-sm btn-icon" title="Enable" onclick="confirmEnable(${u.id})" style="color:var(--success)"><i class="fas fa-check"></i></button>`
+          : `<button class="btn btn-ghost btn-sm btn-icon" title="Approve" onclick="confirmApprove(${u.id})" style="color:var(--success)"><i class="fas fa-user-check"></i></button>`
+        }
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('usersPaginationInfo').textContent = `Showing 1–${filtered.length} of ${filtered.length}`;
+}
+
+function openUserDetail(id) {
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('udAvatar').style.background = u.color;
+  document.getElementById('udAvatar').textContent = u.avatar;
+  document.getElementById('udName').textContent = u.name;
+  const roleClass = u.role === 'Admin' ? 'status-purple' : u.role === 'Editor' ? 'status-info' : u.role === 'Moderator' ? 'status-pending' : u.role === 'Reviewer' ? 'status-info' : 'status-active';
+  document.getElementById('udRole').className = 'status-badge ' + roleClass;
+  document.getElementById('udRole').innerHTML = `<i class="fas fa-circle"></i> ${u.role}`;
+  const statusClass = u.status === 'Active' ? 'status-active' : u.status === 'Disabled' ? 'status-disabled' : 'status-pending';
+  document.getElementById('udStatus').className = 'status-badge ' + statusClass;
+  document.getElementById('udStatus').innerHTML = `<i class="fas fa-circle"></i> ${u.status}`;
+  document.getElementById('udActions').innerHTML = `
+    <button class="btn btn-secondary btn-sm" onclick="openRoleModal(${u.id})"><i class="fas fa-user-shield"></i> Change Role</button>
+    ${u.status === 'Active' ? `<button class="btn btn-danger btn-sm" onclick="confirmDisable(${u.id})"><i class="fas fa-ban"></i> Disable</button>` : u.status === 'Disabled' ? `<button class="btn btn-success btn-sm" onclick="confirmEnable(${u.id})"><i class="fas fa-check"></i> Enable</button>` : `<button class="btn btn-success btn-sm" onclick="confirmApprove(${u.id})"><i class="fas fa-user-check"></i> Approve</button>`}
+  `;
+  document.getElementById('udOverviewContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px">
+      <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.04em">Email</span><strong>${u.email}</strong></div>
+      <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.04em">Department</span><strong>${u.department}</strong></div>
+      <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.04em">Institution</span><strong>${u.institution}</strong></div>
+      <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.04em">OAuth Provider</span><strong>${u.oauth}</strong></div>
+      <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.04em">Joined</span><strong>${u.joined}</strong></div>
+      <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.04em">Last Login</span><strong>${u.lastLogin}</strong></div>
+    </div>`;
+  const userActs = auditLogs.filter(l => l.entity.includes(u.name.split(' ').slice(-1)[0]) || l.actor === u.name).slice(0, 6);
+  document.getElementById('udActivityList').innerHTML = userActs.length
+    ? userActs.map(a => `<li class="activity-item"><div class="activity-dot ${a.result === 'Success' ? 'dot-success' : 'dot-danger'}"></div><div class="activity-content"><div class="activity-text"><strong>${a.action}</strong> — ${a.entity}</div><div class="activity-time">${a.ts}</div></div></li>`).join('')
+    : '<div class="empty-state" style="padding:24px"><div class="empty-state-text">No activity recorded for this user</div></div>';
+  const role = roles.find(r => r.name === u.role);
+  document.getElementById('udRoleContent').innerHTML = `
+    <div style="margin-bottom:var(--spacing-lg)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">Current Role: <span style="color:${role.color}">${role.name}</span></div>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.7">${role.desc}</p>
+    </div>
+    <div style="margin-bottom:var(--spacing-lg)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">Permissions</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${role.perms.map(p => `<span class="role-card-perm">${p}</span>`).join('')}</div>
+    </div>
+    <div class="alert-banner alert-info"><i class="fas fa-info-circle"></i><div>Role changes replace the current role entirely. The previous role assignment is recorded in the audit log. Co-author access is independent of system role.</div></div>`;
+  // Reset tabs
+  document.querySelectorAll('#udTabBar .tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.querySelectorAll('#page-user-detail .tab-content').forEach((t, i) => t.classList.toggle('active', i === 0));
+  navigateTo('user-detail');
+}
+
+/* ===== USER ACTIONS ===== */
+let pendingActionUser = null;
+
+function confirmDisable(id) {
+  const u = users.find(x => x.id === id);
+  pendingActionUser = u;
+  document.getElementById('modalConfirmTitle').textContent = 'Disable Account';
+  document.getElementById('modalConfirmBody').innerHTML = `<p style="font-size:13px;color:var(--text-secondary);line-height:1.7">Are you sure you want to disable <strong>${u.name}</strong>? The user will be immediately logged out and unable to access the system until re-enabled.</p>`;
+  document.getElementById('modalConfirmAction').className = 'btn btn-danger';
+  document.getElementById('modalConfirmAction').textContent = 'Disable Account';
+  document.getElementById('modalConfirmAction').onclick = () => { u.status = 'Disabled'; closeModal('modalConfirm'); renderUsers(); showToast(`${u.name} has been disabled`, 'fa-ban'); if (document.getElementById('page-user-detail').classList.contains('active')) openUserDetail(id); };
+  openModal('modalConfirm');
+}
+
+function confirmEnable(id) {
+  const u = users.find(x => x.id === id);
+  pendingActionUser = u;
+  document.getElementById('modalConfirmTitle').textContent = 'Enable Account';
+  document.getElementById('modalConfirmBody').innerHTML = `<p style="font-size:13px;color:var(--text-secondary);line-height:1.7">Are you sure you want to re-enable <strong>${u.name}</strong>? The user will regain access to the system with their assigned role.</p>`;
+  document.getElementById('modalConfirmAction').className = 'btn btn-success';
+  document.getElementById('modalConfirmAction').textContent = 'Enable Account';
+  document.getElementById('modalConfirmAction').onclick = () => { u.status = 'Active'; closeModal('modalConfirm'); renderUsers(); showToast(`${u.name} has been enabled`, 'fa-check'); if (document.getElementById('page-user-detail').classList.contains('active')) openUserDetail(id); };
+  openModal('modalConfirm');
+}
+
+function confirmApprove(id) {
+  const u = users.find(x => x.id === id);
+  pendingActionUser = u;
+  document.getElementById('modalConfirmTitle').textContent = 'Approve User';
+  document.getElementById('modalConfirmBody').innerHTML = `<p style="font-size:13px;color:var(--text-secondary);line-height:1.7">Approve <strong>${u.name}</strong> (${u.email})? The user will be activated with the <strong>Author</strong> role and can begin using the system.</p>`;
+  document.getElementById('modalConfirmAction').className = 'btn btn-success';
+  document.getElementById('modalConfirmAction').textContent = 'Approve';
+  document.getElementById('modalConfirmAction').onclick = () => { u.status = 'Active'; closeModal('modalConfirm'); renderUsers(); showToast(`${u.name} has been approved`, 'fa-user-check'); };
+  openModal('modalConfirm');
+}
+
+function openRoleModal(id) {
+  const u = users.find(x => x.id === id);
+  pendingActionUser = u;
+  document.getElementById('roleUserName').value = u.name + ' (' + u.email + ')';
+  document.getElementById('roleCurrentRole').value = u.role;
+  document.getElementById('roleNewRole').value = u.role;
+  openModal('modalRole');
+}
+
+function confirmRoleChange() {
+  if (!pendingActionUser) return;
+  const newRole = document.getElementById('roleNewRole').value;
+  const oldRole = pendingActionUser.role;
+  if (newRole === oldRole) { closeModal('modalRole'); return; }
+  pendingActionUser.role = newRole;
+  closeModal('modalRole');
+  renderUsers();
+  showToast(`${pendingActionUser.name}: ${oldRole} → ${newRole}`, 'fa-user-shield');
+  if (document.getElementById('page-user-detail').classList.contains('active')) openUserDetail(pendingActionUser.id);
+}
+
+/* ===== ROLES ===== */
+function renderRoles() {
+  document.getElementById('rolesGrid').innerHTML = roles.map(r => `
+    <div class="role-card" style="--rc:${r.color}">
+      <style>.role-card[style*="${r.color}"]::before{background:${r.color}}</style>
+      <div class="role-card-header"><span class="role-card-name">${r.name}</span><span class="role-card-count">${r.count} user${r.count !== 1 ? 's' : ''}</span></div>
+      <div class="role-card-desc">${r.desc}</div>
+      <div class="role-card-perms">${r.perms.map(p => `<span class="role-card-perm">${p}</span>`).join('')}</div>
+    </div>
+  `).join('');
+  // Fix pseudo-elements with JS since inline styles can't target ::before
+  document.querySelectorAll('.role-card').forEach((card, i) => {
+    card.style.setProperty('--rc', roles[i].color);
+    card.querySelector('.role-card::before') // won't work, use direct style
+  });
+}
+
+/* ===== EMAIL TEMPLATES ===== */
+let editingTemplateId = null;
+
+function renderTemplates() {
+  document.getElementById('templatesBody').innerHTML = emailTemplates.map(t => `
+    <tr>
+      <td class="cell-name">${t.name}</td>
+      <td class="cell-muted text-truncate" style="max-width:240px">${t.subject}</td>
+      <td><span class="status-badge ${t.status === 'Enabled' ? 'status-active' : 'status-disabled'}"><i class="fas fa-circle"></i> ${t.status}</span></td>
+      <td class="cell-muted">${t.modified}</td>
+      <td style="text-align:right">
+        <button class="btn btn-ghost btn-sm" onclick="editTemplate(${t.id})"><i class="fas fa-pen"></i> Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleTemplateStatus(${t.id})" style="color:${t.status === 'Enabled' ? 'var(--warning)' : 'var(--success)'}">
+          <i class="fas ${t.status === 'Enabled' ? 'fa-pause' : 'fa-play'}"></i> ${t.status === 'Enabled' ? 'Disable' : 'Enable'}
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function editTemplate(id) {
+  editingTemplateId = id;
+  const t = emailTemplates.find(x => x.id === id);
+  document.getElementById('templateModalTitle').textContent = 'Edit: ' + t.name;
+  document.getElementById('templateSubject').value = t.subject;
+  document.getElementById('templateBody').value = t.body;
+  openModal('modalTemplate');
+}
+
+function saveTemplate() {
+  const t = emailTemplates.find(x => x.id === editingTemplateId);
+  if (t) {
+    t.subject = document.getElementById('templateSubject').value;
+    t.body = document.getElementById('templateBody').value;
+    t.modified = new Date().toISOString().split('T')[0];
+    renderTemplates();
+    showToast(`Template "${t.name}" saved`, 'fa-check');
+  }
+  closeModal('modalTemplate');
+}
+
+function toggleTemplateStatus(id) {
+  const t = emailTemplates.find(x => x.id === id);
+  if (t) {
+    t.status = t.status === 'Enabled' ? 'Disabled' : 'Enabled';
+    renderTemplates();
+    showToast(`Template "${t.name}" ${t.status.toLowerCase()}`, 'fa-envelope');
+  }
+}
+
+/* ===== LOGS ===== */
+function renderLogs(type) {
+  let data, searchId, actionFilterId, extraFilterId, bodyId;
+  if (type === 'audit') {
+    data = auditLogs; searchId = 'auditSearch'; actionFilterId = 'auditActionFilter'; extraFilterId = 'auditResultFilter'; bodyId = 'auditBody';
+  } else if (type === 'security') {
+    data = securityLogs; searchId = 'secSearch'; actionFilterId = 'secEventFilter'; extraFilterId = 'secSeverityFilter'; bodyId = 'securityBody';
+  } else {
+    data = workflowLogs; searchId = 'wfSearch'; actionFilterId = 'wfActionFilter'; extraFilterId = 'wfRoleFilter'; bodyId = 'workflowBody';
+  }
+  const search = (document.getElementById(searchId)?.value || '').toLowerCase();
+  const actionF = document.getElementById(actionFilterId)?.value || '';
+  const extraF = document.getElementById(extraFilterId)?.value || '';
+  const filtered = data.filter(l => {
+    if (search) {
+      const searchable = type === 'audit' ? `${l.actor} ${l.entity} ${l.details}`.toLowerCase()
+        : type === 'security' ? `${l.event} ${l.user} ${l.ip} ${l.details}`.toLowerCase()
+        : `${l.ms} ${l.actor} ${l.action}`.toLowerCase();
+      if (!searchable.includes(search)) return false;
+    }
+    const actionField = type === 'audit' ? l.action : type === 'security' ? l.event : l.action;
+    if (actionF && actionField !== actionF) return false;
+    const extraField = type === 'audit' ? l.result : type === 'security' ? l.severity : l.role;
+    if (extraF && extraField !== extraF) return false;
+    return true;
+  });
+  const body = document.getElementById(bodyId);
+  if (type === 'audit') {
+    body.innerHTML = filtered.map(l => `<tr><td class="cell-muted" style="white-space:nowrap;font-size:12px">${l.ts}</td><td class="cell-name">${l.actor}</td><td>${l.action}</td><td class="cell-muted">${l.entity}</td><td><span class="status-badge ${l.result === 'Success' ? 'status-active' : 'status-locked'}"><i class="fas fa-circle"></i> ${l.result}</span></td><td class="cell-muted text-truncate" style="max-width:200px">${l.details}</td></tr>`).join('');
+  } else if (type === 'security') {
+    body.innerHTML = filtered.map(l => {
+      const sevClass = l.severity === 'High' ? 'severity-high' : l.severity === 'Medium' ? 'severity-medium' : 'severity-low';
+      const rowStyle = l.severity === 'High' ? 'background:rgba(184,51,51,0.03)' : '';
+      return `<tr style="${rowStyle}"><td class="cell-muted" style="white-space:nowrap;font-size:12px">${l.ts}</td><td class="cell-name">${l.event}</td><td>${l.user}</td><td class="cell-muted" style="font-family:monospace;font-size:12px">${l.ip}</td><td class="${sevClass}">${l.severity}</td><td class="cell-muted text-truncate" style="max-width:200px">${l.details}</td></tr>`;
+    }).join('');
+  } else {
+    body.innerHTML = filtered.map(l => `<tr><td class="cell-muted" style="white-space:nowrap;font-size:12px">${l.ts}</td><td class="cell-name">${l.ms}</td><td>${l.action}</td><td class="cell-muted">${l.actor}</td><td><span class="status-badge ${l.role === 'Author' ? 'status-active' : l.role === 'Editor' ? 'status-info' : l.role === 'Moderator' ? 'status-pending' : l.role === 'Reviewer' ? 'status-info' : 'status-purple'}"><i class="fas fa-circle"></i> ${l.role}</span></td><td><span class="status-badge status-active"><i class="fas fa-circle"></i> ${l.result}</span></td></tr>`).join('');
+  }
+}
+
+/* ===== DASHBOARD CHARTS ===== */
+function drawRegistrationChart() {
+  const canvas = document.getElementById('chartRegistrations');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+  const data = [2, 3, 1, 2, 2, 3, 1, 1];
+  const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'];
+  const maxVal = Math.max(...data, 1);
+  const padding = {top: 20, right: 20, bottom: 36, left: 40};
+  const chartW = w - padding.left - padding.right;
+  const chartH = h - padding.top - padding.bottom;
+  const barW = Math.min(chartW / data.length * 0.5, 36);
+  const gap = chartW / data.length;
+  ctx.clearRect(0, 0, w, h);
+  // Grid lines
+  ctx.strokeStyle = '#E2E4E8';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padding.top + (chartH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(w - padding.right, y); ctx.stroke();
+    ctx.fillStyle = '#8B8F9A'; ctx.font = '11px DM Sans'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padding.left - 8, y + 4);
+  }
+  // Bars
+  data.forEach((v, i) => {
+    const x = padding.left + gap * i + (gap - barW) / 2;
+    const barH = (v / maxVal) * chartH;
+    const y = padding.top + chartH - barH;
+    const grad = ctx.createLinearGradient(x, y, x, y + barH);
+    grad.addColorStop(0, '#3D7A8A');
+    grad.addColorStop(1, '#2A3F6B');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    const r = Math.min(4, barW / 2);
+    ctx.moveTo(x + r, y); ctx.lineTo(x + barW - r, y); ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+    ctx.lineTo(x + barW, y + barH); ctx.lineTo(x, y + barH); ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y); ctx.fill();
+    // Value on top
+    ctx.fillStyle = '#1A1A2E'; ctx.font = '600 12px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText(v, x + barW / 2, y - 6);
+    // Label
+    ctx.fillStyle = '#8B8F9A'; ctx.font = '11px DM Sans';
+    ctx.fillText(labels[i], x + barW / 2, h - 10);
+  });
+}
+
+function drawRoleChart() {
+  const canvas = document.getElementById('chartRoles');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+  const data = roles.map(r => r.count);
+  const colors = ['#1B2A4A', '#2B7A4B', '#2E6B9E', '#C48B1E', '#7C3AED'];
+  const total = data.reduce((a, b) => a + b, 0);
+  const cx = w * 0.38, cy = h / 2;
+  const radius = Math.min(cx - 20, cy - 20, 80);
+  const innerRadius = radius * 0.58;
+  let startAngle = -Math.PI / 2;
+  data.forEach((v, i) => {
+    const slice = (v / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, startAngle, startAngle + slice);
+    ctx.arc(cx, cy, innerRadius, startAngle + slice, startAngle, true);
+    ctx.closePath();
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    startAngle += slice;
+  });
+  // Center text
+  ctx.fillStyle = '#1A1A2E'; ctx.font = '700 28px DM Sans'; ctx.textAlign = 'center';
+  ctx.fillText(total, cx, cy + 2);
+  ctx.fillStyle = '#8B8F9A'; ctx.font = '500 11px DM Sans';
+  ctx.fillText('TOTAL', cx, cy + 18);
+  // Legend
+  const legendX = w * 0.7;
+  let legendY = h * 0.2;
+  roles.forEach((r, i) => {
+    ctx.fillStyle = colors[i];
+    ctx.beginPath(); ctx.arc(legendX, legendY, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1A1A2E'; ctx.font = '600 13px DM Sans'; ctx.textAlign = 'left';
+    ctx.fillText(r.name, legendX + 14, legendY + 4);
+    ctx.fillStyle = '#8B8F9A'; ctx.font = '12px DM Sans';
+    ctx.fillText(`${data[i]} user${data[i] !== 1 ? 's' : ''}`, legendX + 14, legendY + 20);
+    legendY += 38;
+  });
+}
+
+/* ===== DASHBOARD ACTIVITY ===== */
+function renderDashActivity() {
+  const items = auditLogs.slice(0, 5);
+  document.getElementById('dashActivity').innerHTML = items.map(a => `
+    <li class="activity-item">
+      <div class="activity-dot ${a.result === 'Success' ? 'dot-success' : 'dot-danger'}"></div>
+      <div class="activity-content">
+        <div class="activity-text"><strong>${a.actor}</strong> — ${a.action}</div>
+        <div class="activity-time">${a.ts} &middot; ${a.entity}</div>
+      </div>
+    </li>
+  `).join('');
+}
+
+function renderDashSecurity() {
+  const items = securityLogs.filter(l => l.severity === 'High');
+  document.getElementById('dashSecurity').innerHTML = items.map(l => `
+    <li class="activity-item" style="cursor:pointer" onclick="navigateTo('security-logs',document.querySelector('[data-page=security-logs]'))">
+      <div class="activity-dot dot-danger"></div>
+      <div class="activity-content">
+        <div class="activity-text"><strong>${l.event}</strong> — ${l.user}</div>
+        <div class="activity-time">${l.ts} &middot; ${l.details.substring(0, 60)}...</div>
+      </div>
+    </li>
+  `).join('');
+}
+
+/* ===== GLOBAL SEARCH ===== */
+function handleGlobalSearch(val) {
+  if (!val || val.length < 2) return;
+  const v = val.toLowerCase();
+  const found = users.find(u => u.name.toLowerCase().includes(v) || u.email.toLowerCase().includes(v));
+  if (found) {
+    // Subtle hint: could navigate, but don't auto-navigate on typing
+  }
+}
+
+/* ===== INIT ===== */
+function init() {
+  renderUsers();
+  renderRoles();
+  renderTemplates();
+  renderLogs('audit');
+  renderLogs('security');
+  renderLogs('workflow');
+  renderDashActivity();
+  renderDashSecurity();
+  setTimeout(drawRegistrationChart, 100);
+  setTimeout(drawRoleChart, 100);
+}
+
+// Fix role card top borders
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  // Apply role card top-border colors via JS since CSS can't use inline custom props in ::before
+  document.querySelectorAll('.role-card').forEach((card, i) => {
+    if (roles[i]) {
+      card.style.borderTop = `3px solid ${roles[i].color}`;
+    }
+  });
+});
+
+// Redraw charts on resize
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (document.getElementById('page-dashboard').classList.contains('active')) {
+      drawRegistrationChart();
+      drawRoleChart();
+    }
+  }, 200);
+});
+</script>
+</body>
+</html>

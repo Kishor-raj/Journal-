@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reviewer Dashboard — Journal Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root {
+    --primary:#1B2A4A;--primary-light:#2A3F6B;--primary-dark:#0F1A30;
+    --secondary:#3D7A8A;--secondary-light:#5A9DAD;
+    --accent:#C4922E;--accent-light:#D9A94A;
+    --bg:#F4F5F7;--surface:#FFFFFF;--surface-border:#E2E4E8;--surface-hover:#F9FAFB;
+    --text-primary:#1A1A2E;--text-secondary:#5A5E6B;--text-muted:#8B8F9A;--text-inverse:#FFFFFF;
+    --success:#2B7A4B;--success-bg:#E8F5EC;--success-border:#B8DCC8;
+    --warning:#C48B1E;--warning-bg:#FEF7E8;--warning-border:#F0DCA0;
+    --danger:#B83333;--danger-bg:#FCECEC;--danger-border:#E8B8B8;
+    --info:#2E6B9E;--info-bg:#EBF4FB;--info-border:#A8CCE8;
+    --purple:#7C3AED;--purple-bg:#F3E8FF;--purple-border:#D8B4FE;
+    --radius-sm:4px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
+    --shadow-sm:0 1px 2px rgba(27,42,74,0.06);--shadow-md:0 2px 8px rgba(27,42,74,0.08);--shadow-lg:0 8px 24px rgba(27,42,74,0.12);--shadow-xl:0 16px 48px rgba(27,42,74,0.16);
+    --sidebar-width:256px;--sidebar-collapsed:64px;--header-height:64px;
+    --spacing-xs:4px;--spacing-sm:8px;--spacing-md:16px;--spacing-lg:24px;--spacing-xl:32px;
+    --transition-fast:150ms ease;--transition-base:250ms ease;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px;-webkit-font-smoothing:antialiased}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6;overflow:hidden;height:100vh}
+  .app-shell{display:flex;height:100vh;overflow:hidden}
+
+  .sidebar{width:var(--sidebar-width);min-width:var(--sidebar-width);background:var(--primary);display:flex;flex-direction:column;transition:width var(--transition-base),min-width var(--transition-base);z-index:100;overflow:hidden}
+  .sidebar.collapsed{width:var(--sidebar-collapsed);min-width:var(--sidebar-collapsed)}
+  .sidebar-brand{height:var(--header-height);display:flex;align-items:center;padding:0 var(--spacing-md);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;gap:var(--spacing-sm);overflow:hidden;white-space:nowrap}
+  .sidebar-brand-icon{width:32px;height:32px;min-width:32px;background:var(--accent);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:800;font-size:16px;color:var(--primary-dark)}
+  .sidebar-brand-text{display:flex;flex-direction:column;overflow:hidden;transition:opacity var(--transition-fast)}
+  .sidebar.collapsed .sidebar-brand-text{opacity:0;pointer-events:none}
+  .sidebar-brand-title{font-size:13px;font-weight:700;color:var(--text-inverse);letter-spacing:0.02em;line-height:1.2}
+  .sidebar-brand-sub{font-size:10px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;font-weight:500}
+  .sidebar-role-badge{margin:var(--spacing-md) var(--spacing-md) 0;padding:6px 12px;background:rgba(255,255,255,0.08);border-radius:var(--radius-sm);font-size:11px;font-weight:600;color:#7CB9D4;text-transform:uppercase;letter-spacing:0.06em;display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap;transition:opacity var(--transition-fast)}
+  .sidebar.collapsed .sidebar-role-badge{opacity:0;height:0;margin:0;padding:0}
+  .sidebar-nav{flex:1;padding:var(--spacing-md) var(--spacing-sm);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent}
+  .sidebar-nav::-webkit-scrollbar{width:4px}
+  .sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
+  .nav-section-label{font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;padding:var(--spacing-md) var(--spacing-sm) var(--spacing-xs);overflow:hidden;white-space:nowrap;transition:opacity var(--transition-fast)}
+  .sidebar.collapsed .nav-section-label{opacity:0;height:0;padding:0;margin:0}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-md);color:rgba(255,255,255,0.6);font-size:14px;font-weight:500;cursor:pointer;transition:all var(--transition-fast);text-decoration:none;position:relative;overflow:hidden;white-space:nowrap;margin-bottom:2px}
+  .nav-item:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9)}
+  .nav-item.active{background:rgba(255,255,255,0.12);color:var(--text-inverse)}
+  .nav-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+  .nav-item i{width:20px;min-width:20px;text-align:center;font-size:15px}
+  .nav-item-text{overflow:hidden;transition:opacity var(--transition-fast)}
+  .sidebar.collapsed .nav-item-text{opacity:0;pointer-events:none}
+  .nav-item .badge-count{margin-left:auto;background:var(--danger);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center;transition:opacity var(--transition-fast)}
+  .nav-item .badge-warning{background:var(--warning);color:var(--primary-dark)}
+  .sidebar.collapsed .badge-count{opacity:0}
+  .sidebar-footer{padding:var(--spacing-md);border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+  .sidebar-collapse-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-family:inherit;transition:all var(--transition-fast);overflow:hidden;white-space:nowrap}
+  .sidebar-collapse-btn:hover{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8)}
+  .sidebar-collapse-btn i{transition:transform var(--transition-base)}
+  .sidebar.collapsed .sidebar-collapse-btn i{transform:rotate(180deg)}
+  .sidebar.collapsed .collapse-text{opacity:0;display:none}
+  @keyframes sidebarPulse{0%,100%{box-shadow:inset 0 0 60px rgba(124,185,212,0.02)}50%{box-shadow:inset 0 0 60px rgba(124,185,212,0.05)}}
+  .sidebar{animation:sidebarPulse 8s ease-in-out infinite}
+
+  .main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+  .app-header{height:var(--header-height);min-height:var(--header-height);background:var(--surface);border-bottom:1px solid var(--surface-border);display:flex;align-items:center;padding:0 var(--spacing-lg);gap:var(--spacing-md);z-index:50}
+  .header-breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);min-width:0}
+  .header-breadcrumb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .header-breadcrumb .bc-sep{color:var(--surface-border);font-size:11px}
+  .header-breadcrumb .bc-current{color:var(--text-primary);font-weight:600}
+  .header-spacer{flex:1}
+  .header-search{position:relative;width:280px}
+  .header-search input{width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--bg);font-family:inherit;font-size:13px;color:var(--text-primary);outline:none;transition:all var(--transition-fast)}
+  .header-search input::placeholder{color:var(--text-muted)}
+  .header-search input:focus{border-color:var(--secondary);background:var(--surface);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+  .header-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none}
+  .header-actions{display:flex;align-items:center;gap:4px}
+  .header-icon-btn{width:36px;height:36px;border:none;background:transparent;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--text-secondary);cursor:pointer;position:relative;transition:all var(--transition-fast);font-size:16px}
+  .header-icon-btn:hover{background:var(--bg);color:var(--text-primary)}
+  .header-icon-btn .notif-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;background:var(--danger);border-radius:50%;border:2px solid var(--surface)}
+  .header-profile{display:flex;align-items:center;gap:10px;margin-left:var(--spacing-sm);padding:4px 8px 4px 4px;border-radius:var(--radius-md);cursor:pointer;transition:background var(--transition-fast)}
+  .header-profile:hover{background:var(--bg)}
+  .header-avatar{width:32px;height:32px;border-radius:50%;background:var(--purple);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .header-profile-info{display:flex;flex-direction:column}
+  .header-profile-name{font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.2}
+  .header-profile-role{font-size:11px;color:var(--text-muted);line-height:1.2}
+
+  .content-area{flex:1;overflow-y:auto;padding:var(--spacing-lg);scrollbar-width:thin;scrollbar-color:var(--surface-border) transparent}
+  .content-area::-webkit-scrollbar{width:6px}
+  .content-area::-webkit-scrollbar-thumb{background:var(--surface-border);border-radius:3px}
+  .page{display:none;max-width:1200px;animation:pageIn 300ms ease}
+  .page.active{display:block}
+  @keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .page-header{margin-bottom:var(--spacing-lg)}
+  .page-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--spacing-md);margin-bottom:var(--spacing-sm)}
+  .page-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--text-primary);line-height:1.2}
+  .page-subtitle{font-size:14px;color:var(--text-secondary);margin-top:4px}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:var(--radius-md);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all var(--transition-fast);white-space:nowrap;text-decoration:none;line-height:1.3}
+  .btn i{font-size:13px}
+  .btn-primary{background:var(--primary);color:var(--text-inverse)}
+  .btn-primary:hover{background:var(--primary-light);box-shadow:var(--shadow-md)}
+  .btn-secondary{background:var(--surface);color:var(--text-primary);border:1px solid var(--surface-border)}
+  .btn-secondary:hover{background:var(--surface-hover);border-color:var(--text-muted)}
+  .btn-ghost{background:transparent;color:var(--text-secondary);padding:8px 12px}
+  .btn-ghost:hover{background:var(--bg);color:var(--text-primary)}
+  .btn-danger{background:var(--danger);color:white}
+  .btn-danger:hover{background:#A02B2B}
+  .btn-success{background:var(--success);color:white}
+  .btn-success:hover{background:#236B3F}
+  .btn-warning{background:var(--warning);color:var(--primary-dark)}
+  .btn-warning:hover{background:#B07E18}
+  .btn-sm{padding:6px 12px;font-size:12px}
+  .btn-sm i{font-size:11px}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;pointer-events:none}
+  .btn-lg{padding:12px 28px;font-size:15px}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--spacing-md);margin-bottom:var(--spacing-lg)}
+  .kpi-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius-lg);padding:var(--spacing-lg);transition:all var(--transition-fast);position:relative;overflow:hidden}
+  .kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .kpi-card.kpi-invited::after{background:var(--info)}
+  .kpi-card.kpi-active::after{background:var(--warning)}
+  .kpi-card.kpi-done::after{background:var(--success)}
+  .kpi-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+  .kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-md)}
+  .kpi-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em}
+  .kpi-icon{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:15px}
+  .kpi-invited .kpi-icon{background:var(--info-bg);color:var(--info)}
+  .kpi-active .kpi-icon{background:var(--warning-bg);color:var(--warning)}
+  .kpi-done .kpi-icon{background:var(--success-bg);color:var(--success)}
+  .kpi-value{font-size:32px;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px}
+  .kpi-trend{font-size:12px;color:var(--text-muted)}
+
+  .card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius-lg);overflow:hidden}
+  .card-header{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-md) var(--spacing-lg);border-bottom:1px solid var(--surface-border)}
+  .card-title{font-size:15px;font-weight:700;color:var(--text-primary)}
+  .card-body{padding:var(--spacing-lg)}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-lg);margin-bottom:var(--spacing-lg)}
+
+  .table-wrapper{overflow-x:auto}
+  .data-table{width:100%;border-collapse:collapse;font-size:13px}
+  .data-table thead th{text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;background:var(--bg);border-bottom:1px solid var(--surface-border);white-space:nowrap}
+  .data-table tbody tr{border-bottom:1px solid var(--surface-border);transition:background var(--transition-fast)}
+  .data-table tbody tr:last-child{border-bottom:none}
+  .data-table tbody tr:hover{background:var(--surface-hover)}
+  .data-table tbody td{padding:12px 16px;color:var(--text-primary);vertical-align:middle}
+  .data-table .cell-muted{color:var(--text-secondary)}
+  .data-table .cell-name{font-weight:600;color:var(--text-primary)}
+  .data-table .cell-sub{font-size:12px;color:var(--text-muted)}
+
+  .status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+  .status-badge i{font-size:10px}
+  .status-active{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+  .status-locked{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border)}
+  .status-pending{background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning-border)}
+  .status-info{background:var(--info-bg);color:var(--info);border:1px solid var(--info-border)}
+  .status-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+  .status-disabled{background:var(--bg);color:var(--text-muted);border:1px solid var(--surface-border)}
+
+  .alert-banner{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:var(--radius-md);font-size:13px;margin-bottom:var(--spacing-md)}
+  .alert-banner i{margin-top:2px;font-size:15px}
+  .alert-warning{background:var(--warning-bg);border:1px solid var(--warning-border);color:#7A5A10}
+  .alert-info{background:var(--info-bg);border:1px solid var(--info-border);color:#1A4A6E}
+  .alert-danger{background:var(--danger-bg);border:1px solid var(--danger-border);color:#7A1A1A}
+  .alert-success{background:var(--success-bg);border:1px solid var(--success-border);color:#1A5A30}
+
+  .form-group{margin-bottom:var(--spacing-lg)}
+  .form-label{display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+  .form-label .required{color:var(--danger);margin-left:2px}
+  .form-input,.form-textarea,.form-select-full{width:100%;padding:9px 12px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--surface);font-family:inherit;font-size:14px;color:var(--text-primary);outline:none;transition:all var(--transition-fast)}
+  .form-textarea{min-height:100px;resize:vertical}
+  .form-input:focus,.form-textarea:focus,.form-select-full:focus{border-color:var(--secondary);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+  .form-hint{font-size:12px;color:var(--text-muted);margin-top:4px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+
+  .pagination{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-md) var(--spacing-lg);border-top:1px solid var(--surface-border);font-size:13px;color:var(--text-secondary)}
+  .pagination-pages{display:flex;align-items:center;gap:4px}
+  .pagination-btn{width:32px;height:32px;border:1px solid var(--surface-border);background:var(--surface);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:13px;font-family:inherit;color:var(--text-secondary);cursor:pointer;transition:all var(--transition-fast)}
+  .pagination-btn:hover{border-color:var(--primary);color:var(--primary)}
+  .pagination-btn.active{background:var(--primary);border-color:var(--primary);color:white}
+  .pagination-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+  /* Invitation card */
+  .inv-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius-lg);padding:var(--spacing-lg);margin-bottom:var(--spacing-md);transition:all var(--transition-fast);position:relative;overflow:hidden}
+  .inv-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+  .inv-card.inv-new::before{background:var(--info)}
+  .inv-card.inv-urgent::before{background:var(--danger)}
+  .inv-card:hover{box-shadow:var(--shadow-md)}
+  .inv-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--spacing-md);margin-bottom:var(--spacing-md)}
+  .inv-ms-id{font-size:13px;font-weight:700;color:var(--info);margin-bottom:4px}
+  .inv-title{font-size:16px;font-weight:700;color:var(--text-primary);line-height:1.3;margin-bottom:6px}
+  .inv-abstract{font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:var(--spacing-md);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .inv-meta{display:flex;flex-wrap:wrap;gap:var(--spacing-md);margin-bottom:var(--spacing-md);font-size:13px;color:var(--text-secondary)}
+  .inv-meta-item{display:flex;align-items:center;gap:6px}
+  .inv-meta-item i{color:var(--text-muted);font-size:12px}
+  .inv-due{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-md);margin-bottom:var(--spacing-md);font-size:14px;font-weight:700}
+  .inv-due.due-ok{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+  .inv-due.due-soon{background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning-border)}
+  .inv-due.due-overdue{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border)}
+  .inv-due i{font-size:18px}
+  .inv-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .inv-urgent-tag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border);text-transform:uppercase;letter-spacing:0.04em}
+
+  /* Review workspace split pane */
+  .review-workspace{display:grid;grid-template-columns:1fr 1fr;gap:0;height:calc(100vh - var(--header-height) - var(--spacing-lg)*2);border:1px solid var(--surface-border);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface)}
+  .review-pane{display:flex;flex-direction:column;overflow:hidden}
+  .review-pane-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--surface-border);background:var(--bg);flex-shrink:0}
+  .review-pane-title{font-size:13px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px}
+  .review-pane-title i{color:var(--text-muted);font-size:14px}
+  .review-pane-body{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--surface-border) transparent}
+  .review-pane-body::-webkit-scrollbar{width:5px}
+  .review-pane-body::-webkit-scrollbar-thumb{background:var(--surface-border);border-radius:3px}
+  .review-divider{width:1px;background:var(--surface-border);flex-shrink:0}
+
+  /* Manuscript viewer */
+  .ms-viewer-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;line-height:1.3;margin-bottom:8px}
+  .ms-viewer-meta{font-size:12px;color:var(--text-muted);margin-bottom:var(--spacing-lg);padding-bottom:var(--spacing-md);border-bottom:1px solid var(--surface-border)}
+  .ms-viewer-section{margin-bottom:var(--spacing-lg)}
+  .ms-viewer-section-title{font-size:14px;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em}
+  .ms-viewer-text{font-size:14px;color:var(--text-secondary);line-height:1.8}
+  .ms-viewer-text p{margin-bottom:12px}
+  .ms-viewer-figure{background:var(--bg);border:1px solid var(--surface-border);border-radius:var(--radius-md);padding:24px;text-align:center;margin:var(--spacing-md) 0;color:var(--text-muted);font-size:13px}
+  .ms-viewer-figure-caption{font-size:12px;color:var(--text-secondary);margin-top:8px;font-style:italic;text-align:center}
+
+  /* Review form */
+  .review-field{margin-bottom:var(--spacing-lg)}
+  .review-field-label{font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .review-field-label .required{color:var(--danger)}
+  .review-field-hint{font-size:11px;color:var(--text-muted);margin-top:4px}
+  .review-textarea{width:100%;min-height:100px;padding:10px 14px;border:1px solid var(--surface-border);border-radius:var(--radius-md);font-family:inherit;font-size:13px;color:var(--text-primary);outline:none;resize:vertical;transition:border-color var(--transition-fast);line-height:1.6}
+  .review-textarea:focus{border-color:var(--secondary);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+  .review-textarea.confidential{border-color:var(--danger-border);background:var(--danger-bg)}
+  .review-textarea.confidential:focus{border-color:var(--danger);box-shadow:0 0 0 3px rgba(184,51,51,0.12)}
+
+  .rating-group{display:flex;gap:8px;flex-wrap:wrap}
+  .rating-btn{padding:8px 16px;border:2px solid var(--surface-border);border-radius:var(--radius-md);font-size:13px;font-weight:600;cursor:pointer;transition:all var(--transition-fast);color:var(--text-secondary);background:var(--surface)}
+  .rating-btn:hover{border-color:var(--text-muted);color:var(--text-primary)}
+  .rating-btn.selected-accept{border-color:var(--success);background:var(--success-bg);color:var(--success)}
+  .rating-btn.selected-minor{border-color:var(--info);background:var(--info-bg);color:var(--info)}
+  .rating-btn.selected-major{border-color:var(--warning);background:var(--warning-bg);color:var(--warning)}
+  .rating-btn.selected-reject{border-color:var(--danger);background:var(--danger-bg);color:var(--danger)}
+
+  .criteria-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--surface-border)}
+  .criteria-row:last-child{border-bottom:none}
+  .criteria-label{flex:1;font-size:13px;font-weight:500;color:var(--text-primary)}
+  .criteria-rating{display:flex;gap:4px}
+  .criteria-star{width:28px;height:28px;border:1px solid var(--surface-border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--text-muted);background:var(--surface);transition:all var(--transition-fast)}
+  .criteria-star:hover{border-color:var(--accent);color:var(--accent)}
+  .criteria-star.filled{background:var(--accent);border-color:var(--accent);color:white}
+
+  .review-sticky-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-top:1px solid var(--surface-border);background:var(--surface);flex-shrink:0;gap:var(--spacing-md)}
+  .review-save-status{font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px}
+  .review-save-status i{color:var(--success)}
+
+  /* Profile */
+  .profile-header-card{display:flex;align-items:center;gap:var(--spacing-lg);padding:var(--spacing-xl);background:linear-gradient(135deg,var(--purple) 0%,#5B21B6 100%);border-radius:var(--radius-lg);color:white;margin-bottom:var(--spacing-lg);position:relative;overflow:hidden}
+  .profile-header-card::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:rgba(255,255,255,0.06);border-radius:50%}
+  .profile-avatar-lg{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;font-family:'Playfair Display',serif;flex-shrink:0;border:3px solid rgba(255,255,255,0.2)}
+  .profile-header-info{position:relative;z-index:1}
+  .profile-header-name{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;margin-bottom:4px}
+  .profile-header-email{font-size:14px;opacity:0.7;margin-bottom:var(--spacing-sm)}
+  .profile-header-meta{display:flex;gap:var(--spacing-lg);font-size:12px;opacity:0.6}
+
+  .notif-item{display:flex;gap:14px;padding:16px 20px;border-bottom:1px solid var(--surface-border);transition:background var(--transition-fast);cursor:pointer}
+  .notif-item:hover{background:var(--surface-hover)}
+  .notif-item.unread{background:rgba(124,58,237,0.03)}
+  .notif-item.unread::before{content:'';width:8px;height:8px;min-width:8px;border-radius:50%;background:var(--purple);margin-top:6px}
+  .notif-content{flex:1}
+  .notif-text{font-size:13px;color:var(--text-primary);line-height:1.5}
+  .notif-text strong{font-weight:600}
+  .notif-time{font-size:12px;color:var(--text-muted);margin-top:4px}
+
+  .toast-container{position:fixed;top:var(--spacing-lg);right:var(--spacing-lg);z-index:9999;display:flex;flex-direction:column;gap:var(--spacing-sm)}
+  .toast{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--primary-dark);color:white;border-radius:var(--radius-md);font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn 300ms ease,toastOut 300ms ease 2700ms forwards;max-width:380px}
+  .toast i{font-size:16px}
+  @keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(15,26,48,0.5);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;animation:fadeIn 200ms ease}
+  .modal-overlay.open{display:flex}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--surface);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);width:90%;max-width:520px;animation:modalIn 250ms ease;overflow:hidden}
+  @keyframes modalIn{from{opacity:0;transform:scale(0.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-lg);border-bottom:1px solid var(--surface-border)}
+  .modal-title{font-size:17px;font-weight:700}
+  .modal-close{width:32px;height:32px;border:none;background:var(--bg);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);font-size:14px;transition:all var(--transition-fast)}
+  .modal-close:hover{background:var(--danger-bg);color:var(--danger)}
+  .modal-body{padding:var(--spacing-lg)}
+  .modal-footer{display:flex;justify-content:flex-end;gap:var(--spacing-sm);padding:var(--spacing-md) var(--spacing-lg);border-top:1px solid var(--surface-border);background:var(--bg)}
+
+  .text-truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mb-md{margin-bottom:var(--spacing-md)}
+  .mb-lg{margin-bottom:var(--spacing-lg)}
+  .mt-md{margin-top:var(--spacing-md)}
+
+  @media(max-width:1100px){.review-workspace{grid-template-columns:1fr;height:auto;}.review-divider{display:none}.review-pane{min-height:400px}}
+  @media(max-width:900px){.kpi-grid{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.header-search{display:none}}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">J</div>
+      <div class="sidebar-brand-text"><div class="sidebar-brand-title">Journal MS</div><div class="sidebar-brand-sub">Reviewer Portal</div></div>
+    </div>
+    <div class="sidebar-role-badge"><i class="fas fa-magnifying-glass"></i> Reviewer</div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Reviews</div>
+      <a class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard',this)"><i class="fas fa-grid-2"></i><span class="nav-item-text">Dashboard</span></a>
+      <a class="nav-item" data-page="invitations" onclick="navigateTo('invitations',this)"><i class="fas fa-envelope-open-text"></i><span class="nav-item-text">Invitations</span><span class="badge-count">2</span></a>
+      <a class="nav-item" data-page="my-reviews" onclick="navigateTo('my-reviews',this)"><i class="fas fa-clipboard-check"></i><span class="nav-item-text">My Reviews</span><span class="badge-count badge-warning">1</span></a>
+      <a class="nav-item" data-page="extensions" onclick="navigateTo('extensions',this)"><i class="fas fa-clock-rotate-left"></i><span class="nav-item-text">Extensions</span></a>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" data-page="profile" onclick="navigateTo('profile',this)"><i class="fas fa-user-circle"></i><span class="nav-item-text">Profile</span></a>
+    </nav>
+    <div class="sidebar-footer"><button class="sidebar-collapse-btn" onclick="toggleSidebar()"><i class="fas fa-chevron-left"></i><span class="collapse-text">Collapse</span></button></div>
+  </aside>
+
+  <div class="main-area">
+    <header class="app-header">
+      <div class="header-breadcrumb"><span>Reviewer</span><i class="fas fa-chevron-right bc-sep"></i><span class="bc-current" id="breadcrumb-current">Dashboard</span></div>
+      <div class="header-spacer"></div>
+      <div class="header-search"><i class="fas fa-search"></i><input type="text" placeholder="Search invitations, reviews..." aria-label="Global search"></div>
+      <div class="header-actions">
+        <button class="header-icon-btn" title="Notifications" onclick="showToast('No new notifications','fa-bell')"><i class="fas fa-bell"></i></button>
+        <button class="header-icon-btn" title="Help" onclick="showToast('Help center coming soon','fa-circle-question')"><i class="fas fa-circle-question"></i></button>
+      </div>
+      <div class="header-profile" onclick="navigateTo('profile',document.querySelector('[data-page=profile]'))">
+        <div class="header-avatar">KT</div>
+        <div class="header-profile-info"><div class="header-profile-name">Dr. Kenji Tanaka</div><div class="header-profile-role">Reviewer</div></div>
+      </div>
+    </header>
+
+    <main class="content-area">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div class="page-header-row"><div><h1 class="page-title">Reviewer Dashboard</h1><p class="page-subtitle">Your review invitations, active assignments, and completion history</p></div></div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-invited">
+            <div class="kpi-header"><span class="kpi-label">Pending Invitations</span><div class="kpi-icon"><i class="fas fa-envelope"></i></div></div>
+            <div class="kpi-value">2</div>
+            <div class="kpi-trend"><span>Awaiting your response</span></div>
+          </div>
+          <div class="kpi-card kpi-active">
+            <div class="kpi-header"><span class="kpi-label">Active Reviews</span><div class="kpi-icon"><i class="fas fa-pen-to-square"></i></div></div>
+            <div class="kpi-value">1</div>
+            <div class="kpi-trend"><span style="color:var(--danger);font-weight:600;">Due in 11 days</span></div>
+          </div>
+          <div class="kpi-card kpi-done">
+            <div class="kpi-header"><span class="kpi-label">Completed (All Time)</span><div class="kpi-icon"><i class="fas fa-circle-check"></i></div></div>
+            <div class="kpi-value">12</div>
+            <div class="kpi-trend"><span>Avg turnaround: 18 days</span></div>
+          </div>
+        </div>
+
+        <!-- Due soon warning -->
+        <div class="alert-banner alert-warning mb-lg">
+          <i class="fas fa-clock"></i>
+          <div><strong>Review due soon:</strong> MS-2026-0878 "Quantum Error Correction in Noisy Intermediate-Scale Quantum Processors" is due on <strong>Sep 5, 2026</strong>. You have 11 days remaining. Please submit your review or request an extension before the deadline.</div>
+        </div>
+
+        <!-- Pending invitations -->
+        <div class="card mb-lg">
+          <div class="card-header"><span class="card-title">Pending Invitations</span><button class="btn btn-ghost btn-sm" onclick="navigateTo('invitations',document.querySelector('[data-page=invitations]'))">View All <i class="fas fa-arrow-right" style="font-size:11px;margin-left:4px;"></i></button></div>
+          <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg);">
+            <div class="inv-card inv-new" style="margin-bottom:0;padding:var(--spacing-md) var(--spacing-lg);display:flex;align-items:center;gap:var(--spacing-lg);cursor:pointer;" onclick="navigateTo('invitations',document.querySelector('[data-page=invitations]'))">
+              <div style="flex:1;min-width:0;">
+                <div class="inv-ms-id">MS-2026-0865</div>
+                <div class="inv-title" style="font-size:14px;">Explainable AI for Clinical Decision Support Systems</div>
+                <div class="inv-meta" style="margin-bottom:0;"><span class="inv-meta-item"><i class="fas fa-user"></i> Prof. J. Morton et al.</span><span class="inv-meta-item"><i class="fas fa-file-lines"></i> Review Article</span></div>
+              </div>
+              <div class="inv-due due-ok" style="margin-bottom:0;flex-shrink:0;"><i class="fas fa-calendar-check"></i><div><div style="font-size:11px;font-weight:500;opacity:0.8;">Due Date</div><div style="font-size:16px;">Sep 12</div></div></div>
+              <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();navigateTo('invitations',document.querySelector('[data-page=invitations]'))"><i class="fas fa-envelope-open"></i> Respond</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active review -->
+        <div class="card mb-lg">
+          <div class="card-header"><span class="card-title">Active Review</span></div>
+          <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg);">
+            <div style="display:flex;align-items:center;gap:var(--spacing-lg);cursor:pointer;" onclick="openReviewWorkspace()">
+              <div style="width:48px;height:48px;border-radius:var(--radius-md);background:var(--warning-bg);color:var(--warning);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;"><i class="fas fa-pen-to-square"></i></div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:700;color:var(--info);">MS-2026-0878</div>
+                <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:2px;">Quantum Error Correction in Noisy Intermediate-Scale Quantum Processors</div>
+                <div style="font-size:12px;color:var(--text-muted);">Dr. K. Tanaka (sole author) — Original Research — Due: Sep 5, 2026</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:28px;font-weight:700;color:var(--warning);">11d</div>
+                <div style="font-size:11px;color:var(--text-muted);">remaining</div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openReviewWorkspace()"><i class="fas fa-arrow-right"></i> Continue Review</button>
+            </div>
+            <!-- Draft progress -->
+            <div style="margin-top:var(--spacing-md);padding:12px 16px;background:var(--bg);border-radius:var(--radius-md);display:flex;align-items:center;gap:var(--spacing-lg);font-size:13px;">
+              <span style="color:var(--text-muted);">Draft progress:</span>
+              <div style="flex:1;height:6px;background:var(--surface-border);border-radius:3px;overflow:hidden;"><div style="width:35%;height:100%;background:var(--warning);border-radius:3px;transition:width 0.4s ease;"></div></div>
+              <span style="font-weight:600;color:var(--warning);">35%</span>
+              <span style="color:var(--text-muted);font-size:11px;">Last saved: 2 hours ago</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent completions -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Recently Completed</span><button class="btn btn-ghost btn-sm" onclick="navigateTo('my-reviews',document.querySelector('[data-page=my-reviews]'))">View All <i class="fas fa-arrow-right" style="font-size:11px;margin-left:4px;"></i></button></div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Manuscript</th><th>Title</th><th>Submitted</th><th>Recommendation</th><th>Turnaround</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="cell-name">MS-2026-0870</td>
+                  <td class="text-truncate" style="max-width:260px;">Federated Learning for Privacy-Preserving Medical Image Analysis</td>
+                  <td class="cell-muted">Aug 24</td>
+                  <td><span class="status-badge status-active"><i class="fas fa-pen"></i> Minor Revision</span></td>
+                  <td class="cell-muted">12 days</td>
+                </tr>
+                <tr>
+                  <td class="cell-name">MS-2026-0850</td>
+                  <td class="text-truncate" style="max-width:260px;">Self-Supervised Representation Learning for Low-Resource Languages</td>
+                  <td class="cell-muted">Aug 10</td>
+                  <td><span class="status-badge status-active"><i class="fas fa-thumbs-up"></i> Accept</span></td>
+                  <td class="cell-muted">21 days</td>
+                </tr>
+                <tr>
+                  <td class="cell-name">MS-2026-0832</td>
+                  <td class="text-truncate" style="max-width:260px;">Adversarial Robustness in Deep Reinforcement Learning</td>
+                  <td class="cell-muted">Jul 28</td>
+                  <td><span class="status-badge status-pending"><i class="fas fa-rotate"></i> Major Revision</span></td>
+                  <td class="cell-muted">18 days</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== INVITATIONS ===== -->
+      <div class="page" id="page-invitations">
+        <div class="page-header">
+          <div class="page-header-row"><div><h1 class="page-title">Review Invitations</h1><p class="page-subtitle">Respond to review requests — accept, decline, or request an extension</p></div></div>
+        </div>
+
+        <!-- Invitation 1 -->
+        <div class="inv-card inv-new">
+          <div class="inv-card-header">
+            <div style="flex:1;min-width:0;">
+              <div class="inv-ms-id">MS-2026-0865</div>
+              <div class="inv-title">Explainable AI for Clinical Decision Support Systems</div>
+            </div>
+          </div>
+          <div class="inv-abstract">This review article examines the landscape of explainable AI (XAI) methods applied to clinical decision support systems (CDSS). We systematically categorize post-hoc and intrinsic explanation approaches, evaluate their effectiveness in clinical workflows, and propose a framework for selecting appropriate XAI techniques based on clinical context, stakeholder requirements, and regulatory constraints. The review covers 187 studies published between 2020 and 2026.</div>
+          <div class="inv-meta">
+            <span class="inv-meta-item"><i class="fas fa-user"></i> Prof. James Morton et al. (3 authors)</span>
+            <span class="inv-meta-item"><i class="fas fa-file-lines"></i> Review Article</span>
+            <span class="inv-meta-item"><i class="fas fa-font"></i> ~11,200 words</span>
+          </div>
+          <div class="inv-due due-ok">
+            <i class="fas fa-calendar-check"></i>
+            <div><div style="font-size:11px;font-weight:500;opacity:0.8;">Review Deadline</div><div style="font-size:18px;">September 12, 2026</div><div style="font-size:11px;font-weight:500;opacity:0.7;margin-top:2px;">18 days from now</div></div>
+          </div>
+          <!-- Conflict declaration -->
+          <div class="alert-banner alert-info" style="margin-bottom:var(--spacing-md);">
+            <i class="fas fa-shield-halved"></i>
+            <div><strong>Conflict of Interest Check</strong> — Before responding, confirm that you have no conflict of interest with the authors, their institutions, or the subject matter that would prevent an impartial review.</div>
+          </div>
+          <div style="margin-bottom:var(--spacing-md);">
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:var(--text-primary);">
+              <input type="checkbox" style="margin-top:3px;accent-color:var(--success);width:16px;height:16px;" id="conflict1" onchange="updateInvBtns()">
+              <span>I confirm that I have no conflict of interest and am able to provide an impartial review of this manuscript.</span>
+            </label>
+          </div>
+          <div class="inv-actions">
+            <button class="btn btn-success btn-lg" id="inv1Accept" disabled onclick="respondInvitation('MS-2026-0865','accept')"><i class="fas fa-check"></i> Accept Invitation</button>
+            <button class="btn btn-danger" onclick="openDeclineModal('MS-2026-0865')"><i class="fas fa-xmark"></i> Decline</button>
+            <button class="btn btn-secondary" onclick="showToast('Extension requests are for active reviews, not invitations','fa-info-circle')"><i class="fas fa-clock"></i> Need More Time?</button>
+          </div>
+        </div>
+
+        <!-- Invitation 2 -->
+        <div class="inv-card inv-urgent">
+          <div class="inv-urgent-tag"><i class="fas fa-bolt"></i> Urgent</div>
+          <div class="inv-card-header">
+            <div style="flex:1;min-width:0;">
+              <div class="inv-ms-id">MS-2026-0910</div>
+              <div class="inv-title">Real-Time Object Detection on Edge Devices Using Optimized YOLO Architectures</div>
+            </div>
+          </div>
+          <div class="inv-abstract">We propose a set of architectural optimizations for YOLO-based object detection models targeting deployment on resource-constrained edge devices. Our approach combines channel pruning, knowledge distillation, and quantization-aware training to achieve real-time inference (30+ FPS) on ARM-based processors while maintaining mAP within 2% of the full model. Extensive experiments on COCO and custom industrial datasets demonstrate practical applicability.</div>
+          <div class="inv-meta">
+            <span class="inv-meta-item"><i class="fas fa-user"></i> Dr. Clara Nwosu (sole author)</span>
+            <span class="inv-meta-item"><i class="fas fa-file-lines"></i> Original Research</span>
+            <span class="inv-meta-item"><i class="fas fa-font"></i> ~7,800 words</span>
+          </div>
+          <div class="inv-due due-soon">
+            <i class="fas fa-triangle-exclamation"></i>
+            <div><div style="font-size:11px;font-weight:500;opacity:0.8;">Review Deadline</div><div style="font-size:18px;">September 1, 2026</div><div style="font-size:11px;font-weight:500;opacity:0.7;margin-top:2px;">7 days from now — Short turnaround requested</div></div>
+          </div>
+          <div class="alert-banner alert-warning" style="margin-bottom:var(--spacing-md);">
+            <i class="fas fa-bolt"></i>
+            <div><strong>Short turnaround:</strong> The editor has requested an expedited review due to a tight publication schedule. If you cannot meet this deadline, please decline promptly so an alternative reviewer can be found.</div>
+          </div>
+          <div class="alert-banner alert-info" style="margin-bottom:var(--spacing-md);">
+            <i class="fas fa-shield-halved"></i>
+            <div><strong>Conflict of Interest Check</strong> — Confirm no conflict of interest before responding.</div>
+          </div>
+          <div style="margin-bottom:var(--spacing-md);">
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13px;color:var(--text-primary);">
+              <input type="checkbox" style="margin-top:3px;accent-color:var(--success);width:16px;height:16px;" id="conflict2" onchange="updateInvBtns()">
+              <span>I confirm that I have no conflict of interest and am able to provide an impartial review of this manuscript.</span>
+            </label>
+          </div>
+          <div class="inv-actions">
+            <button class="btn btn-warning btn-lg" id="inv2Accept" disabled onclick="respondInvitation('MS-2026-0910','accept')"><i class="fas fa-check"></i> Accept (Expedited)</button>
+            <button class="btn btn-danger" onclick="openDeclineModal('MS-2026-0910')"><i class="fas fa-xmark"></i> Decline</button>
+            <button class="btn btn-secondary" onclick="openExtensionModal('MS-2026-0910','September 1, 2026')"><i class="fas fa-clock"></i> Request Extension</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MY REVIEWS ===== -->
+      <div class="page" id="page-my-reviews">
+        <div class="page-header">
+          <div class="page-header-row"><div><h1 class="page-title">My Reviews</h1><p class="page-subtitle">All your review assignments — active, due soon, and completed</p></div></div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg);">
+            <div class="filter-bar" style="margin-bottom:0;">
+              <div class="filter-search"><i class="fas fa-search"></i><input type="text" placeholder="Search by manuscript ID or title..." aria-label="Search reviews"></div>
+              <select class="filter-select"><option value="">All Statuses</option><option>Active</option><option>Due Soon</option><option>Completed</option><option>Declined</option></select>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Manuscript</th><th>Title</th><th>Editor</th><th>Status</th><th>Deadline</th><th>Days Left</th><th style="text-align:right;">Action</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="cell-name">MS-2026-0878</td>
+                  <td class="text-truncate" style="max-width:220px;">Quantum Error Correction in Noisy Intermediate-Scale Quantum Processors</td>
+                  <td class="cell-muted">Dr. L. Vogt</td>
+                  <td><span class="status-badge status-info"><i class="fas fa-circle"></i> Active</span></td>
+                  <td class="cell-muted">Sep 5, 2026</td>
+                  <td style="font-weight:700;color:var(--warning);">11</td>
+                  <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="openReviewWorkspace()"><i class="fas fa-arrow-right"></i> Continue</button></td>
+                </tr>
+                <tr>
+                  <td class="cell-name">MS-2026-0870</td>
+                  <td class="text-truncate" style="max-width:220px;">Federated Learning for Privacy-Preserving Medical Image Analysis</td>
+                  <td class="cell-muted">Dr. L. Vogt</td>
+                  <td><span class="status-badge status-active"><i class="fas fa-circle"></i> Completed</span></td>
+                  <td class="cell-muted">Aug 24, 2026</td>
+                  <td class="cell-muted">—</td>
+                  <td style="text-align:right;"><button class="btn btn-ghost btn-sm"><i class="fas fa-eye"></i> View</button></td>
+                </tr>
+                <tr>
+                  <td class="cell-name">MS-2026-0850</td>
+                  <td class="text-truncate" style="max-width:220px;">Self-Supervised Representation Learning for Low-Resource Languages</td>
+                  <td class="cell-muted">Dr. L. Vogt</td>
+                  <td><span class="status-badge status-active"><i class="fas fa-circle"></i> Completed</span></td>
+                  <td class="cell-muted">Aug 10, 2026</td>
+                  <td class="cell-muted">—</td>
+                  <td style="text-align:right;"><button class="btn btn-ghost btn-sm"><i class="fas fa-eye"></i> View</button></td>
+                </tr>
+                <tr>
+                  <td class="cell-name">MS-2026-0832</td>
+                  <td class="text-truncate" style="max-width:220px;">Adversarial Robustness in Deep Reinforcement Learning</td>
+                  <td class="cell-muted">Dr. L. Vogt</td>
+                  <td><span class="status-badge status-active"><i class="fas fa-circle"></i> Completed</span></td>
+                  <td class="cell-muted">Jul 28, 2026</td>
+                  <td class="cell-muted">—</td>
+                  <td style="text-align:right;"><button class="btn btn-ghost btn-sm"><i class="fas fa-eye"></i> View</button></td>
+                </tr>
+                <tr>
+                  <td class="cell-name">MS-2026-0810</td>
+                  <td class="text-truncate" style="max-width:220px;">Graph-Based Neural Architecture Search for Tabular Data</td>
+                  <td class="cell-muted">Prof. J. Morton</td>
+                  <td><span class="status-badge status-disabled"><i class="fas fa-circle"></i> Declined</span></td>
+                  <td class="cell-muted">—</td>
+                  <td class="cell-muted">—</td>
+                  <td style="text-align:right;"><span style="font-size:12px;color:var(--text-muted);">Conflict of interest</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <span>Showing 1–5 of 14 reviews</span>
+            <div class="pagination-pages"><button class="pagination-btn active">1</button><button class="pagination-btn">2</button><button class="pagination-btn">3</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== REVIEW WORKSPACE (SPLIT PANE) ===== -->
+      <div class="page" id="page-review-workspace" style="max-width:100%;">
+        <!-- No page-header — workspace fills the space -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-md);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button class="btn btn-ghost btn-sm" onclick="navigateTo('my-reviews',document.querySelector('[data-page=my-reviews]'))"><i class="fas fa-arrow-left"></i> Back</button>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:14px;font-weight:700;color:var(--info);">MS-2026-0878</span>
+                <span class="status-badge status-info"><i class="fas fa-circle"></i> In Progress</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);">Quantum Error Correction in Noisy Intermediate-Scale Quantum Processors</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="text-align:right;">
+              <div style="font-size:11px;color:var(--text-muted);">DEADLINE</div>
+              <div style="font-size:16px;font-weight:700;color:var(--warning);">Sep 5, 2026</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openExtensionModal('MS-2026-0878','September 5, 2026')"><i class="fas fa-clock"></i> Extension</button>
+          </div>
+        </div>
+
+        <div class="review-workspace">
+          <!-- LEFT: Manuscript Viewer -->
+          <div class="review-pane" id="manuscriptPane">
+            <div class="review-pane-header">
+              <span class="review-pane-title"><i class="fas fa-file-lines"></i> Manuscript</span>
+              <div style="display:flex;gap:4px;">
+                <button class="btn btn-ghost btn-sm btn-icon" title="Download PDF" onclick="showToast('PDF downloaded','fa-download')"><i class="fas fa-download"></i></button>
+                <button class="btn btn-ghost btn-sm btn-icon" title="Toggle viewer" onclick="toggleManuscriptPane()"><i class="fas fa-compress"></i></button>
+              </div>
+            </div>
+            <div class="review-pane-body">
+              <div class="ms-viewer-title">Quantum Error Correction in Noisy Intermediate-Scale Quantum Processors</div>
+              <div class="ms-viewer-meta">
+                <div><strong>Article Type:</strong> Original Research</div>
+                <div><strong>Word Count:</strong> 8,240</div>
+                <div><strong>Figures:</strong> 5 | <strong>Tables:</strong> 3</div>
+                <div><strong>Received:</strong> August 14, 2026</div>
+              </div>
+
+              <div class="ms-viewer-section">
+                <div class="ms-viewer-section-title">Abstract</div>
+                <div class="ms-viewer-text"><p>Noisy Intermediate-Scale Quantum (NISQ) processors present unique challenges for quantum error correction (QEC) due to limited qubit counts, high error rates, and short coherence times. This paper presents a comprehensive analysis of surface code and color code implementations specifically optimized for NISQ-era devices with 50–200 qubits. We introduce an adaptive decoding algorithm that leverages real-time error syndrome data to dynamically select decoding strategies based on observed error patterns. Through extensive simulations on realistic noise models derived from current superconducting and trapped-ion hardware, we demonstrate that our approach achieves a 23–31% improvement in logical error rates compared to static minimum-weight perfect matching decoders. We further propose a resource-efficient variant suitable for devices with limited classical processing capability, achieving 89% of the full decoder's performance with 40% reduced computational overhead.</p></div>
+              </div>
+
+              <div class="ms-viewer-section">
+                <div class="ms-viewer-section-title">1. Introduction</div>
+                <div class="ms-viewer-text"><p>Quantum computing has progressed from theoretical constructs to physical reality with the availability of NISQ devices from multiple vendors. However, the path from current noisy processors to fault-tolerant quantum computation remains challenging. Quantum error correction is widely recognized as essential for this transition, yet standard QEC codes designed for idealized fault-tolerant architectures may not be optimal for the constrained environments of NISQ processors.</p><p>In this work, we address the gap between theoretical QEC performance and practical NISQ-era implementation. Our contributions are threefold: (1) a systematic evaluation of leading QEC code families under NISQ constraints, (2) an adaptive decoding algorithm that responds to real-time error characteristics, and (3) a lightweight decoder variant for resource-limited control systems.</p></div>
+              </div>
+
+              <div class="ms-viewer-section">
+                <div class="ms-viewer-section-title">2. Background and Related Work</div>
+                <div class="ms-viewer-text"><p>Surface codes, first proposed by Kitaev, have emerged as the leading candidate for near-term QEC implementation due to their high error thresholds (~1%) and local stabilizer measurements. Color codes offer alternative topological properties but typically require more complex decoding. Recent work by Fowler et al. has established minimum-weight perfect matching (MWPM) as the standard baseline decoder, achieving near-optimal performance for independent error models.</p><p>However, several limitations of static decoders in NISQ contexts have been identified. First, error rates in current hardware exhibit significant spatial and temporal correlations that violate the independent error assumptions of MWPM. Second, the classical processing required for MWPM decoding scales as O(n³) for n physical qubits, creating a bottleneck for real-time operation. Third, the overhead of full syndrome extraction may not be justified for the limited circuit depths achievable in NISQ devices.</p></div>
+              </div>
+
+              <div class="ms-viewer-section">
+                <div class="ms-viewer-section-title">3. Methodology</div>
+                <div class="ms-viewer-text"><p>Our approach consists of three interconnected components. The <strong>Error Pattern Analyzer</strong> (EPA) processes incoming syndrome data to classify the current error environment into one of several predefined profiles: isotropic, biased (X or Z dominant), correlated, or burst errors. The <strong>Adaptive Decoder Selector</strong> (ADS) uses the EPA classification to choose from a library of optimized decoders, each tuned for a specific error profile. The <strong>Lightweight Decoder Engine</strong> (LDE) provides a simplified decoding path for resource-constrained scenarios.</p></div>
+              </div>
+
+              <div class="ms-viewer-figure">
+                <i class="fas fa-image" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+                Figure 1: Architecture of the adaptive QEC decoding system
+                <div class="ms-viewer-figure-caption">Figure 1. Overview of the proposed adaptive decoding framework. Error syndromes from the quantum processor are analyzed by the EPA module, which feeds into the ADS for decoder selection. The LDE provides a resource-efficient fallback path.</div>
+              </div>
+
+              <div class="ms-viewer-section">
+                <div class="ms-viewer-section-title">4. Results</div>
+                <div class="ms-viewer-text"><p>We evaluated our approach using noise models calibrated to three leading NISQ platforms. Table 1 summarizes the logical error rate improvements across different code distances and error environments. Our adaptive decoder consistently outperforms static MWPM, with the largest gains observed in correlated error scenarios where the improvement reaches 31%.</p></div>
+              </div>
+
+              <div class="ms-viewer-section">
+                <div class="ms-viewer-section-title">5. Discussion</div>
+                <div class="ms-viewer-text"><p>The results demonstrate that adapting the decoding strategy to observed error patterns provides significant benefits in NISQ-era QEC. We attribute the performance gains primarily to the mismatch between the independent error assumptions of MWPM and the correlated error structures present in real hardware. The lightweight decoder variant enables practical deployment on devices where classical processing is a bottleneck.</p><p>Several limitations should be noted. Our evaluation relies on simulated noise models rather than live hardware measurements. The classifier accuracy of the EPA module, while above 94% in our tests, may degrade for error patterns not well-represented in the training data. Additionally, the overhead of the EPA analysis itself must be considered in total system performance.</p></div>
+              </div>
+
+              <div class="ms-viewer-section">
+                <div class="ms-viewer-section-title">6. Conclusion</div>
+                <div class="ms-viewer-text"><p>We have presented an adaptive quantum error correction decoding framework tailored for NISQ-era processors. The system achieves 23–31% improvement in logical error rates compared to static MWPM decoders across realistic noise models. The lightweight variant enables deployment on resource-constrained control systems with minimal performance degradation. This work provides a practical path toward more effective error correction in the current generation of quantum hardware.</p></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="review-divider"></div>
+
+          <!-- RIGHT: Review Form -->
+          <div class="review-pane" id="reviewFormPane">
+            <div class="review-pane-header">
+              <span class="review-pane-title"><i class="fas fa-pen-to-square"></i> Review Form</span>
+              <span style="font-size:11px;color:var(--text-muted);">Autosave enabled</span>
+            </div>
+            <div class="review-pane-body">
+              <!-- Overall Recommendation -->
+              <div class="review-field">
+                <div class="review-field-label">Overall Recommendation <span class="required">*</span></div>
+                <div class="rating-group" id="ratingGroup">
+                  <button class="rating-btn" onclick="selectRating(this,'accept')"><i class="fas fa-thumbs-up" style="font-size:11px;"></i> Accept</button>
+                  <button class="rating-btn" onclick="selectRating(this,'minor')"><i class="fas fa-pen" style="font-size:11px;"></i> Minor Revision</button>
+                  <button class="rating-btn" onclick="selectRating(this,'major')"><i class="fas fa-rotate" style="font-size:11px;"></i> Major Revision</button>
+                  <button class="rating-btn" onclick="selectRating(this,'reject')"><i class="fas fa-xmark" style="font-size:11px;"></i> Reject</button>
+                </div>
+              </div>
+
+              <!-- Structured Criteria -->
+              <div class="review-field">
+                <div class="review-field-label">Structured Assessment</div>
+                <div class="review-field-hint" style="margin-bottom:12px;">Rate each criterion from 1 (poor) to 5 (excellent)</div>
+
+                <div class="criteria-row">
+                  <span class="criteria-label">Originality and novelty of contribution</span>
+                  <div class="criteria-rating" data-criteria="originality"><span class="criteria-star" onclick="rateCriteria(this,1)">1</span><span class="criteria-star" onclick="rateCriteria(this,2)">2</span><span class="criteria-star" onclick="rateCriteria(this,3)">3</span><span class="criteria-star" onclick="rateCriteria(this,4)">4</span><span class="criteria-star" onclick="rateCriteria(this,5)">5</span></div>
+                </div>
+                <div class="criteria-row">
+                  <span class="criteria-label">Soundness of methodology and analysis</span>
+                  <div class="criteria-rating" data-criteria="methodology"><span class="criteria-star" onclick="rateCriteria(this,1)">1</span><span class="criteria-star" onclick="rateCriteria(this,2)">2</span><span class="criteria-star" onclick="rateCriteria(this,3)">3</span><span class="criteria-star" onclick="rateCriteria(this,4)">4</span><span class="criteria-star" onclick="rateCriteria(this,5)">5</span></div>
+                </div>
+                <div class="criteria-row">
+                  <span class="criteria-label">Clarity of writing and organization</span>
+                  <div class="criteria-rating" data-criteria="clarity"><span class="criteria-star" onclick="rateCriteria(this,1)">1</span><span class="criteria-star" onclick="rateCriteria(this,2)">2</span><span class="criteria-star" onclick="rateCriteria(this,3)">3</span><span class="criteria-star" onclick="rateCriteria(this,4)">4</span><span class="criteria-star" onclick="rateCriteria(this,5)">5</span></div>
+                </div>
+                <div class="criteria-row">
+                  <span class="criteria-label">Adequacy of literature review and citations</span>
+                  <div class="criteria-rating" data-criteria="literature"><span class="criteria-star" onclick="rateCriteria(this,1)">1</span><span class="criteria-star" onclick="rateCriteria(this,2)">2</span><span class="criteria-star" onclick="rateCriteria(this,3)">3</span><span class="criteria-star" onclick="rateCriteria(this,4)">4</span><span class="criteria-star" onclick="rateCriteria(this,5)">5</span></div>
+                </div>
+                <div class="criteria-row">
+                  <span class="criteria-label">Quality and relevance of figures and tables</span>
+                  <div class="criteria-rating" data-criteria="figures"><span class="criteria-star" onclick="rateCriteria(this,1)">1</span><span class="criteria-star" onclick="rateCriteria(this,2)">2</span><span class="criteria-star" onclick="rateCriteria(this,3)">3</span><span class="criteria-star" onclick="rateCriteria(this,4)">4</span><span class="criteria-star" onclick="rateCriteria(this,5)">5</span></div>
+                </div>
+                <div class="criteria-row">
+                  <span class="criteria-label">Reproducibility of reported results</span>
+                  <div class="criteria-rating" data-criteria="reproducibility"><span class="criteria-star" onclick="rateCriteria(this,1)">1</span><span class="criteria-star" onclick="rateCriteria(this,2)">2</span><span class="criteria-star" onclick="rateCriteria(this,3)">3</span><span class="criteria-star" onclick="rateCriteria(this,4)">4</span><span class="criteria-star" onclick="rateCriteria(this,5)">5</span></div>
+                </div>
+              </div>
+
+              <!-- Comments to Author -->
+              <div class="review-field">
+                <div class="review-field-label">Comments to Author <span class="required">*</span></div>
+                <div class="review-field-hint">Provide detailed feedback for the author. Be constructive and specific. These comments will be shared with the author.</div>
+                <textarea class="review-textarea" rows="8" placeholder="Address the strengths and weaknesses of the manuscript. Suggest specific improvements. Reference sections, equations, or figures by number." id="commentsToAuthor">The manuscript presents a well-structured approach to adaptive quantum error correction for NISQ devices. The adaptive decoding concept is timely and the simulation results are promising.
+
+Strengths:
+- The adaptive approach is well-motivated by the gap between theoretical QEC assumptions and NISQ realities
+- Comprehensive evaluation across multiple noise models adds credibility
+- The lightweight decoder variant addresses a practical deployment concern
+
+Areas for improvement:
+- The simulation relies on calibrated noise models rather than live hardware data. The authors should discuss how calibration accuracy affects decoder performance.
+- The EPA classifier accuracy (94%) should be analyzed for failure modes — what happens when misclassification occurs?
+- Comparison with more recent neural network-based decoders (e.g., from 2025-2026 literature) would strengthen the related work section
+- The 40% computational reduction claim for LDE should include memory usage comparisons, not just runtime</textarea>
+              </div>
+
+              <!-- Confidential Comments -->
+              <div class="review-field">
+                <div class="review-field-label"><i class="fas fa-lock" style="color:var(--danger);font-size:12px;"></i> Confidential Comments to Editor</div>
+                <div class="review-field-hint">These comments are visible ONLY to the handling editor. Use this for concerns you do not want shared with the author.</div>
+                <textarea class="review-textarea confidential" rows="4" placeholder="e.g., concerns about data integrity, suspected plagiarism, recommendation caveats..." id="confidentialComments">The overall contribution is solid and suitable for publication after minor revisions. One note: the simulation parameters in Section 3.2 appear to have been selected to favor the adaptive approach. I recommend the editor request the authors include at least one adversarial scenario where the adaptive decoder performs worse than MWPM, to demonstrate honest evaluation.</textarea>
+              </div>
+
+              <!-- Extension link -->
+              <div style="padding:12px 14px;background:var(--bg);border-radius:var(--radius-md);font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:8px;">
+                <i class="fas fa-clock"></i>
+                <span>Need more time? <a href="#" style="color:var(--info);text-decoration:underline;font-weight:600;" onclick="event.preventDefault();openExtensionModal('MS-2026-0878','September 5, 2026')">Request an extension</a> before the deadline.</span>
+              </div>
+            </div>
+
+            <!-- Sticky submit bar -->
+            <div class="review-sticky-bar">
+              <div class="review-save-status"><i class="fas fa-circle-check"></i> Draft saved 2 min ago</div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-secondary btn-sm" onclick="saveDraft()"><i class="fas fa-save"></i> Save Draft</button>
+                <button class="btn btn-primary" id="submitReviewBtn" disabled onclick="submitReview()"><i class="fas fa-paper-plane"></i> Submit Review</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== EXTENSIONS ===== -->
+      <div class="page" id="page-extensions">
+        <div class="page-header">
+          <div class="page-header-row"><div><h1 class="page-title">Extension Requests</h1><p class="page-subtitle">Track and manage deadline extension requests</p></div></div>
+        </div>
+        <div class="card mb-lg">
+          <div class="card-header"><span class="card-title">Active Extension</span><span class="status-badge status-pending"><i class="fas fa-circle"></i> Pending</span></div>
+          <div class="card-body">
+            <div style="display:flex;align-items:center;gap:var(--spacing-lg);margin-bottom:var(--spacing-md);">
+              <div style="width:48px;height:48px;border-radius:var(--radius-md);background:var(--warning-bg);color:var(--warning);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;"><i class="fas fa-clock"></i></div>
+              <div style="flex:1;">
+                <div style="font-size:14px;font-weight:700;">MS-2026-0878</div>
+                <div style="font-size:13px;color:var(--text-secondary);">Quantum Error Correction in Noisy Intermediate-Scale Quantum Processors</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;margin-bottom:var(--spacing-md);">
+              <div style="padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);"><span style="color:var(--text-muted);display:block;font-size:11px;">Original Deadline</span><strong>Sep 5, 2026</strong></div>
+              <div style="padding:10px 14px;background:var(--warning-bg);border-radius:var(--radius-sm);"><span style="color:var(--text-muted);display:block;font-size:11px;">Requested Deadline</span><strong style="color:var(--warning);">Sep 15, 2026</strong></div>
+            </div>
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--spacing-md);padding:12px;background:var(--bg);border-radius:var(--radius-sm);"><strong>Reason:</strong> Concurrent grant deadline on Sep 3 requires full attention. Will be able to dedicate focused time to the review from Sep 6 onward.</div>
+            <div style="font-size:12px;color:var(--text-muted);">Submitted: Aug 25, 2026 — Awaiting editor response</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Past Extensions</span></div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Manuscript</th><th>Original Deadline</th><th>Extended To</th><th>Reason</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="cell-name">MS-2026-0832</td>
+                  <td class="cell-muted">Jul 15, 2026</td>
+                  <td class="cell-muted">Jul 28, 2026</td>
+                  <td class="cell-muted text-truncate" style="max-width:200px;">Conference travel during original review period</td>
+                  <td><span class="status-badge status-active"><i class="fas fa-check"></i> Approved & Completed</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PROFILE ===== -->
+      <div class="page" id="page-profile">
+        <div class="page-header">
+          <div class="page-header-row"><div><h1 class="page-title">My Profile</h1><p class="page-subtitle">Your reviewer account and review history</p></div><button class="btn btn-primary btn-sm" onclick="showToast('Profile updated','fa-check')"><i class="fas fa-save"></i> Save Changes</button></div>
+        </div>
+        <div class="profile-header-card">
+          <div class="profile-avatar-lg">KT</div>
+          <div class="profile-header-info">
+            <div class="profile-header-name">Dr. Kenji Tanaka</div>
+            <div class="profile-header-email">k.tanaka@tokyo-u.ac.jp</div>
+            <div class="profile-header-meta"><span><i class="fas fa-magnifying-glass"></i> Reviewer</span><span><i class="fas fa-calendar"></i> Joined Apr 2025</span><span><i class="fas fa-clock"></i> Last login: Today, 07:45</span></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Account Information</span><button class="btn btn-ghost btn-sm" onclick="showToast('Edit mode enabled','fa-pen')"><i class="fas fa-pen"></i> Edit</button></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" value="Dr. Kenji Tanaka"></div>
+              <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" value="k.tanaka@tokyo-u.ac.jp"><div class="form-hint">Managed via Google OAuth</div></div>
+              <div class="form-group"><label class="form-label">Organization</label><input type="text" class="form-input" value="University of Tokyo"></div>
+              <div class="form-group"><label class="form-label">Expertise Areas</label><input type="text" class="form-input" value="Quantum Computing, Error Correction, Cryptography, Information Theory"></div>
+              <div class="form-group"><label class="form-label">ORCID</label><input type="text" class="form-input" value="0000-0003-1234-5678" placeholder="0000-0000-0000-0000"></div>
+            </div>
+          </div>
+          <div>
+            <div class="card mb-md">
+              <div class="card-header"><span class="card-title">Review Statistics</span></div>
+              <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--primary);">12</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Reviews Completed</div></div>
+                  <div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--warning);">18d</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Avg Turnaround</div></div>
+                  <div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--info);">83%</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Accept Rate</div></div>
+                  <div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--danger);">1</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Declined</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">Recommendation Breakdown</span></div>
+              <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;"><span>Accept</span><div style="display:flex;align-items:center;gap:8px;width:60%;"><div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;"><div style="width:42%;height:100%;background:var(--success);border-radius:4px;"></div></div><strong>5</strong></div></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;"><span>Minor Revision</span><div style="display:flex;align-items:center;gap:8px;width:60%;"><div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;"><div style="width:33%;height:100%;background:var(--info);border-radius:4px;"></div></div><strong>4</strong></div></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;"><span>Major Revision</span><div style="display:flex;align-items:center;gap:8px;width:60%;"><div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;"><div style="width:17%;height:100%;background:var(--warning);border-radius:4px;"></div></div><strong>2</strong></div></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;"><span>Reject</span><div style="display:flex;align-items:center;gap:8px;width:60%;"><div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;"><div style="width:8%;height:100%;background:var(--danger);border-radius:4px;"></div></div><strong>1</strong></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Decline Modal -->
+<div class="modal-overlay" id="declineModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Decline Review Invitation</span><button class="modal-close" onclick="closeModal('declineModal')"><i class="fas fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="alert-banner alert-info"><i class="fas fa-info-circle"></i><div>Declining helps the editor find an alternative reviewer quickly. Please provide a brief reason.</div></div>
+      <div class="form-group"><label class="form-label">Reason for Declining <span class="required">*</span></label>
+        <select class="form-select-full" style="margin-bottom:8px;" id="declineReason">
+          <option value="">Select reason...</option>
+          <option>Conflict of interest</option>
+          <option>Insufficient expertise in this area</option>
+          <option>Too many current review commitments</option>
+          <option>Unable to meet the deadline</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Additional Comments (optional)</label><textarea class="form-textarea" rows="3" placeholder="Any additional context..." id="declineComments"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('declineModal')">Cancel</button><button class="btn btn-danger" onclick="confirmDecline()"><i class="fas fa-xmark"></i> Decline Invitation</button></div>
+  </div>
+</div>
+
+<!-- Extension Modal -->
+<div class="modal-overlay" id="extensionModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Request Deadline Extension</span><button class="modal-close" onclick="closeModal('extensionModal')"><i class="fas fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="alert-banner alert-warning"><i class="fas fa-clock"></i><div>Extension requests require editor approval. Submit your request as early as possible — ideally before the deadline. The editor may offer an alternative date.</div></div>
+      <div style="padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:13px;margin-bottom:var(--spacing-md);"><strong>Current deadline:</strong> <span id="extCurrentDeadline">—</span></div>
+      <div class="form-group"><label class="form-label">Requested New Deadline <span class="required">*</span></label><input type="date" class="form-input" id="extNewDate"></div>
+      <div class="form-group"><label class="form-label">Reason for Extension <span class="required">*</span></label><textarea class="form-textarea" rows="4" placeholder="Explain why you need additional time..." id="extReason"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('extensionModal')">Cancel</button><button class="btn btn-warning" onclick="confirmExtension()"><i class="fas fa-clock"></i> Submit Request</button></div>
+  </div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Submit Final Review</span><button class="modal-close" onclick="closeModal('submitModal')"><i class="fas fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="alert-banner alert-danger"><i class="fas fa-triangle-exclamation"></i><div><strong>This action cannot be undone.</strong> Once submitted, your review will be sent to the editor and cannot be edited. Please verify all fields are complete and accurate.</div></div>
+      <div style="padding:12px 16px;background:var(--bg);border-radius:var(--radius-md);font-size:13px;">
+        <div style="margin-bottom:6px;"><strong>Manuscript:</strong> MS-2026-0878</div>
+        <div style="margin-bottom:6px;"><strong>Recommendation:</strong> <span id="submitRecLabel">—</span></div>
+        <div style="margin-bottom:6px;"><strong>Criteria rated:</strong> <span id="submitCriteriaCount">0</span>/6</div>
+        <div><strong>Comments to author:</strong> <span id="submitCommentsLen">0</span> characters</div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('submitModal')">Go Back</button><button class="btn btn-primary" onclick="confirmSubmit()"><i class="fas fa-paper-plane"></i> Confirm Submission</button></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  let selectedRating = null;
+  let declinedMsId = null;
+
+  function navigateTo(pageId, navEl) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    if (navEl) navEl.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const t = document.getElementById('page-' + pageId);
+    if (t) t.classList.add('active');
+    const map = { dashboard:'Dashboard', invitations:'Invitations', 'my-reviews':'My Reviews', 'review-workspace':'Review Workspace', extensions:'Extensions', profile:'Profile' };
+    document.getElementById('breadcrumb-current').textContent = map[pageId] || pageId;
+    if (pageId === 'review-workspace') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelector('[data-page=my-reviews]').classList.add('active');
+    }
+  }
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+  // ===== INVITATION RESPONSES =====
+  function updateInvBtns() {
+    const c1 = document.getElementById('conflict1');
+    const c2 = document.getElementById('conflict2');
+    if (c1) document.getElementById('inv1Accept').disabled = !c1.checked;
+    if (c2) document.getElementById('inv2Accept').disabled = !c2.checked;
+  }
+
+  function respondInvitation(msId, action) {
+    showToast(`Invitation for ${msId}: ${action === 'accept' ? 'Accepted' : 'Declined'}`, 'fa-check-circle');
+    setTimeout(() => navigateTo('my-reviews', document.querySelector('[data-page=my-reviews]')), 600);
+  }
+
+  function openDeclineModal(msId) {
+    declinedMsId = msId;
+    document.getElementById('declineReason').value = '';
+    document.getElementById('declineComments').value = '';
+    document.getElementById('declineModal').classList.add('open');
+  }
+  function confirmDecline() {
+    const reason = document.getElementById('declineReason').value;
+    if (!reason) { showToast('Please select a reason for declining', 'fa-triangle-exclamation'); return; }
+    closeModal('declineModal');
+    respondInvitation(declinedMsId, 'decline');
+  }
+
+  // ===== EXTENSION =====
+  function openExtensionModal(msId, currentDeadline) {
+    document.getElementById('extCurrentDeadline').textContent = currentDeadline;
+    document.getElementById('extNewDate').value = '';
+    document.getElementById('extReason').value = '';
+    document.getElementById('extensionModal').classList.add('open');
+  }
+  function confirmExtension() {
+    const date = document.getElementById('extNewDate').value;
+    const reason = document.getElementById('extReason').value;
+    if (!date || !reason.trim()) { showToast('Please fill in all required fields', 'fa-triangle-exclamation'); return; }
+    closeModal('extensionModal');
+    showToast('Extension request submitted — awaiting editor approval', 'fa-clock');
+  }
+
+  // ===== REVIEW WORKSPACE =====
+  function openReviewWorkspace() {
+    navigateTo('review-workspace', null);
+  }
+
+  function selectRating(btn, type) {
+    document.querySelectorAll('#ratingGroup .rating-btn').forEach(b => b.className = 'rating-btn');
+    btn.classList.add('selected-' + type);
+    selectedRating = type;
+    validateReviewForm();
+  }
+
+  function rateCriteria(star, value) {
+    const group = star.parentElement;
+    group.querySelectorAll('.criteria-star').forEach((s, i) => {
+      s.classList.toggle('filled', i < value);
+    });
+    validateReviewForm();
+  }
+
+  function validateReviewForm() {
+    const hasRating = selectedRating !== null;
+    const ratings = document.querySelectorAll('.criteria-rating');
+    let filledCriteria = 0;
+    ratings.forEach(g => { if (g.querySelector('.criteria-star.filled')) filledCriteria++; });
+    const comments = (document.getElementById('commentsToAuthor')?.value || '').trim().length;
+    document.getElementById('submitReviewBtn').disabled = !(hasRating && filledCriteria >= 4 && comments > 50);
+  }
+
+  function saveDraft() {
+    showToast('Draft saved successfully', 'fa-save');
+    document.querySelector('.review-save-status').innerHTML = '<i class="fas fa-circle-check"></i> Draft saved just now';
+  }
+
+  function submitReview() {
+    const labels = { accept:'Accept', minor:'Minor Revision', major:'Major Revision', reject:'Reject' };
+    document.getElementById('submitRecLabel').textContent = labels[selectedRating] || '—';
+    const ratings = document.querySelectorAll('.criteria-rating');
+    let filled = 0;
+    ratings.forEach(g => { if (g.querySelector('.criteria-star.filled')) filled++; });
+    document.getElementById('submitCriteriaCount').textContent = filled;
+    document.getElementById('submitCommentsLen').textContent = (document.getElementById('commentsToAuthor')?.value || '').trim().length;
+    document.getElementById('submitModal').classList.add('open');
+  }
+
+  function confirmSubmit() {
+    closeModal('submitModal');
+    showToast('Review submitted successfully for MS-2026-0878', 'fa-check-circle');
+    setTimeout(() => navigateTo('my-reviews', document.querySelector('[data-page=my-reviews]')), 800);
+  }
+
+  function toggleManuscriptPane() {
+    const pane = document.getElementById('manuscriptPane');
+    const divider = document.querySelector('.review-divider');
+    if (pane.style.display === 'none') {
+      pane.style.display = '';
+      divider.style.display = '';
+    } else {
+      pane.style.display = 'none';
+      divider.style.display = 'none';
+    }
+  }
+
+  // Observe textarea changes for validation
+  document.addEventListener('input', function(e) {
+    if (e.target.id === 'commentsToAuthor') validateReviewForm();
+  });
+
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function showToast(message, icon) {
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<i class="fas ${icon||'fa-check'}"></i> ${message}`;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3100);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+/* ─── Reset ───────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+html {
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink-body);
+  background-color: var(--color-vellum);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-ink-navy);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-gold-dark);
+}
+
+input, textarea, select, button {
+  font: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ─── Public layout ───────────────────────────────────────────────────────── */
+.public-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-vellum);
+}
+
+/* The header/footer/nav styles are now fully inline in PublicLayout.jsx  */
+/* These classes remain for <main> only so Outlet-rendered pages don't    */
+/* need to repeat the padding constraint.                                 */
+
+/* ─── Dashboard layout (unchanged) ───────────────────────────────────────── */
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.dashboard-sidebar {
+  width: 240px;
+  background: var(--color-ink-navy);
+  color: var(--color-surface);
+  padding: var(--space-3);
+  border-right: 1px solid rgba(196, 162, 76, 0.2);
+}
+
+.sidebar-brand {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid rgba(196, 162, 76, 0.2);
+  margin-bottom: var(--space-3);
+}
+
+.sidebar-nav a {
+  display: block;
+  color: var(--color-surface);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-nav a:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-vellum);
+}
+
+.dashboard-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-ink-navy);
+  color: var(--color-surface);
+  border-bottom: 2px solid var(--color-gold);
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: var(--space-4);
+}
+
+@media (max-width: 720px) {
+  .dashboard-layout {
+    display: block;
+  }
+  .dashboard-sidebar {
+    width: 100%;
+    padding: var(--space-2);
+  }
+  .sidebar-brand {
+    margin-bottom: var(--space-2);
+  }
+  .sidebar-nav {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .sidebar-nav a {
+    flex: 0 0 auto;
+  }
+  .dashboard-topbar {
+    padding: var(--space-2);
+  }
+  .signed-in-text {
+    display: none;
+  }
+  .dashboard-content {
+    padding: var(--space-3);
+  }
+}
+
+/* ─── Login (split OAuth screen) ─────────────────────────────────────────── */
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  background: var(--color-surface);
+}
+
+.login-illustration {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+.login-illustration-logo {
+  height: clamp(36px, 6vw, 52px);
+  width: auto;
+  mix-blend-mode: multiply;
+}
+
+.login-illustration svg {
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+}
+
+.login-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-ink-navy);
+  overflow: hidden;
+  padding: var(--space-4);
+}
+
+.login-panel-ring {
+  position: absolute;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.login-panel-ring--outer {
+  width: 340px;
+  height: 340px;
+  right: -140px;
+  bottom: -160px;
+}
+
+.login-panel-ring--inner {
+  width: 240px;
+  height: 240px;
+  right: -90px;
+  bottom: -110px;
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+  padding: var(--space-5) var(--space-4);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card-title {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  color: var(--color-ink-navy);
+  margin-bottom: var(--space-2);
+}
+
+.login-card-subtitle {
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  color: var(--color-ink-muted);
+  margin-bottom: var(--space-4);
+}
+
+.login-google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.9rem 1.5rem;
+  background: var(--color-surface);
+  color: var(--color-ink-body);
+  border: 1.5px solid var(--color-rule);
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s;
+}
+
+.login-google-btn:hover {
+  border-color: var(--color-gold);
+  box-shadow: var(--shadow-card);
+  color: var(--color-ink-body);
+}
+
+.login-google-btn:active {
+  transform: scale(0.99);
+}
+
+.login-google-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.login-footer {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--color-ink-muted);
+  margin-top: var(--space-4);
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+  .login-illustration {
+    display: none;
+  }
+  .login-panel {
+    min-height: 100vh;
+    padding: var(--space-3);
+  }
+}
+
+@media (max-width: 420px) {
+  .login-card {
+    padding: var(--space-4) var(--space-3);
+    border-radius: var(--radius-md);
+  }
+  .login-card-title {
+    font-size: 1.6rem;
+  }
+  .login-panel-ring--outer {
+    width: 240px;
+    height: 240px;
+    right: -100px;
+    bottom: -120px;
+  }
+  .login-panel-ring--inner {
+    width: 170px;
+    height: 170px;
+    right: -65px;
+    bottom: -80px;
+  }
+}

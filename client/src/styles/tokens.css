@@ -1,0 +1,113 @@
+:root {
+  /* ═══════════════════════════════════════════════════════
+     PUBLIC SITE — Asgard Publications colour palette
+     ═══════════════════════════════════════════════════════ */
+  --color-ink-deep:        #071228;
+  --color-ink-navy:        #0B1B3A;
+  --color-ink-body:        #1C2233;
+  --color-ink-subtle:      #3A4157;
+  --color-ink-muted:       #6B7288;
+  --color-ink-light:       #C3CBDC;
+  --color-ink-ghost:       #C9CEDC;
+
+  --color-gold:            #C4A24C;
+  --color-gold-light:      #E3CB86;
+  --color-gold-dark:       #9A7B23;
+
+  --color-surface:         #FFFFFF;
+  --color-vellum:          #FAF8F4;
+  --color-vellum-mid:      #FDFCF9;
+  --color-rule:            #E6E1D6;
+  --color-rule-light:      #EFEBE1;
+
+  /* ═══════════════════════════════════════════════════════
+     DASHBOARD / ADMIN UI — Sample UI design system
+     (primary #1B2A4A, accent #C4922E — from sample HTML)
+     ═══════════════════════════════════════════════════════ */
+  --dash-primary:          #1B2A4A;
+  --dash-primary-light:    #2A3F6B;
+  --dash-primary-dark:     #0F1A30;
+
+  --dash-accent:           #C4922E;
+  --dash-accent-light:     #D9A94A;
+
+  --dash-bg:               #F4F5F7;
+  --dash-surface:          #FFFFFF;
+  --dash-surface-border:   #E2E4E8;
+  --dash-surface-hover:    #F9FAFB;
+
+  --dash-text-primary:     #1A1A2E;
+  --dash-text-secondary:   #5A5E6B;
+  --dash-text-muted:       #8B8F9A;
+  --dash-text-inverse:     #FFFFFF;
+
+  --dash-success:          #2B7A4B;
+  --dash-success-bg:       #E8F5EC;
+  --dash-warning:          #C48B1E;
+  --dash-warning-bg:       #FEF7E8;
+  --dash-danger:           #B83333;
+  --dash-danger-bg:        #FCECEC;
+  --dash-info:             #2E6B9E;
+  --dash-info-bg:          #EBF4FB;
+
+  --dash-sidebar-w:        256px;
+  --dash-sidebar-collapsed: 64px;
+  --dash-header-h:         64px;
+
+  --dash-radius-sm:        4px;
+  --dash-radius-md:        8px;
+  --dash-radius-lg:        12px;
+
+  --dash-shadow-sm:        0 1px 2px rgba(27,42,74,0.06);
+  --dash-shadow-md:        0 2px 8px rgba(27,42,74,0.08);
+  --dash-shadow-lg:        0 8px 24px rgba(27,42,74,0.12);
+
+  --dash-transition-fast:  150ms ease;
+  --dash-transition-base:  250ms ease;
+
+  /* ═══════════════════════════════════════════════════════
+     LEGACY ALIASES — kept so existing dashboard pages compile
+     ═══════════════════════════════════════════════════════ */
+  --color-ink-black:       var(--color-ink-body);
+  --color-text-muted:      var(--color-ink-muted);
+  --color-citation-gold:   var(--color-gold);
+  --color-citation-gold-dark: var(--color-gold-dark);
+  --color-rule-grey:       var(--color-rule);
+  --color-surface-sunken:  var(--color-vellum);
+  --color-archive-green:   #2F4A3E;
+  --color-danger:          var(--dash-danger);
+  --color-warning:         var(--dash-warning);
+  --color-success:         var(--dash-success);
+
+  /* ═══════════════════════════════════════════════════════
+     TYPOGRAPHY
+     ═══════════════════════════════════════════════════════ */
+  --font-display:  'Cormorant Garamond', Georgia, serif;
+  --font-body:     Spectral, Georgia, serif;
+  --font-ui:       'DM Sans', system-ui, sans-serif;
+  --font-heading:  'Playfair Display', Georgia, serif;
+  --font-mono:     ui-monospace, Menlo, monospace;
+
+  /* ═══════════════════════════════════════════════════════
+     SPACING & LAYOUT
+     ═══════════════════════════════════════════════════════ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+  --space-6: 64px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --shadow-card:     0 1px 3px rgba(11,27,58,0.08);
+  --shadow-elevated: 0 2px 12px rgba(11,27,58,0.09);
+  --shadow-modal:    0 20px 60px rgba(11,27,58,0.25);
+
+  --layout-max:        1240px;
+  --layout-pad:        clamp(18px, 4vw, 32px);
+  --gradient-rule:     linear-gradient(90deg, #0B1B3A 0%, #C4A24C 50%, #0B1B3A 100%);
+  --hatch:             repeating-linear-gradient(135deg, rgba(196,162,76,0.07) 0 2px, transparent 2px 10px);
+}

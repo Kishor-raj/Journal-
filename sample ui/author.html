@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Author Dashboard — Journal Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --primary:#1B2A4A;--primary-light:#2A3F6B;--primary-dark:#0F1A30;
+  --secondary:#3D7A8A;--secondary-light:#5A9DAD;
+  --accent:#C4922E;--accent-light:#D9A94A;
+  --bg:#F4F5F7;--surface:#FFFFFF;--surface-border:#E2E4E8;--surface-hover:#F9FAFB;
+  --text-primary:#1A1A2E;--text-secondary:#5A5E6B;--text-muted:#8B8F9A;--text-inverse:#FFFFFF;
+  --success:#2B7A4B;--success-bg:#E8F5EC;--success-border:#B8DCC8;
+  --warning:#C48B1E;--warning-bg:#FEF7E8;--warning-border:#F0DCA0;
+  --danger:#B83333;--danger-bg:#FCECEC;--danger-border:#E8B8B8;
+  --info:#2E6B9E;--info-bg:#EBF4FB;--info-border:#A8CCE8;
+  --purple:#7C3AED;--purple-bg:#F3E8FF;--purple-border:#D8B4FE;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:12px;--radius-xl:16px;
+  --shadow-sm:0 1px 2px rgba(27,42,74,0.06);--shadow-md:0 2px 8px rgba(27,42,74,0.08);--shadow-lg:0 8px 24px rgba(27,42,74,0.12);--shadow-xl:0 16px 48px rgba(27,42,74,0.16);
+  --sidebar-width:256px;--sidebar-collapsed:64px;--header-height:64px;
+  --spacing-xs:4px;--spacing-sm:8px;--spacing-md:16px;--spacing-lg:24px;--spacing-xl:32px;--spacing-2xl:48px;
+  --transition-fast:150ms ease;--transition-base:250ms ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text-primary);line-height:1.6;overflow:hidden;height:100vh}
+.app-shell{display:flex;height:100vh;overflow:hidden}
+
+.sidebar{width:var(--sidebar-width);min-width:var(--sidebar-width);background:var(--primary);display:flex;flex-direction:column;transition:width var(--transition-base),min-width var(--transition-base);z-index:100;overflow:hidden}
+.sidebar.collapsed{width:var(--sidebar-collapsed);min-width:var(--sidebar-collapsed)}
+.sidebar-brand{height:var(--header-height);display:flex;align-items:center;padding:0 var(--spacing-md);border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;gap:var(--spacing-sm);overflow:hidden;white-space:nowrap}
+.sidebar-brand-icon{width:32px;height:32px;min-width:32px;background:var(--accent);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:800;font-size:16px;color:var(--primary-dark)}
+.sidebar-brand-text{display:flex;flex-direction:column;overflow:hidden;transition:opacity var(--transition-fast)}
+.sidebar.collapsed .sidebar-brand-text{opacity:0;pointer-events:none}
+.sidebar-brand-title{font-size:13px;font-weight:700;color:var(--text-inverse);letter-spacing:0.02em;line-height:1.2}
+.sidebar-brand-sub{font-size:10px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.08em;font-weight:500}
+.sidebar-role-badge{margin:var(--spacing-md) var(--spacing-md) 0;padding:6px 12px;background:rgba(255,255,255,0.08);border-radius:var(--radius-sm);font-size:11px;font-weight:600;color:var(--success);text-transform:uppercase;letter-spacing:0.06em;display:flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap;transition:opacity var(--transition-fast)}
+.sidebar.collapsed .sidebar-role-badge{opacity:0;height:0;margin:0;padding:0}
+.sidebar-nav{flex:1;padding:var(--spacing-md) var(--spacing-sm);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent}
+.sidebar-nav::-webkit-scrollbar{width:4px}
+.sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
+.nav-section-label{font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;padding:var(--spacing-md) var(--spacing-sm) var(--spacing-xs);overflow:hidden;white-space:nowrap;transition:opacity var(--transition-fast)}
+.sidebar.collapsed .nav-section-label{opacity:0;height:0;padding:0;margin:0}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-md);color:rgba(255,255,255,0.6);font-size:14px;font-weight:500;cursor:pointer;transition:all var(--transition-fast);text-decoration:none;position:relative;overflow:hidden;white-space:nowrap;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9)}
+.nav-item.active{background:rgba(255,255,255,0.12);color:var(--text-inverse)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-item i{width:20px;min-width:20px;text-align:center;font-size:15px}
+.nav-item-text{overflow:hidden;transition:opacity var(--transition-fast)}
+.sidebar.collapsed .nav-item-text{opacity:0;pointer-events:none}
+.nav-item .badge-count{margin-left:auto;background:var(--danger);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center;transition:opacity var(--transition-fast)}
+.nav-item .badge-warning{background:var(--warning);color:var(--primary-dark)}
+.sidebar.collapsed .badge-count{opacity:0}
+.sidebar-footer{padding:var(--spacing-md);border-top:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+.sidebar-collapse-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-family:inherit;transition:all var(--transition-fast);overflow:hidden;white-space:nowrap}
+.sidebar-collapse-btn:hover{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.8)}
+.sidebar-collapse-btn i{transition:transform var(--transition-base)}
+.sidebar.collapsed .sidebar-collapse-btn i{transform:rotate(180deg)}
+.sidebar.collapsed .collapse-text{opacity:0;display:none}
+@keyframes sidebarPulse{0%,100%{box-shadow:inset 0 0 60px rgba(43,122,75,0.02)}50%{box-shadow:inset 0 0 60px rgba(43,122,75,0.05)}}
+.sidebar{animation:sidebarPulse 8s ease-in-out infinite}
+
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.app-header{height:var(--header-height);min-height:var(--header-height);background:var(--surface);border-bottom:1px solid var(--surface-border);display:flex;align-items:center;padding:0 var(--spacing-lg);gap:var(--spacing-md);z-index:50}
+.header-breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);min-width:0}
+.header-breadcrumb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-breadcrumb .bc-sep{color:var(--surface-border);font-size:11px}
+.header-breadcrumb .bc-current{color:var(--text-primary);font-weight:600}
+.header-spacer{flex:1}
+.header-search{position:relative;width:280px}
+.header-search input{width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--bg);font-family:inherit;font-size:13px;color:var(--text-primary);outline:none;transition:all var(--transition-fast)}
+.header-search input::placeholder{color:var(--text-muted)}
+.header-search input:focus{border-color:var(--secondary);background:var(--surface);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+.header-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none}
+.header-actions{display:flex;align-items:center;gap:4px}
+.header-icon-btn{width:36px;height:36px;border:none;background:transparent;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--text-secondary);cursor:pointer;position:relative;transition:all var(--transition-fast);font-size:16px}
+.header-icon-btn:hover{background:var(--bg);color:var(--text-primary)}
+.header-icon-btn .notif-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;background:var(--danger);border-radius:50%;border:2px solid var(--surface)}
+.header-profile{display:flex;align-items:center;gap:10px;margin-left:var(--spacing-sm);padding:4px 8px 4px 4px;border-radius:var(--radius-md);cursor:pointer;transition:background var(--transition-fast)}
+.header-profile:hover{background:var(--bg)}
+.header-avatar{width:32px;height:32px;border-radius:50%;background:var(--success);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.header-profile-info{display:flex;flex-direction:column}
+.header-profile-name{font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.2}
+.header-profile-role{font-size:11px;color:var(--text-muted);line-height:1.2}
+
+.content-area{flex:1;overflow-y:auto;padding:var(--spacing-lg);scrollbar-width:thin;scrollbar-color:var(--surface-border) transparent}
+.content-area::-webkit-scrollbar{width:6px}
+.content-area::-webkit-scrollbar-thumb{background:var(--surface-border);border-radius:3px}
+.page{display:none;max-width:1280px;animation:pageIn 300ms ease}
+.page.active{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:var(--spacing-lg)}
+.page-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--spacing-md);margin-bottom:var(--spacing-sm)}
+.page-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--text-primary);line-height:1.2}
+.page-subtitle{font-size:14px;color:var(--text-secondary);margin-top:4px}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:none;border-radius:var(--radius-md);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all var(--transition-fast);white-space:nowrap;text-decoration:none;line-height:1.3}
+.btn i{font-size:13px}
+.btn-primary{background:var(--primary);color:var(--text-inverse)}
+.btn-primary:hover{background:var(--primary-light);box-shadow:var(--shadow-md)}
+.btn-secondary{background:var(--surface);color:var(--text-primary);border:1px solid var(--surface-border)}
+.btn-secondary:hover{background:var(--surface-hover);border-color:var(--text-muted)}
+.btn-ghost{background:transparent;color:var(--text-secondary);padding:8px 12px}
+.btn-ghost:hover{background:var(--bg);color:var(--text-primary)}
+.btn-danger{background:var(--danger);color:white}
+.btn-danger:hover{background:#A02B2B}
+.btn-success{background:var(--success);color:white}
+.btn-success:hover{background:#236B3F}
+.btn-warning{background:var(--warning);color:var(--primary-dark)}
+.btn-warning:hover{background:#B07E18}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-sm i{font-size:11px}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center}
+.btn:disabled{opacity:0.5;cursor:not-allowed;pointer-events:none}
+.btn-lg{padding:12px 28px;font-size:15px}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--spacing-md);margin-bottom:var(--spacing-lg)}
+.kpi-card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius-lg);padding:var(--spacing-lg);transition:all var(--transition-fast);position:relative;overflow:hidden;cursor:default}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.kpi-draft::after{background:var(--text-muted)}
+.kpi-card.kpi-review::after{background:var(--info)}
+.kpi-card.kpi-revision::after{background:var(--warning)}
+.kpi-card.kpi-accepted::after{background:var(--success)}
+.kpi-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-md)}
+.kpi-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em}
+.kpi-icon{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:15px}
+.kpi-draft .kpi-icon{background:var(--bg);color:var(--text-muted)}
+.kpi-review .kpi-icon{background:var(--info-bg);color:var(--info)}
+.kpi-revision .kpi-icon{background:var(--warning-bg);color:var(--warning)}
+.kpi-accepted .kpi-icon{background:var(--success-bg);color:var(--success)}
+.kpi-value{font-size:32px;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px}
+.kpi-trend{font-size:12px;color:var(--text-muted)}
+
+.card{background:var(--surface);border:1px solid var(--surface-border);border-radius:var(--radius-lg);overflow:hidden}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-md) var(--spacing-lg);border-bottom:1px solid var(--surface-border)}
+.card-title{font-size:15px;font-weight:700;color:var(--text-primary)}
+.card-body{padding:var(--spacing-lg)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-lg);margin-bottom:var(--spacing-lg)}
+
+.table-wrapper{overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table thead th{text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;background:var(--bg);border-bottom:1px solid var(--surface-border);white-space:nowrap}
+.data-table tbody tr{border-bottom:1px solid var(--surface-border);transition:background var(--transition-fast);cursor:pointer}
+.data-table tbody tr:last-child{border-bottom:none}
+.data-table tbody tr:hover{background:var(--surface-hover)}
+.data-table tbody td{padding:12px 16px;color:var(--text-primary);vertical-align:middle}
+.data-table .cell-muted{color:var(--text-secondary)}
+.data-table .cell-name{font-weight:600;color:var(--text-primary)}
+.data-table .cell-sub{font-size:12px;color:var(--text-muted)}
+
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.status-badge i{font-size:10px}
+.status-active{background:var(--success-bg);color:var(--success);border:1px solid var(--success-border)}
+.status-locked{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-border)}
+.status-pending{background:var(--warning-bg);color:var(--warning);border:1px solid var(--warning-border)}
+.status-info{background:var(--info-bg);color:var(--info);border:1px solid var(--info-border)}
+.status-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+.status-disabled{background:var(--bg);color:var(--text-muted);border:1px solid var(--surface-border)}
+
+.alert-banner{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:var(--radius-md);font-size:13px;margin-bottom:var(--spacing-md)}
+.alert-banner i{margin-top:2px;font-size:15px}
+.alert-warning{background:var(--warning-bg);border:1px solid var(--warning-border);color:#7A5A10}
+.alert-info{background:var(--info-bg);border:1px solid var(--info-border);color:#1A4A6E}
+.alert-danger{background:var(--danger-bg);border:1px solid var(--danger-border);color:#7A1A1A}
+.alert-success{background:var(--success-bg);border:1px solid var(--success-border);color:#1A5A30}
+
+.form-group{margin-bottom:var(--spacing-lg)}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+.form-label .required{color:var(--danger);margin-left:2px}
+.form-input,.form-textarea,.form-select-full{width:100%;padding:9px 12px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--surface);font-family:inherit;font-size:14px;color:var(--text-primary);outline:none;transition:all var(--transition-fast)}
+.form-textarea{min-height:100px;resize:vertical}
+.form-input:focus,.form-textarea:focus,.form-select-full:focus{border-color:var(--secondary);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+.form-hint{font-size:12px;color:var(--text-muted);margin-top:4px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+
+.filter-bar{display:flex;align-items:center;gap:var(--spacing-sm);margin-bottom:var(--spacing-md);flex-wrap:wrap}
+.filter-search{position:relative;flex:1;min-width:200px;max-width:320px}
+.filter-search input{width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--surface);font-family:inherit;font-size:13px;color:var(--text-primary);outline:none;transition:all var(--transition-fast)}
+.filter-search input:focus{border-color:var(--secondary);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+.filter-search i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px}
+.filter-select{height:36px;padding:0 32px 0 12px;border:1px solid var(--surface-border);border-radius:var(--radius-md);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238B8F9A' d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E") right 10px center no-repeat;font-family:inherit;font-size:13px;color:var(--text-primary);outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;transition:all var(--transition-fast)}
+.filter-select:focus{border-color:var(--secondary);box-shadow:0 0 0 3px rgba(61,122,138,0.12)}
+
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-md) var(--spacing-lg);border-top:1px solid var(--surface-border);font-size:13px;color:var(--text-secondary)}
+.pagination-pages{display:flex;align-items:center;gap:4px}
+.pagination-btn{width:32px;height:32px;border:1px solid var(--surface-border);background:var(--surface);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:13px;font-family:inherit;color:var(--text-secondary);cursor:pointer;transition:all var(--transition-fast)}
+.pagination-btn:hover{border-color:var(--primary);color:var(--primary)}
+.pagination-btn.active{background:var(--primary);border-color:var(--primary);color:white}
+.pagination-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+.activity-list{list-style:none}
+.activity-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--surface-border)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:8px;height:8px;min-width:8px;border-radius:50%;margin-top:7px}
+.activity-dot.dot-info{background:var(--info)}
+.activity-dot.dot-success{background:var(--success)}
+.activity-dot.dot-warning{background:var(--warning)}
+.activity-dot.dot-danger{background:var(--danger)}
+.activity-content{flex:1;min-width:0}
+.activity-text{font-size:13px;color:var(--text-primary);line-height:1.5}
+.activity-text strong{font-weight:600}
+.activity-time{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+/* Status timeline */
+.st-timeline{display:flex;align-items:center;padding:16px 20px;background:var(--bg);border-radius:var(--radius-lg);margin-bottom:var(--spacing-lg);overflow-x:auto;gap:0}
+.st-step{display:flex;align-items:center;gap:0;flex-shrink:0}
+.st-node{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:72px}
+.st-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid var(--surface-border);background:var(--surface);color:var(--text-muted);transition:all var(--transition-fast)}
+.st-circle.completed{background:var(--success);border-color:var(--success);color:white}
+.st-circle.current{background:var(--info);border-color:var(--info);color:white;box-shadow:0 0 0 4px rgba(46,107,158,0.2)}
+.st-circle.pending{background:var(--surface);border-color:var(--surface-border);color:var(--text-muted)}
+.st-circle.rejected{background:var(--danger);border-color:var(--danger);color:white}
+.st-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.03em;text-align:center}
+.st-label.active{color:var(--info)}
+.st-label.done{color:var(--success)}
+.st-label.rejected{color:var(--danger)}
+.st-connector{width:28px;height:2px;background:var(--surface-border);flex-shrink:0;margin-bottom:18px}
+.st-connector.done{background:var(--success)}
+
+/* Wizard */
+.wizard-progress{display:flex;align-items:center;gap:0;margin-bottom:var(--spacing-xl);position:relative}
+.wizard-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+.wizard-num{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid var(--surface-border);background:var(--surface);color:var(--text-muted);transition:all var(--transition-fast)}
+.wizard-num.active{background:var(--info);border-color:var(--info);color:white;box-shadow:0 0 0 4px rgba(46,107,158,0.15)}
+.wizard-num.done{background:var(--success);border-color:var(--success);color:white}
+.wizard-step-label{font-size:11px;font-weight:600;color:var(--text-muted);text-align:center}
+.wizard-step-label.active{color:var(--info)}
+.wizard-step-label.done{color:var(--success)}
+.wizard-line{position:absolute;top:18px;left:calc(50% + 18px);right:calc(-50% + 18px);height:2px;background:var(--surface-border);z-index:0}
+.wizard-line.done{background:var(--success)}
+.wizard-content{min-height:400px}
+
+/* File upload area */
+.upload-zone{border:2px dashed var(--surface-border);border-radius:var(--radius-lg);padding:var(--spacing-2xl);text-align:center;cursor:pointer;transition:all var(--transition-fast);background:var(--bg)}
+.upload-zone:hover{border-color:var(--secondary);background:var(--info-bg)}
+.upload-zone.has-file{border-color:var(--success);border-style:solid;background:var(--success-bg)}
+.upload-icon{font-size:36px;color:var(--text-muted);margin-bottom:var(--spacing-md)}
+.upload-text{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:4px}
+.upload-hint{font-size:12px;color:var(--text-muted)}
+
+.file-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--surface-border);border-radius:var(--radius-md);margin-bottom:var(--spacing-sm);background:var(--surface)}
+.file-item-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.file-item-info{flex:1;min-width:0}
+.file-item-name{font-size:13px;font-weight:600}
+.file-item-meta{font-size:11px;color:var(--text-muted)}
+
+/* Author chip */
+.author-chip{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--surface-border);border-radius:var(--radius-md);margin-bottom:var(--spacing-sm)}
+.author-chip-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0}
+.author-chip-info{flex:1;min-width:0}
+.author-chip-name{font-size:13px;font-weight:600}
+.author-chip-affil{font-size:11px;color:var(--text-muted)}
+.author-chip-remove{color:var(--text-muted);cursor:pointer;padding:4px;transition:color var(--transition-fast)}
+.author-chip-remove:hover{color:var(--danger)}
+
+/* Co-author badge */
+.coauthor-notice{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--purple-bg);border:1px solid var(--purple-border);border-radius:var(--radius-md);font-size:13px;color:#5B21B6;margin-bottom:var(--spacing-md)}
+
+/* Tabs */
+.tab-bar{display:flex;gap:0;border-bottom:2px solid var(--surface-border);padding:0 var(--spacing-lg);background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow-x:auto}
+.tab-btn{padding:12px 20px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;position:relative;transition:all var(--transition-fast);white-space:nowrap}
+.tab-btn:hover{color:var(--text-primary)}
+.tab-btn.active{color:var(--primary);font-weight:700}
+.tab-btn.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--primary)}
+.tab-content{display:none;padding:var(--spacing-lg);animation:pageIn 200ms ease}
+.tab-content.active{display:block}
+
+/* Profile */
+.profile-header-card{display:flex;align-items:center;gap:var(--spacing-lg);padding:var(--spacing-xl);background:linear-gradient(135deg,var(--success) 0%,#1A6B3A 100%);border-radius:var(--radius-lg);color:white;margin-bottom:var(--spacing-lg);position:relative;overflow:hidden}
+.profile-header-card::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:rgba(255,255,255,0.06);border-radius:50%}
+.profile-avatar-lg{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;font-family:'Playfair Display',serif;flex-shrink:0;border:3px solid rgba(255,255,255,0.2)}
+.profile-header-info{position:relative;z-index:1}
+.profile-header-name{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;margin-bottom:4px}
+.profile-header-email{font-size:14px;opacity:0.7;margin-bottom:var(--spacing-sm)}
+.profile-header-meta{display:flex;gap:var(--spacing-lg);font-size:12px;opacity:0.6}
+
+.notif-item{display:flex;gap:14px;padding:16px 20px;border-bottom:1px solid var(--surface-border);transition:background var(--transition-fast);cursor:pointer}
+.notif-item:hover{background:var(--surface-hover)}
+.notif-item.unread{background:rgba(43,122,75,0.03)}
+.notif-item.unread::before{content:'';width:8px;height:8px;min-width:8px;border-radius:50%;background:var(--success);margin-top:6px}
+.notif-content{flex:1}
+.notif-text{font-size:13px;color:var(--text-primary);line-height:1.5}
+.notif-text strong{font-weight:600}
+.notif-time{font-size:12px;color:var(--text-muted);margin-top:4px}
+
+.toast-container{position:fixed;top:var(--spacing-lg);right:var(--spacing-lg);z-index:9999;display:flex;flex-direction:column;gap:var(--spacing-sm)}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--primary-dark);color:white;border-radius:var(--radius-md);font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn 300ms ease,toastOut 300ms ease 2700ms forwards;max-width:380px}
+.toast i{font-size:16px}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(15,26,48,0.5);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;animation:fadeIn 200ms ease}
+.modal-overlay.open{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);width:90%;max-width:520px;animation:modalIn 250ms ease;overflow:hidden}
+@keyframes modalIn{from{opacity:0;transform:scale(0.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-lg);border-bottom:1px solid var(--surface-border)}
+.modal-title{font-size:17px;font-weight:700}
+.modal-close{width:32px;height:32px;border:none;background:var(--bg);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-secondary);font-size:14px;transition:all var(--transition-fast)}
+.modal-close:hover{background:var(--danger-bg);color:var(--danger)}
+.modal-body{padding:var(--spacing-lg)}
+.modal-footer{display:flex;justify-content:flex-end;gap:var(--spacing-sm);padding:var(--spacing-md) var(--spacing-lg);border-top:1px solid var(--surface-border);background:var(--bg)}
+
+.text-truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mb-md{margin-bottom:var(--spacing-md)}
+.mb-lg{margin-bottom:var(--spacing-lg)}
+.mt-md{margin-top:var(--spacing-md)}
+.mt-lg{margin-top:var(--spacing-lg)}
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}.header-search{display:none}.wizard-step-label{display:none}}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><div class="sidebar-brand-icon">J</div><div class="sidebar-brand-text"><div class="sidebar-brand-title">Journal MS</div><div class="sidebar-brand-sub">Author Portal</div></div></div>
+    <div class="sidebar-role-badge"><i class="fas fa-feather-pointed"></i> Author</div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Submissions</div>
+      <a class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard',this)"><i class="fas fa-grid-2"></i><span class="nav-item-text">Dashboard</span></a>
+      <a class="nav-item" data-page="manuscripts" onclick="navigateTo('manuscripts',this)"><i class="fas fa-file-lines"></i><span class="nav-item-text">My Manuscripts</span><span class="badge-count">7</span></a>
+      <a class="nav-item" data-page="new-submission" onclick="navigateTo('new-submission',this)"><i class="fas fa-plus-circle"></i><span class="nav-item-text">New Submission</span></a>
+      <a class="nav-item" data-page="revisions" onclick="navigateTo('revisions',this)"><i class="fas fa-rotate"></i><span class="nav-item-text">Revisions</span><span class="badge-count badge-warning">1</span></a>
+      <div class="nav-section-label">Communication</div>
+      <a class="nav-item" data-page="notifications" onclick="navigateTo('notifications',this)"><i class="fas fa-bell"></i><span class="nav-item-text">Notifications</span><span class="badge-count">4</span></a>
+      <div class="nav-section-label">Account</div>
+      <a class="nav-item" data-page="profile" onclick="navigateTo('profile',this)"><i class="fas fa-user-circle"></i><span class="nav-item-text">Profile</span></a>
+      <a class="nav-item" data-page="help" onclick="navigateTo('help',this)"><i class="fas fa-circle-question"></i><span class="nav-item-text">Help</span></a>
+    </nav>
+    <div class="sidebar-footer"><button class="sidebar-collapse-btn" onclick="toggleSidebar()"><i class="fas fa-chevron-left"></i><span class="collapse-text">Collapse</span></button></div>
+  </aside>
+
+  <div class="main-area">
+    <header class="app-header">
+      <div class="header-breadcrumb"><span>Author</span><i class="fas fa-chevron-right bc-sep"></i><span class="bc-current" id="breadcrumb-current">Dashboard</span></div>
+      <div class="header-spacer"></div>
+      <div class="header-search"><i class="fas fa-search"></i><input type="text" placeholder="Search manuscripts..." aria-label="Search"></div>
+      <div class="header-actions">
+        <button class="header-icon-btn" title="Notifications" onclick="navigateTo('notifications',document.querySelector('[data-page=notifications]'))"><i class="fas fa-bell"></i><span class="notif-dot"></span></button>
+        <button class="header-icon-btn" title="Help" onclick="navigateTo('help',document.querySelector('[data-page=help]'))"><i class="fas fa-circle-question"></i></button>
+      </div>
+      <div class="header-profile" onclick="navigateTo('profile',document.querySelector('[data-page=profile]'))"><div class="header-avatar">FO</div><div class="header-profile-info"><div class="header-profile-name">Prof. Amara Osei</div><div class="header-profile-role">Author</div></div></div>
+    </header>
+
+    <main class="content-area">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div class="page-header-row"><div><h1 class="page-title">Author Dashboard</h1><p class="page-subtitle">Your manuscripts, submission status, and items needing attention</p></div>
+            <button class="btn btn-primary" onclick="navigateTo('new-submission',document.querySelector('[data-page=new-submission]'))"><i class="fas fa-plus"></i> New Submission</button>
+          </div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-draft"><div class="kpi-header"><span class="kpi-label">Drafts</span><div class="kpi-icon"><i class="fas fa-file-pen"></i></div></div><div class="kpi-value">3</div><div class="kpi-trend"><span>Continue where you left off</span></div></div>
+          <div class="kpi-card kpi-review"><div class="kpi-header"><span class="kpi-label">Under Review</span><div class="kpi-icon"><i class="fas fa-magnifying-glass"></i></div></div><div class="kpi-value">2</div><div class="kpi-trend"><span>Awaiting reviewer reports</span></div></div>
+          <div class="kpi-card kpi-revision"><div class="kpi-header"><span class="kpi-label">Revision Needed</span><div class="kpi-icon"><i class="fas fa-rotate"></i></div></div><div class="kpi-value">1</div><div class="kpi-trend"><span style="color:var(--danger);font-weight:600;">Due in 4 days</span></div></div>
+          <div class="kpi-card kpi-accepted"><div class="kpi-header"><span class="kpi-label">Accepted</span><div class="kpi-icon"><i class="fas fa-circle-check"></i></div></div><div class="kpi-value">1</div><div class="kpi-trend"><span>Proceeding to publication</span></div></div>
+        </div>
+
+        <div class="alert-banner alert-danger mb-lg"><i class="fas fa-triangle-exclamation"></i><div><strong>Revision due soon:</strong> MS-2026-0840 "Self-Supervised Representation Learning for Low-Resource Languages" — Major revision due by <strong>Aug 29, 2026</strong>. You have 4 days remaining to submit your revised manuscript and cover letter.</div></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Needs Attention</span></div>
+            <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg);">
+              <ul class="activity-list">
+                <li class="activity-item" style="cursor:pointer;" onclick="openManuscriptDetail('MS-2026-0840')"><div class="activity-dot dot-danger"></div><div class="activity-content"><div class="activity-text"><strong>MS-2026-0840</strong> — Major revision due in 4 days</div><div class="activity-time">Deadline: Aug 29, 2026</div></div></li>
+                <li class="activity-item"><div class="activity-dot dot-warning"></div><div class="activity-content"><div class="activity-text"><strong>MS-2026-0901</strong> — Under moderation screening</div><div class="activity-time">Submitted 2 hours ago</div></div></li>
+                <li class="activity-item"><div class="activity-dot dot-info"></div><div class="activity-content"><div class="activity-text"><strong>MS-2026-0878</strong> — 1 of 3 reviews completed</div><div class="activity-time">Updated today at 10:45</div></div></li>
+              </ul>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Recent Manuscripts</span><button class="btn btn-ghost btn-sm" onclick="navigateTo('manuscripts',document.querySelector('[data-page=manuscripts]'))">View All <i class="fas fa-arrow-right" style="font-size:11px;margin-left:4px;"></i></button></div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead><tr><th>ID</th><th>Status</th><th>Updated</th></tr></thead>
+                <tbody>
+                  <tr style="cursor:pointer;" onclick="openManuscriptDetail('MS-2026-0901')"><td class="cell-name">MS-2026-0901</td><td><span class="status-badge status-info"><i class="fas fa-circle"></i> Submitted</span></td><td class="cell-muted">2 hours ago</td></tr>
+                  <tr style="cursor:pointer;" onclick="openManuscriptDetail('MS-2026-0878')"><td class="cell-name">MS-2026-0878</td><td><span class="status-badge status-info"><i class="fas fa-circle"></i> Under Review</span></td><td class="cell-muted">Today</td></tr>
+                  <tr style="cursor:pointer;" onclick="openManuscriptDetail('MS-2026-0840')"><td class="cell-name">MS-2026-0840</td><td><span class="status-badge status-pending"><i class="fas fa-circle"></i> Major Revision</span></td><td class="cell-muted">Aug 20</td></tr>
+                  <tr><td class="cell-name">MS-2026-0810</td><td><span class="status-badge status-active"><i class="fas fa-circle"></i> Accepted</span></td><td class="cell-muted">Aug 12</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MY MANUSCRIPTS ===== -->
+      <div class="page" id="page-manuscripts">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">My Manuscripts</h1><p class="page-subtitle">All your submissions and their current status</p></div><button class="btn btn-primary" onclick="navigateTo('new-submission',document.querySelector('[data-page=new-submission]'))"><i class="fas fa-plus"></i> New Submission</button></div></div>
+        <div class="card">
+          <div class="card-body" style="padding:var(--spacing-md) var(--spacing-lg);">
+            <div class="filter-bar" style="margin-bottom:0;">
+              <div class="filter-search"><i class="fas fa-search"></i><input type="text" placeholder="Search by ID or title..." aria-label="Search manuscripts"></div>
+              <select class="filter-select" id="msFilter" onchange="filterManuscripts()"><option value="">All Statuses</option><option>Draft</option><option>Submitted</option><option>Under Review</option><option>Major Revision</option><option>Minor Revision</option><option>Accepted</option><option>Rejected</option><option>Withdrawn</option></select>
+              <select class="filter-select"><option value="">Sort: Newest</option><option>Sort: Oldest</option><option>Sort: Title A-Z</option></select>
+            </div>
+          </div>
+          <div class="table-wrapper"><table class="data-table" id="msTable"><thead><tr><th>Manuscript ID</th><th>Title</th><th>Type</th><th>Submitted</th><th>Status</th><th>Deadline</th><th style="text-align:right;">Action</th></tr></thead><tbody id="msBody"></tbody></table></div>
+          <div class="pagination"><span>Showing 1–7 of 7</span><div class="pagination-pages"><button class="pagination-btn active">1</button></div></div>
+        </div>
+      </div>
+
+      <!-- ===== MANUSCRIPT DETAIL ===== -->
+      <div class="page" id="page-manuscript-detail">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:var(--spacing-md);">
+          <button class="btn btn-ghost btn-sm" onclick="navigateTo('manuscripts',document.querySelector('[data-page=manuscripts]'))"><i class="fas fa-arrow-left"></i> Back to Manuscripts</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+          <h1 class="page-title" style="font-size:22px;" id="detailId">MS-2026-0840</h1>
+          <span class="status-badge status-pending" id="detailStatus"><i class="fas fa-circle"></i> Major Revision</span>
+        </div>
+        <p class="page-subtitle mb-lg" id="detailTitle">Self-Supervised Representation Learning for Low-Resource Languages</p>
+
+        <div class="st-timeline" id="detailTimeline"></div>
+
+        <div class="tab-bar" id="detailTabBar">
+          <button class="tab-btn active" onclick="switchTab(this,'dt-overview')">Overview</button>
+          <button class="tab-btn" onclick="switchTab(this,'dt-authors')">Authors</button>
+          <button class="tab-btn" onclick="switchTab(this,'dt-files')">Files</button>
+          <button class="tab-btn" onclick="switchTab(this,'dt-activity')">Activity</button>
+          <button class="tab-btn" onclick="switchTab(this,'dt-decision')">Decision</button>
+        </div>
+        <div class="tab-content active" id="dt-overview">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px;margin-bottom:var(--spacing-lg);">
+            <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;">Article Type</span><strong>Original Research</strong></div>
+            <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;">Submitted</span><strong>Aug 5, 2026</strong></div>
+            <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;">Word Count</span><strong>8,960</strong></div>
+            <div><span style="color:var(--text-muted);display:block;font-size:11px;text-transform:uppercase;">Revision Deadline</span><strong style="color:var(--danger);">Aug 29, 2026</strong></div>
+          </div>
+          <div style="margin-bottom:var(--spacing-lg);"><div style="font-size:13px;font-weight:600;margin-bottom:6px;">Abstract</div><p style="font-size:13px;color:var(--text-secondary);line-height:1.7;">This paper introduces a novel self-supervised pre-training approach for low-resource languages that leverages cross-lingual transfer from related high-resource languages. We propose a contrastive learning framework that learns shared representations across language families while preserving language-specific morphological features. Experiments on 12 low-resource languages demonstrate state-of-the-art performance on downstream NLP tasks including named entity recognition, sentiment analysis, and machine translation augmentation.</p></div>
+          <div class="alert-banner alert-warning"><i class="fas fa-rotate"></i><div><strong>Editor's Revision Instructions:</strong> The reviewers identified significant issues with the evaluation methodology (Section 4.2) and the comparison with recent multilingual LLM approaches. Please address all reviewer comments point-by-point in your cover letter and submit a revised manuscript with tracked changes.</div></div>
+          <div style="display:flex;gap:8px;margin-top:var(--spacing-md);">
+            <button class="btn btn-warning" onclick="navigateTo('revisions',document.querySelector('[data-page=revisions]'))"><i class="fas fa-rotate"></i> Submit Revision</button>
+            <button class="btn btn-danger" onclick="openWithdrawModal('MS-2026-0840')"><i class="fas fa-ban"></i> Withdraw</button>
+          </div>
+        </div>
+        <div class="tab-content" id="dt-authors">
+          <div class="coauthor-notice mb-lg"><i class="fas fa-info-circle"></i><div><strong>Viewing as Primary Author.</strong> Co-authors linked to this manuscript may see limited information based on journal policy.</div></div>
+          <div class="author-chip"><div class="author-chip-avatar" style="background:var(--success);">AO</div><div class="author-chip-info"><div class="author-chip-name">Prof. Amara Osei <span style="font-size:11px;color:var(--success);font-weight:600;margin-left:6px;">Corresponding Author</span></div><div class="author-chip-affil">University of Lagos, Department of Computer Science</div></div></div>
+          <div class="author-chip"><div class="author-chip-avatar" style="background:var(--info);">DM</div><div class="author-chip-info"><div class="author-chip-name">Dr. David Mensah</div><div class="author-chip-affil">University of Ghana, Department of Linguistics</div></div></div>
+          <div class="author-chip"><div class="author-chip-avatar" style="background:var(--purple);">AK</div><div class="author-chip-info"><div class="author-chip-name">Ananya Kumar</div><div class="author-chip-affil">IIT Bombay, Department of Computer Science and Engineering</div></div></div>
+        </div>
+        <div class="tab-content" id="dt-files">
+          <div class="file-item"><div class="file-item-icon" style="background:var(--danger-bg);color:var(--danger);"><i class="fas fa-file-pdf"></i></div><div class="file-item-info"><div class="file-item-name">manuscript_v1.pdf</div><div class="file-item-meta">4.1 MB — Uploaded Aug 5, 2026</div></div><button class="btn btn-ghost btn-sm"><i class="fas fa-download"></i></button></div>
+          <div class="file-item"><div class="file-item-icon" style="background:var(--success-bg);color:var(--success);"><i class="fas fa-file-excel"></i></div><div class="file-item-info"><div class="file-item-name">supplementary_data.xlsx</div><div class="file-item-meta">1.2 MB — Uploaded Aug 5, 2026</div></div><button class="btn btn-ghost btn-sm"><i class="fas fa-download"></i></button></div>
+          <div class="file-item"><div class="file-item-icon" style="background:var(--info-bg);color:var(--info);"><i class="fas fa-file-image"></i></div><div class="file-item-info"><div class="file-item-name">figures.zip</div><div class="file-item-meta">8.7 MB — Uploaded Aug 5, 2026</div></div><button class="btn btn-ghost btn-sm"><i class="fas fa-download"></i></button></div>
+        </div>
+        <div class="tab-content" id="dt-activity">
+          <ul class="activity-list">
+            <li class="activity-item"><div class="activity-dot dot-warning"></div><div class="activity-content"><div class="activity-text"><strong>Dr. L. Vogt</strong> sent decision: <strong>Major Revision</strong> — revision due by Aug 29</div><div class="activity-time">Aug 20, 2026 at 14:30</div></div></li>
+            <li class="activity-item"><div class="activity-dot dot-success"></div><div class="activity-content"><div class="activity-text"><strong>Dr. K. Tanaka</strong> submitted review — Recommendation: Minor Revision</div><div class="activity-time">Aug 18, 2026 at 10:45</div></div></li>
+            <li class="activity-item"><div class="activity-dot dot-success"></div><div class="activity-content"><div class="activity-text"><strong>Dr. J. Chen</strong> submitted review — Recommendation: Major Revision</div><div class="activity-time">Aug 17, 2026 at 16:20</div></div></li>
+            <li class="activity-item"><div class="activity-dot dot-info"></div><div class="activity-content"><div class="activity-text"><strong>Dr. S. Patel</strong> approved manuscript in moderation</div><div class="activity-time">Aug 6, 2026 at 11:10</div></div></li>
+            <li class="activity-item"><div class="activity-dot dot-info"></div><div class="activity-content"><div class="activity-text">You submitted the manuscript</div><div class="activity-time">Aug 5, 2026 at 09:30</div></div></li>
+          </ul>
+        </div>
+        <div class="tab-content" id="dt-decision">
+          <div style="padding:16px;background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:var(--radius-md);margin-bottom:var(--spacing-md);">
+            <div style="font-size:14px;font-weight:700;color:var(--warning);margin-bottom:8px;"><i class="fas fa-rotate"></i> Major Revision Required</div>
+            <div style="font-size:13px;color:#7A5A10;line-height:1.7;">The editorial team has reviewed your manuscript based on two reviewer reports. While the contribution is judged to have merit, significant revisions are required before a final decision can be made. Please address all reviewer comments in a point-by-point response letter and submit a revised manuscript.</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;"><strong>Revision Deadline:</strong> <span style="color:var(--danger);font-weight:700;">August 29, 2026</span></div>
+        </div>
+      </div>
+
+      <!-- ===== NEW SUBMISSION (WIZARD) ===== -->
+      <div class="page" id="page-new-submission">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">New Submission</h1><p class="page-subtitle">Submit a new manuscript for peer review — progress is saved automatically</p></div></div></div>
+        <div class="wizard-progress" id="wizardProgress"></div>
+        <div class="card"><div class="card-body wizard-content" id="wizardContent"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:var(--spacing-md);" id="wizardNav">
+          <button class="btn btn-secondary" id="wizPrev" disabled onclick="wizardGo(-1)"><i class="fas fa-arrow-left"></i> Previous</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary" onclick="showToast('Draft saved','fa-save')"><i class="fas fa-save"></i> Save Draft</button>
+            <button class="btn btn-primary" id="wizNext" onclick="wizardGo(1)">Next Step <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== REVISIONS ===== -->
+      <div class="page" id="page-revisions">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Submit Revision</h1><p class="page-subtitle">Upload your revised manuscript and cover letter in response to the editor's decision</p></div></div></div>
+        <div class="alert-banner alert-danger mb-lg"><i class="fas fa-triangle-exclamation"></i><div><strong>Deadline: August 29, 2026</strong> — 4 days remaining. Ensure your revision and cover letter are complete before submitting.</div></div>
+        <div class="card mb-lg">
+          <div class="card-header"><span class="card-title">MS-2026-0840: Self-Supervised Representation Learning for Low-Resource Languages</span><span class="status-badge status-pending"><i class="fas fa-circle"></i> Major Revision</span></div>
+          <div class="card-body">
+            <div class="form-group"><label class="form-label">Cover Letter <span class="required">*</span></label><textarea class="form-textarea" rows="6" placeholder="Address each reviewer comment and editor instruction point-by-point. Explain what changes were made and where in the revised manuscript."></textarea><div class="form-hint">This letter will be sent to the editor alongside your revised manuscript.</div></div>
+            <div class="form-group"><label class="form-label">Revised Manuscript <span class="required">*</span></label><div class="upload-zone" onclick="simulateUpload(this)"><div class="upload-icon"><i class="fas fa-cloud-arrow-up"></i></div><div class="upload-text">Click to upload revised manuscript</div><div class="upload-hint">PDF only, max 20 MB. Include tracked changes if possible.</div></div></div>
+            <div class="form-group"><label class="form-label">Supplementary Files (optional)</label><div class="upload-zone" onclick="simulateUpload(this)"><div class="upload-icon"><i class="fas fa-paperclip"></i></div><div class="upload-text">Click to upload supplementary files</div><div class="upload-hint">ZIP, XLSX, CSV, or individual image files.</div></div></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;"><button class="btn btn-secondary" onclick="showToast('Draft saved','fa-save')"><i class="fas fa-save"></i> Save Draft</button><button class="btn btn-warning" onclick="submitRevision()"><i class="fas fa-paper-plane"></i> Submit Revision</button></div>
+      </div>
+
+      <!-- ===== NOTIFICATIONS ===== -->
+      <div class="page" id="page-notifications">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Notifications</h1><p class="page-subtitle">Decisions, review updates, and submission status changes</p></div><button class="btn btn-secondary btn-sm" onclick="showToast('All marked as read','fa-check-double')"><i class="fas fa-check-double"></i> Mark All Read</button></div></div>
+        <div class="card"><div>
+          <div class="notif-item unread" onclick="this.classList.remove('unread')"><div class="notif-content"><div class="notif-text"><strong>Major revision required</strong> for MS-2026-0840 — deadline Aug 29, 2026. Review comments are available in the manuscript detail page.</div><div class="notif-time">Aug 20 at 14:30</div></div><span class="status-badge status-pending" style="font-size:10px;">Revision</span></div>
+          <div class="notif-item unread" onclick="this.classList.remove('unread')"><div class="notif-content"><div class="notif-text"><strong>MS-2026-0901</strong> submitted successfully — assigned ID MS-2026-0901. Awaiting moderation screening.</div><div class="notif-time">Today at 09:15</div></div><span class="status-badge status-info" style="font-size:10px;">Submitted</span></div>
+          <div class="notif-item unread" onclick="this.classList.remove('unread')"><div class="notif-content"><div class="notif-text"><strong>MS-2026-0878</strong> — A reviewer has submitted their report. 1 of 3 reviews now complete.</div><div class="notif-time">Today at 10:45</div></div><span class="status-badge status-info" style="font-size:10px;">Review</span></div>
+          <div class="notif-item unread" onclick="this.classList.remove('unread')"><div class="notif-content"><div class="notif-text"><strong>MS-2026-0810</strong> has been <strong>accepted</strong> for publication. Congratulations! The production team will contact you regarding proof review.</div><div class="notif-time">Aug 12 at 16:00</div></div><span class="status-badge status-active" style="font-size:10px;">Accepted</span></div>
+        </div></div>
+      </div>
+
+      <!-- ===== PROFILE ===== -->
+      <div class="page" id="page-profile">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">My Profile</h1><p class="page-subtitle">Your author account and publication history</p></div><button class="btn btn-primary btn-sm" onclick="showToast('Profile updated','fa-check')"><i class="fas fa-save"></i> Save</button></div></div>
+        <div class="profile-header-card"><div class="profile-avatar-lg">AO</div><div class="profile-header-info"><div class="profile-header-name">Prof. Amara Osei</div><div class="profile-header-email">a.osei@unilag.edu.ng</div><div class="profile-header-meta"><span><i class="fas fa-feather-pointed"></i> Author</span><span><i class="fas fa-calendar"></i> Joined Jan 2025</span></div></div></div>
+        <div class="grid-2">
+          <div class="card"><div class="card-header"><span class="card-title">Account Information</span><button class="btn btn-ghost btn-sm" onclick="showToast('Edit mode','fa-pen')"><i class="fas fa-pen"></i></button></div><div class="card-body">
+            <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" value="Prof. Amara Osei"></div>
+            <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" value="a.osei@unilag.edu.ng"><div class="form-hint">Managed via Google OAuth</div></div>
+            <div class="form-group"><label class="form-label">Organization</label><input type="text" class="form-input" value="University of Lagos"></div>
+            <div class="form-group"><label class="form-label">Department</label><input type="text" class="form-input" value="Department of Computer Science"></div>
+            <div class="form-group"><label class="form-label">ORCID</label><input type="text" class="form-input" value="0000-0001-5678-9012"></div>
+          </div></div>
+          <div>
+            <div class="card mb-md"><div class="card-header"><span class="card-title">Publication Statistics</span></div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--primary);">7</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Total Submitted</div></div>
+              <div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);text-align:center;"><div style="font-size:24px;font-weight:700;color:var(--success);">1</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Accepted</div></div>
+            </div></div></div>
+            <div class="card"><div class="card-header"><span class="card-title">Security</span></div><div class="card-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--surface-border);font-size:13px;"><div><div style="font-weight:600;">Authentication</div><div style="font-size:12px;color:var(--text-muted);">Google OAuth</div></div><span class="status-badge status-active" style="font-size:10px;"><i class="fas fa-circle"></i> Connected</span></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px;"><div><div style="font-weight:600;">Sessions</div><div style="font-size:12px;color:var(--text-muted);">1 active</div></div><button class="btn btn-secondary btn-sm" onclick="showToast('Revoked','fa-right-from-bracket')">Revoke Others</button></div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== HELP ===== -->
+      <div class="page" id="page-help">
+        <div class="page-header"><div class="page-header-row"><div><h1 class="page-title">Help and Resources</h1><p class="page-subtitle">Guides for submitting, revising, and managing your manuscripts</p></div></div></div>
+        <div class="grid-2">
+          <div class="card" style="cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.boxShadow=''" onclick="navigateTo('new-submission',document.querySelector('[data-page=new-submission]'))"><div class="card-body" style="text-align:center;padding:var(--spacing-xl);"><i class="fas fa-plus-circle" style="font-size:32px;color:var(--info);margin-bottom:var(--spacing-md);display:block;"></i><div style="font-size:16px;font-weight:700;margin-bottom:4px;">How to Submit</div><div style="font-size:13px;color:var(--text-secondary);">Step-by-step guide through the 6-step submission wizard</div></div></div>
+          <div class="card" style="cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.boxShadow=''" onclick="navigateTo('revisions',document.querySelector('[data-page=revisions]'))"><div class="card-body" style="text-align:center;padding:var(--spacing-xl);"><i class="fas fa-rotate" style="font-size:32px;color:var(--warning);margin-bottom:var(--spacing-md);display:block;"></i><div style="font-size:16px;font-weight:700;margin-bottom:4px;">How to Revise</div><div style="font-size:13px;color:var(--text-secondary);">Respond to revision requests with cover letter and updated files</div></div></div>
+          <div class="card" style="cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.boxShadow=''"><div class="card-body" style="text-align:center;padding:var(--spacing-xl);"><i class="fas fa-route" style="font-size:32px;color:var(--purple);margin-bottom:var(--spacing-md);display:block;"></i><div style="font-size:16px;font-weight:700;margin-bottom:4px;">Manuscript Lifecycle</div><div style="font-size:13px;color:var(--text-secondary);">Understand the stages: Submit, Screen, Review, Decision, Revision</div></div></div>
+          <div class="card" style="cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.boxShadow=''"><div class="card-body" style="text-align:center;padding:var(--spacing-xl);"><i class="fas fa-users" style="font-size:32px;color:var(--success);margin-bottom:var(--spacing-md);display:block;"></i><div style="font-size:16px;font-weight:700;margin-bottom:4px;">Co-Author Access</div><div style="font-size:13px;color:var(--text-secondary);">How linked co-authors can view manuscript status and files</div></div></div>
+        </div>
+        <div class="card mt-lg"><div class="card-header"><span class="card-title">Contact Editorial Office</span></div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;"><div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);"><div style="font-weight:600;margin-bottom:4px;">General Inquiries</div><div style="color:var(--text-secondary);">editorial@ijarc-journal.org</div></div><div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);"><div style="font-weight:600;margin-bottom:4px;">Technical Support</div><div style="color:var(--text-secondary);">support@ijarc-journal.org</div></div></div></div></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Withdraw Modal -->
+<div class="modal-overlay" id="withdrawModal">
+  <div class="modal"><div class="modal-header"><span class="modal-title">Withdraw Manuscript</span><button class="modal-close" onclick="closeModal('withdrawModal')"><i class="fas fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="alert-banner alert-danger"><i class="fas fa-triangle-exclamation"></i><div><strong>This is a significant action.</strong> Withdrawing a manuscript that is under review or awaiting a decision will notify the editor and cancel all pending reviewer assignments. This may not be reversible.</div></div>
+      <div style="padding:12px;background:var(--bg);border-radius:var(--radius-sm);font-size:13px;margin-bottom:var(--spacing-md);"><strong>Manuscript:</strong> <span id="withdrawMsId">—</span></div>
+      <div class="form-group"><label class="form-label">Reason for Withdrawal <span class="required">*</span></label><textarea class="form-textarea" rows="3" placeholder="Please explain why you are withdrawing this manuscript..." id="withdrawReason"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('withdrawModal')">Cancel</button><button class="btn btn-danger" onclick="confirmWithdraw()"><i class="fas fa-ban"></i> Confirm Withdrawal</button></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const manuscripts=[
+  {id:'MS-2026-0901',title:'Transformer-Based Anomaly Detection in IoT Networks',type:'Original Research',submitted:'Today',status:'Submitted',statusCls:'status-info',deadline:'—',action:'view'},
+  {id:'MS-2026-0899',title:'Federated Learning for Privacy-Preserving Medical Image Analysis',type:'Original Research',submitted:'Aug 24',status:'Under Review',statusCls:'status-info',deadline:'—',action:'view'},
+  {id:'MS-2026-0878',title:'Quantum Error Correction in Noisy Intermediate-Scale Quantum Processors',type:'Original Research',submitted:'Aug 14',status:'Under Review',statusCls:'status-info',deadline:'—',action:'view'},
+  {id:'MS-2026-0840',title:'Self-Supervised Representation Learning for Low-Resource Languages',type:'Original Research',submitted:'Aug 5',status:'Major Revision',statusCls:'status-pending',deadline:'Aug 29',action:'revise'},
+  {id:'MS-2026-0810',title:'Graph Neural Networks for Drug Repurposing in Rare Diseases',type:'Review Article',submitted:'Jul 20',status:'Accepted',statusCls:'status-active',deadline:'—',action:'view'},
+  {id:'MS-2026-D003',title:'Attention Mechanisms in Multimodal Learning Systems',type:'Short Communication',submitted:'—',status:'Draft',statusCls:'status-disabled',deadline:'—',action:'continue'},
+  {id:'MS-2026-D001',title:'Efficient Fine-Tuning Strategies for Foundation Models',type:'Original Research',submitted:'—',status:'Draft',statusCls:'status-disabled',deadline:'—',action:'continue'},
+  {id:'MS-2026-D002',title:'Robustness of Large Language Models to Adversarial Prompts',type:'Original Research',submitted:'—',status:'Draft',statusCls:'status-disabled',deadline:'—',action:'continue'},
+];
+
+function renderManuscripts(data){
+  const tbody=document.getElementById('msBody');
+  const items=data||manuscripts;
+  tbody.innerHTML='';
+  items.forEach(m=>{
+    const actBtn=m.action==='revise'?'<button class="btn btn-warning btn-sm" onclick="event.stopPropagation();navigateTo(\'revisions\',document.querySelector(\'[data-page=revisions]\'))"><i class="fas fa-rotate"></i> Revise</button>':m.action==='continue'?`<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();navigateTo('new-submission',document.querySelector('[data-page=new-submission]'))"><i class="fas fa-pen"></i> Continue</button>`:'<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openManuscriptDetail(\''+m.id+'\')"><i class="fas fa-eye"></i> View</button>';
+    const row=document.createElement('tr');
+    row.onclick=function(){openManuscriptDetail(m.id)};
+    row.innerHTML=`<td class="cell-name">${m.id}</td><td class="text-truncate" style="max-width:260px;">${m.title}</td><td class="cell-muted">${m.type}</td><td class="cell-muted">${m.submitted}</td><td><span class="status-badge ${m.statusCls}"><i class="fas fa-circle"></i> ${m.status}</span></td><td class="cell-muted" style="${m.deadline.includes('Aug 29')?'color:var(--danger);font-weight:700;':''}">${m.deadline}</td><td style="text-align:right;">${actBtn}</td>`;
+    tbody.appendChild(row);
+  });
+}
+function filterManuscripts(){
+  const v=document.getElementById('msFilter').value;
+  if(!v){renderManuscripts();return}
+  renderManuscripts(manuscripts.filter(m=>m.status===v));
+}
+
+const steps=['Basic Information','Authors','Manuscript Files','Metadata & Declarations','Review','Submit'];
+let wizStep=0;
+
+function renderWizard(){
+  const prog=document.getElementById('wizardProgress');
+  prog.innerHTML='';
+  steps.forEach((s,i)=>{
+    const step=document.createElement('div');
+    step.className='wizard-step';
+    const numCls=i<wizStep?'done':i===wizStep?'active':'';
+    const labelCls=i<wizStep?'done':i===wizStep?'active':'';
+    step.innerHTML=`<div class="wizard-num ${numCls}">${i<wizStep?'<i class="fas fa-check" style="font-size:12px;"></i>':(i+1)}</div><div class="wizard-step-label ${labelCls}">${s}</div>${i<steps.length-1?'<div class="wizard-line '+(i<wizStep?'done':'')+'"></div>':''}`;
+    prog.appendChild(step);
+  });
+
+  const content=document.getElementById('wizardContent');
+  if(wizStep===0) content.innerHTML=`
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--spacing-md);">Basic Information</h2>
+    <div class="form-group"><label class="form-label">Manuscript Title <span class="required">*</span></label><input type="text" class="form-input" placeholder="Enter the full title of your manuscript"></div>
+    <div class="form-group"><label class="form-label">Abstract <span class="required">*</span></label><textarea class="form-textarea" rows="5" placeholder="Structured or unstructured abstract (typically 200-300 words)..."></textarea><div class="form-hint">Do not include author names or affiliations if the journal uses double-blind review.</div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Article Type <span class="required">*</span></label><select class="form-select-full"><option value="">Select type...</option><option>Original Research</option><option>Review Article</option><option>Short Communication</option><option>Case Study</option><option>Technical Note</option></select></div><div class="form-group"><label class="form-label">Subject / Category <span class="required">*</span></label><select class="form-select-full"><option value="">Select subject...</option><option>Machine Learning</option><option>Computer Vision</option><option>Natural Language Processing</option><option>Software Engineering</option><option>Cybersecurity</option><option>Quantum Computing</option><option>IoT / Edge Computing</option></select></div></div>
+    <div class="form-group"><label class="form-label">Keywords <span class="required">*</span></label><input type="text" class="form-input" placeholder="Enter 3-6 keywords separated by commas"><div class="form-hint">e.g., self-supervised learning, low-resource languages, cross-lingual transfer, contrastive learning</div></div>`;
+  else if(wizStep===1) content.innerHTML=`
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--spacing-md);">Authors</h2>
+    <div class="coauthor-notice mb-md"><i class="fas fa-info-circle"></i><div>You are automatically added as the corresponding author. Add co-authors below. Author order determines the published byline.</div></div>
+    <div id="authorList">
+      <div class="author-chip"><div class="author-chip-avatar" style="background:var(--success);">AO</div><div class="author-chip-info"><div class="author-chip-name">Prof. Amara Osei <span style="font-size:11px;color:var(--success);font-weight:600;margin-left:6px;">Corresponding</span></div><div class="author-chip-affil">University of Lagos, Department of Computer Science — a.osei@unilag.edu.ng</div></div></div>
+    </div>
+    <button class="btn btn-secondary btn-sm mt-md" onclick="showToast('Co-author form would open here','fa-user-plus')"><i class="fas fa-user-plus"></i> Add Co-Author</button>
+    <div class="form-hint mt-md">In a production system, co-authors can be added by email. They will receive a confirmation link to verify their information and affiliate with the manuscript.</div>`;
+  else if(wizStep===2) content.innerHTML=`
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--spacing-md);">Manuscript Files</h2>
+    <div class="form-group"><label class="form-label">Manuscript File <span class="required">*</span></label><div class="upload-zone" id="msUploadZone" onclick="simulateUpload(this)"><div class="upload-icon"><i class="fas fa-cloud-arrow-up"></i></div><div class="upload-text">Click to upload your manuscript</div><div class="upload-hint">PDF only, max 20 MB. Ensure all figures and tables are embedded or attached separately.</div></div></div>
+    <div class="form-group"><label class="form-label">Supplementary Files (optional)</label><div class="upload-zone" onclick="simulateUpload(this)"><div class="upload-icon"><i class="fas fa-paperclip"></i></div><div class="upload-text">Click to upload supplementary files</div><div class="upload-hint">ZIP, XLSX, CSV, images. Multiple files can be uploaded.</div></div></div>
+    <div class="form-group"><label class="form-label">Figures (optional)</label><div class="upload-zone" onclick="simulateUpload(this)"><div class="upload-icon"><i class="fas fa-image"></i></div><div class="upload-text">Click to upload figure files</div><div class="upload-hint">PNG, JPG, SVG, EPS. Minimum 300 DPI for print.</div></div></div>`;
+  else if(wizStep===3) content.innerHTML=`
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--spacing-md);">Metadata and Declarations</h2>
+    <div class="form-group"><label class="form-label">Conflict of Interest <span class="required">*</span></label><textarea class="form-textarea" rows="3" placeholder="Declare any financial, personal, or professional conflicts of interest. Write 'None declared' if none apply."></textarea></div>
+    <div class="form-group"><label class="form-label">Ethics Approval <span class="required">*</span></label><textarea class="form-textarea" rows="3" placeholder="If your research involves human or animal subjects, provide the ethics committee name and reference number. If not applicable, state 'Not applicable.'"></textarea></div>
+    <div class="form-group"><label class="form-label">Funding Information</label><textarea class="form-textarea" rows="2" placeholder="List all funding sources with grant numbers. Write 'No external funding' if none."></textarea></div>
+    <div class="form-group"><label class="form-label">Acknowledgements</label><textarea class="form-textarea" rows="2" placeholder="Acknowledge anyone who contributed but does not qualify for authorship."></textarea></div>
+    <div class="form-group"><label class="form-label">Data Availability Statement</label><textarea class="form-textarea" rows="2" placeholder="Describe where the data/code used in this study can be accessed."></textarea></div>`;
+  else if(wizStep===4) content.innerHTML=`
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--spacing-md);">Review Your Submission</h2>
+    <div class="alert-banner alert-info"><i class="fas fa-info-circle"></i><div>Review all information below before submitting. You can still go back to make changes.</div></div>
+    <div style="padding:16px;background:var(--bg);border-radius:var(--radius-md);margin-bottom:var(--spacing-md);font-size:13px;line-height:1.8;">
+      <div style="margin-bottom:8px;"><strong>Title:</strong> <span style="color:var(--text-muted);">Not provided yet</span></div>
+      <div style="margin-bottom:8px;"><strong>Abstract:</strong> <span style="color:var(--text-muted);">Not provided yet</span></div>
+      <div style="margin-bottom:8px;"><strong>Article Type:</strong> <span style="color:var(--text-muted);">Not selected</span></div>
+      <div style="margin-bottom:8px;"><strong>Keywords:</strong> <span style="color:var(--text-muted);">Not provided</span></div>
+      <div style="margin-bottom:8px;"><strong>Authors:</strong> Prof. Amara Osei (Corresponding)</div>
+      <div style="margin-bottom:8px;"><strong>Files:</strong> <span style="color:var(--text-muted);">No files uploaded</span></div>
+      <div><strong>Declarations:</strong> <span style="color:var(--text-muted);">Not completed</span></div>
+    </div>
+    <div class="alert-banner alert-warning"><i class="fas fa-exclamation-triangle"></i><div><strong>Validation warnings:</strong> Several required fields are incomplete. Please go back to the relevant steps and fill in all required information before submitting.</div></div>`;
+  else content.innerHTML=`
+    <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--spacing-md);">Submit Manuscript</h2>
+    <div style="text-align:center;padding:var(--spacing-xl) 20px;">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--success-bg);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto var(--spacing-lg);"><i class="fas fa-paper-plane"></i></div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:8px;">Ready to Submit</div>
+      <p style="font-size:14px;color:var(--text-secondary);max-width:500px;margin:0 auto var(--spacing-lg);line-height:1.7;">By submitting, you confirm that this manuscript is original, has not been published elsewhere, and all authors have approved the submission and order.</p>
+      <div class="alert-banner alert-info" style="text-align:left;max-width:500px;margin:0 auto var(--spacing-lg);"><i class="fas fa-shield-halved"></i><div><strong>Declaration:</strong> I confirm this manuscript is original work, all authors have approved this submission, and I accept the journal's submission policies and terms.</div></div>
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-size:14px;font-weight:600;margin-bottom:var(--spacing-lg);"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--success);" id="submitDecl" onchange="document.getElementById('finalSubmitBtn').disabled=!this.checked"> I confirm the above declaration</label>
+      <button class="btn btn-success btn-lg" id="finalSubmitBtn" disabled onclick="finalSubmit()"><i class="fas fa-paper-plane"></i> Submit Manuscript</button>
+    </div>`;
+
+  document.getElementById('wizPrev').disabled=wizStep===0;
+  const nextBtn=document.getElementById('wizNext');
+  if(wizStep===steps.length-1){nextBtn.style.display='none'}else{nextBtn.style.display=''}
+}
+
+function wizardGo(dir){
+  const newStep=wizStep+dir;
+  if(newStep<0||newStep>=steps.length)return;
+  wizStep=newStep;
+  renderWizard();
+  document.getElementById('wizardContent').scrollTop=0;
+}
+
+function simulateUpload(el){
+  if(el.classList.contains('has-file'))return;
+  el.classList.add('has-file');
+  el.innerHTML='<div class="upload-icon" style="color:var(--success);"><i class="fas fa-circle-check"></i></div><div class="upload-text" style="color:var(--success);">File uploaded successfully</div><div class="upload-hint">Click to replace</div>';
+  showToast('File uploaded','fa-check-circle');
+}
+
+function finalSubmit(){
+  showToast('Manuscript submitted! You will receive a manuscript ID shortly.','fa-check-circle');
+  setTimeout(()=>navigateTo('manuscripts',document.querySelector('[data-page=manuscripts]')),800);
+}
+
+function submitRevision(){
+  showToast('Revision submitted for MS-2026-0840 — sent to editor','fa-check-circle');
+  setTimeout(()=>navigateTo('manuscripts',document.querySelector('[data-page=manuscripts]')),800);
+}
+
+function openManuscriptDetail(msId){
+  navigateTo('manuscript-detail',null);
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  document.querySelector('[data-page=manuscripts]').classList.add('active');
+  document.getElementById('detailId').textContent=msId;
+  const m=manuscripts.find(x=>x.id===msId);
+  if(m){document.getElementById('detailTitle').textContent=m.title;document.getElementById('detailStatus').innerHTML='<i class="fas fa-circle"></i> '+m.status;document.getElementById('detailStatus').className='status-badge '+m.statusCls;}
+  renderTimeline(m);
+  // Reset tabs
+  document.querySelectorAll('#detailTabBar .tab-btn').forEach((b,i)=>{b.classList.toggle('active',i===0)});
+  document.querySelectorAll('[id^="dt-"]').forEach(t=>t.classList.toggle('active',t.id==='dt-overview'));
+}
+
+function renderTimeline(m){
+  const tl=document.getElementById('detailTimeline');
+  const states={
+    'Draft':[{l:'Draft',s:'current'},{l:'Submit',s:'pending'},{l:'Moderation',s:'pending'},{l:'Review',s:'pending'},{l:'Decision',s:'pending'}],
+    'Submitted':[{l:'Submitted',s:'completed'},{l:'Moderation',s:'current'},{l:'Review',s:'pending'},{l:'Decision',s:'pending'}],
+    'Under Review':[{l:'Submitted',s:'completed'},{l:'Moderation',s:'completed'},{l:'Review',s:'current'},{l:'Decision',s:'pending'}],
+    'Major Revision':[{l:'Submitted',s:'completed'},{l:'Moderation',s:'completed'},{l:'Review',s:'completed'},{l:'Decision',s:'completed'},{l:'Revision',s:'current'}],
+    'Minor Revision':[{l:'Submitted',s:'completed'},{l:'Moderation',s:'completed'},{l:'Review',s:'completed'},{l:'Decision',s:'completed'},{l:'Revision',s:'current'}],
+    'Accepted':[{l:'Submitted',s:'completed'},{l:'Moderation',s:'completed'},{l:'Review',s:'completed'},{l:'Decision',s:'completed'},{l:'Accepted',s:'completed'}],
+    'Rejected':[{l:'Submitted',s:'completed'},{l:'Moderation',s:'completed'},{l:'Review',s:'completed'},{l:'Decision',s:'rejected'}],
+    'Withdrawn':[{l:'Submitted',s:'completed'},{l:'Withdrawn',s:'rejected'}],
+  };
+  const nodes=states[m?.status]||states['Draft'];
+  tl.innerHTML='';
+  nodes.forEach((n,i)=>{
+    tl.innerHTML+=`<div class="st-step"><div class="st-node"><div class="st-circle ${n.s}">${n.s==='completed'?'<i class="fas fa-check" style="font-size:10px;"></i>':n.s==='rejected'?'<i class="fas fa-xmark" style="font-size:10px;"></i>':(i+1)}</div><div class="st-label ${n.s==='completed'?'done':n.s==='rejected'?'rejected':n.s==='current'?'active':''}">${n.l}</div></div>${i<nodes.length-1?`<div class="st-connector ${n.s==='completed'?'done':''}"></div>`:''}`;
+  });
+}
+
+function switchTab(btn,tabId){
+  btn.parentElement.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('[id^="dt-"]').forEach(t=>t.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+}
+
+function openWithdrawModal(msId){
+  document.getElementById('withdrawMsId').textContent=msId;
+  document.getElementById('withdrawReason').value='';
+  document.getElementById('withdrawModal').classList.add('open');
+}
+function confirmWithdraw(){
+  if(!document.getElementById('withdrawReason').value.trim()){showToast('Please provide a reason','fa-triangle-exclamation');return}
+  closeModal('withdrawModal');
+  showToast('Manuscript withdrawn successfully','fa-check-circle');
+  setTimeout(()=>navigateTo('manuscripts',document.querySelector('[data-page=manuscripts]')),600);
+}
+
+function navigateTo(pageId,navEl){
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  if(navEl)navEl.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const t=document.getElementById('page-'+pageId);
+  if(t)t.classList.add('active');
+  const map={dashboard:'Dashboard',manuscripts:'My Manuscripts','manuscript-detail':'Manuscript Detail','new-submission':'New Submission',revisions:'Revisions',notifications:'Notifications',profile:'Profile',help:'Help'};
+  document.getElementById('breadcrumb-current').textContent=map[pageId]||pageId;
+  if(pageId==='manuscripts')renderManuscripts();
+  if(pageId==='new-submission'){wizStep=0;renderWizard();}
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function showToast(msg,icon){const c=document.getElementById('toastContainer');const t=document.createElement('div');t.className='toast';t.innerHTML=`<i class="fas ${icon||'fa-check'}"></i> ${msg}`;c.appendChild(t);setTimeout(()=>t.remove(),3100)}
+
+renderManuscripts();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+DROP TYPE IF EXISTS revision_response_status_enum;
+DROP TYPE IF EXISTS suggestion_type_enum;
+DROP TYPE IF EXISTS extension_status_enum;
+DROP TYPE IF EXISTS withdrawal_status_enum;
+DROP TYPE IF EXISTS invitation_response_enum;
+DROP TYPE IF EXISTS assignment_status_enum;
+DROP TYPE IF EXISTS review_recommendation_enum;
+DROP TYPE IF EXISTS editorial_decision_enum;
+DROP TYPE IF EXISTS moderator_decision_enum;
+DROP TYPE IF EXISTS manuscript_status_enum;
+DROP TYPE IF EXISTS account_status_enum;
