@@ -484,11 +484,14 @@ export default function ChecklistForm() {
         checklist[`${s.id}_note`] = form[`${s.id}_note`]
       })
 
+      const ethicsChecks = checklist.ethics || []
+      const ethicsCheckStatus = ethicsChecks.length > 0 && ethicsChecks.every(Boolean) ? 'passed' : 'pending'
+
       await submitCheck(id, {
         checklist,
         plagiarism_score:   form.plagiarism_score ? Number(form.plagiarism_score) : null,
         plagiarism_report:  form.plagiarism_report || null,
-        ethics_check_status: form.ethics_radio || 'pending',
+        ethics_check_status: ethicsCheckStatus,
         files_valid: true,
         decision: type === 'approve' ? 'proceed' : type,
         notes: Object.entries(checklist).filter(([k]) => k.endsWith('_note')).map(([, v]) => v).filter(Boolean).join('\n---\n') || null,

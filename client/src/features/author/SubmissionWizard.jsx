@@ -15,7 +15,8 @@ import {
 } from './services/manuscriptService'
 
 const STEPS = [
-    { key: 'metadata', label: 'Metadata' },
+  { key: 'start', label: 'Start' },
+  { key: 'metadata', label: 'Metadata' },
   { key: 'authors', label: 'Authors' },
   { key: 'files', label: 'Files' },
   { key: 'review', label: 'Review' },
