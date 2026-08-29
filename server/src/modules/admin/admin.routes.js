@@ -27,7 +27,7 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
   const countResult = await pool.query(
-    `SELECT count(*) FROM users u JOIN roles r ON r.id = u.role_id ${where}`,
+    `SELECT count(*) FROM users u LEFT JOIN roles r ON r.id = u.role_id ${where}`,
     params
   )
 
@@ -36,9 +36,9 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
 
   const result = await pool.query(
     `SELECT u.id, u.email, u.first_name, u.last_name, u.display_name,
-            u.account_status, u.created_at, r.name as role_name
+            u.account_status, u.created_at, COALESCE(r.name, 'author') as role_name
      FROM users u
-     JOIN roles r ON r.id = u.role_id
+     LEFT JOIN roles r ON r.id = u.role_id
      ${where}
      ORDER BY u.created_at DESC
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -55,8 +55,8 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
 
 router.get('/users/:id', authenticate, requireRole('admin'), async (req, res) => {
   const result = await pool.query(
-    `SELECT u.*, r.name as role_name
-     FROM users u JOIN roles r ON r.id = u.role_id
+    `SELECT u.*, COALESCE(r.name, 'author') as role_name
+     FROM users u LEFT JOIN roles r ON r.id = u.role_id
      WHERE u.id = $1`,
     [req.params.id]
   )
@@ -81,29 +81,32 @@ router.patch('/users/:id/role', authenticate, requireRole('admin'), async (req, 
 
   const oldRoleId = userResult.rows[0].role_id
 
-  await pool.query('BEGIN')
+  const client = await pool.connect()
   try {
-    await pool.query(
+    await client.query('BEGIN')
+    await client.query(
       'INSERT INTO user_role_history (user_id, old_role_id, new_role_id, changed_by, reason) VALUES ($1, $2, $3, $4, $5)',
       [userId, oldRoleId, newRoleId, req.user.uid, reason]
     )
-    await pool.query('UPDATE users SET role_id = $1, updated_at = now() WHERE id = $2', [newRoleId, userId])
-    await pool.query(
+    await client.query('UPDATE users SET role_id = $1, updated_at = now() WHERE id = $2', [newRoleId, userId])
+    await client.query(
       'INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT (user_id, role_id) DO NOTHING',
       [userId, newRoleId]
     )
 
-    await pool.query(
+    await client.query(
       `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, old_values, new_values, ip_address)
        VALUES ($1, 'role_changed', 'users', $2, $3, $4, $5)`,
       [req.user.uid, userId, JSON.stringify({ role_id: oldRoleId }), JSON.stringify({ role_id: newRoleId, role_name }), req.ip]
     )
 
-    await pool.query('COMMIT')
+    await client.query('COMMIT')
     res.json({ message: 'Role updated' })
   } catch (err) {
-    await pool.query('ROLLBACK')
+    await client.query('ROLLBACK')
     throw err
+  } finally {
+    client.release()
   }
 })
 
@@ -120,30 +123,33 @@ router.patch('/users/:id/status', authenticate, requireRole('admin'), async (req
 
   const oldStatus = userResult.rows[0].account_status
 
-  await pool.query('BEGIN')
+  const client = await pool.connect()
   try {
-    await pool.query(
+    await client.query('BEGIN')
+    await client.query(
       'INSERT INTO user_status_history (user_id, old_status, new_status, changed_by, reason) VALUES ($1, $2, $3, $4, $5)',
       [userId, oldStatus, status, req.user.uid, reason]
     )
-    await pool.query('UPDATE users SET account_status = $1, updated_at = now() WHERE id = $2', [status, userId])
+    await client.query('UPDATE users SET account_status = $1, updated_at = now() WHERE id = $2', [status, userId])
 
     // Revoke active sessions on disable/lock
     if (status !== 'active') {
-      await pool.query('UPDATE user_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [userId])
+      await client.query('UPDATE user_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [userId])
     }
 
-    await pool.query(
+    await client.query(
       `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, old_values, new_values, ip_address)
        VALUES ($1, 'status_changed', 'users', $2, $3, $4, $5)`,
       [req.user.uid, userId, JSON.stringify({ account_status: oldStatus }), JSON.stringify({ account_status: status }), req.ip]
     )
 
-    await pool.query('COMMIT')
+    await client.query('COMMIT')
     res.json({ message: 'Status updated' })
   } catch (err) {
-    await pool.query('ROLLBACK')
+    await client.query('ROLLBACK')
     throw err
+  } finally {
+    client.release()
   }
 })
 
@@ -163,7 +169,7 @@ router.delete('/users/:id', authenticate, requireRole('admin'), async (req, res)
   }
 
   const userResult = await pool.query(
-    'SELECT u.*, r.name as role_name FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1',
+    'SELECT u.*, COALESCE(r.name, \'author\') as role_name FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1',
     [userId]
   )
   if (userResult.rows.length === 0) {
@@ -172,10 +178,11 @@ router.delete('/users/:id', authenticate, requireRole('admin'), async (req, res)
 
   const targetUser = userResult.rows[0]
 
-  await pool.query('BEGIN')
+  const client = await pool.connect()
   try {
+    await client.query('BEGIN')
     // Soft delete: anonymize PII, mark as disabled, revoke sessions
-    await pool.query(
+    await client.query(
       `UPDATE users SET
         account_status = 'disabled',
         email = $1,
@@ -188,13 +195,13 @@ router.delete('/users/:id', authenticate, requireRole('admin'), async (req, res)
     )
 
     // Revoke all active sessions
-    await pool.query(
+    await client.query(
       'UPDATE user_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL',
       [userId]
     )
 
     // Audit log
-    await pool.query(
+    await client.query(
       `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, old_values, new_values, ip_address)
        VALUES ($1, 'user_deleted', 'users', $2, $3, $4, $5)`,
       [
@@ -206,11 +213,13 @@ router.delete('/users/:id', authenticate, requireRole('admin'), async (req, res)
       ]
     )
 
-    await pool.query('COMMIT')
+    await client.query('COMMIT')
     res.json({ message: 'User deleted successfully' })
   } catch (err) {
-    await pool.query('ROLLBACK')
+    await client.query('ROLLBACK')
     throw err
+  } finally {
+    client.release()
   }
 })
 

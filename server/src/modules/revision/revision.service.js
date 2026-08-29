@@ -93,7 +93,7 @@ export async function submitRevisionResponse(requestId, userId, responseData) {
     const request = requestResult.rows[0]
 
     if (request.submitted_by !== userId) {
-      const isAuthor = await pool.query(
+      const isAuthor = await client.query(
         'SELECT 1 FROM manuscript_authors WHERE manuscript_id = $1 AND user_id = $2',
         [request.manuscript_id, userId]
       )
@@ -122,11 +122,14 @@ export async function submitRevisionResponse(requestId, userId, responseData) {
       ? previousVersion.rows[0].version_number + 1
       : 1
 
+    const title = version_data?.title || null
+    const abstract = version_data?.abstract || null
+
     const versionResult = await client.query(
       `INSERT INTO manuscript_versions (manuscript_id, version_number, version_type, title, abstract, submitted_by, submitted_at, is_current)
-       VALUES ($1, $2, 'revision', (SELECT title FROM manuscripts WHERE id = $1), (SELECT abstract FROM manuscripts WHERE id = $1), $3, now(), true)
+       VALUES ($1, $2, 'revision', COALESCE($3, (SELECT title FROM manuscripts WHERE id = $1)), COALESCE($4, (SELECT abstract FROM manuscripts WHERE id = $1)), $5, now(), true)
        RETURNING id`,
-      [request.manuscript_id, newVersionNumber, userId]
+      [request.manuscript_id, newVersionNumber, title, abstract, userId]
     )
 
     const newVersionId = versionResult.rows[0].id

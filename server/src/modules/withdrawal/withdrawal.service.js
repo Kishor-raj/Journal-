@@ -143,7 +143,7 @@ export async function handleWithdrawal(withdrawalId, editorId, approved, decisio
   }
 }
 
-export async function getWithdrawalRequests(editorId) {
+export async function getWithdrawalRequests(_editorId) {
   const result = await pool.query(
     `SELECT mw.*, m.title, m.submission_number, m.current_status,
             u.display_name as requested_by_name
