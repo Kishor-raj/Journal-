@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import FormField from '../../shared/components/FormField'
 import Button from '../../shared/components/Button'
 import FileUpload from '../../shared/components/FileUpload'
+import './AuthorDashboard.css'
 import {
   createDraft,
   getManuscript,
@@ -923,16 +924,16 @@ export default function SubmissionWizard() {
 
   const validateStep = useCallback(() => {
     const newErrors = {}
-    if (step === 1) {
+    if (step === 0) {
       if (!manuscript?.title?.trim()) newErrors.title = 'Title is required'
       if (!manuscript?.abstract?.trim()) newErrors.abstract = 'Abstract is required'
       if (!manuscript?.category) newErrors.category = 'Category is required'
     }
-    if (step === 3) {
+    if (step === 2) {
       const hasMain = (manuscript?.files || []).some((f) => f.file_type === 'main_manuscript')
       if (!hasMain) newErrors.main_manuscript = 'Main manuscript file is required'
     }
-    if (step === 5) {
+    if (step === 4) {
       const allChecked = declarations.originality && declarations.ethics && declarations.conflicts && declarations.authorship
       if (!allChecked) newErrors.declarations = 'All declarations must be confirmed before submitting'
       if (!manuscript?.authors || manuscript.authors.length === 0) {
@@ -962,7 +963,7 @@ export default function SubmissionWizard() {
 
   const handleNext = async () => {
     if (!validateStep()) return
-    if (manuscript?.id && step > 0) {
+    if (manuscript?.id) {
       await handleSave()
     }
     if (step < STEPS.length - 1) {
@@ -997,121 +998,77 @@ export default function SubmissionWizard() {
 
   if (loading) {
     return (
-      <div style={styles.page}>
-        <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '60px 0' }}>
-          Loading...
+    <div className="content-area">
+      <div className="page active" id="page-new-submission">
+        <div className="page-header">
+          <div className="page-header-row">
+            <div>
+              <h1 className="page-title">New Submission</h1>
+              <p className="page-subtitle">Submit a new manuscript for peer review — progress is saved automatically</p>
+            </div>
+          </div>
         </div>
-      </div>
-    )
-  }
 
-  const progressPercent = (step / (STEPS.length - 1)) * 100
-
-  return (
-    <div style={styles.page}>
-      <div style={styles.progressBar}>
-        <div style={styles.progressTrack} />
-        <div style={{ ...styles.progressFill, width: `${progressPercent}%` }} />
-        {STEPS.map((s, i) => (
-          <div key={s.key} style={styles.stepContainer}>
-            <div
-              style={styles.stepDot(i === step, i < step)}
-              onClick={() => handleStepClick(i)}
-            >
-              {i < step ? '✓' : i + 1}
+        <div className="wizard-progress" id="wizardProgress">
+          {STEPS.map((s, i) => (
+            <div key={s.key} className="wizard-step" onClick={() => handleStepClick(i)} style={{ cursor: i <= step ? 'pointer' : 'default' }}>
+              <div className={`wizard-num ${i < step ? 'done' : i === step ? 'active' : ''}`}>
+                {i < step ? <i className="fas fa-check"></i> : i + 1}
+              </div>
+              <div className={`wizard-step-label ${i < step ? 'done' : i === step ? 'active' : ''}`}>
+                {s.label}
+              </div>
+              {i < STEPS.length - 1 && (
+                <div className={`wizard-line ${i < step ? 'done' : ''}`}></div>
+              )}
             </div>
-            <div style={styles.stepLabel(i === step)}>{s.label}</div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <div style={{ minHeight: '400px' }}>
-        
-        
-        
-        {step === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <h2 style={styles.sectionTitle}>Ready to Start</h2>
-            <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px', fontSize: 'var(--text-base)' }}>
-              A draft manuscript has been created. Proceed to enter your manuscript details.
-            </p>
-            <Button variant="primary" size="lg" onClick={handleNext}>
-              Start Entering Details
-            </Button>
-          </div>
-        )}
-        {step === 1 && (
-          <StepMetadata
-            manuscript={manuscript || {}}
-            onChange={handleManuscriptChange}
-            errors={errors}
-          />
-        )}
-        {step === 2 && (
-          <StepAuthors
-            manuscript={manuscript || {}}
-            onChange={handleManuscriptChange}
-          />
-        )}
-        {step === 3 && (
-          <StepFiles
-            manuscript={manuscript || {}}
-            onChange={handleManuscriptChange}
-            errors={errors}
-          />
-        )}
-        {step === 4 && (
-          <StepReview manuscript={manuscript || {}} />
-        )}
-        {step === 5 && (
-          <StepDeclarations
-            declarations={declarations}
-            onChange={setDeclarations}
-            errors={errors}
-          />
-        )}
-      </div>
-
-      {step > 0 && (
-        <>
-          {errors.submit && (
-            <div style={{ padding: '16px', background: 'rgba(192, 57, 43, 0.08)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)', borderRadius: '4px', marginBottom: '16px' }}>
-              {errors.submit}
-            </div>
-          )}
-          <div style={styles.navButtons}>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <Button variant="ghost" onClick={handlePrev}>
-              ← Previous
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/author')}>
-              Exit
-            </Button>
-          </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            {saving && (
-              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
-                Saving...
-              </span>
+        <div className="card">
+          <div className="card-body wizard-content" id="wizardContent">
+            {step === 0 && (
+              <StepMetadata manuscript={manuscript || {}} onChange={handleManuscriptChange} errors={errors} />
             )}
+            {step === 1 && (
+              <StepAuthors manuscript={manuscript || {}} onChange={handleManuscriptChange} />
+            )}
+            {step === 2 && (
+              <StepFiles manuscript={manuscript || {}} onChange={handleManuscriptChange} errors={errors} />
+            )}
+            {step === 3 && (
+              <StepReview manuscript={manuscript || {}} />
+            )}
+            {step === 4 && (
+              <StepDeclarations declarations={declarations} onChange={setDeclarations} errors={errors} />
+            )}
+          </div>
+        </div>
+
+        <div style={{display: 'flex', justifyContent: 'space-between', marginTop: 'var(--spacing-md)'}} id="wizardNav">
+          <button className="btn btn-secondary" id="wizPrev" disabled={step === 0} onClick={handlePrev}>
+            <i className="fas fa-arrow-left"></i> Previous
+          </button>
+          
+          <div style={{display: 'flex', gap: '8px'}}>
+            {errors.submit && (
+              <span style={{color: 'var(--danger)', alignSelf: 'center', marginRight: '10px'}}>{errors.submit}</span>
+            )}
+            <button className="btn btn-secondary" onClick={handleSave} disabled={saving}>
+              <i className="fas fa-save"></i> {saving ? 'Saving...' : 'Save Draft'}
+            </button>
             {step < STEPS.length - 1 ? (
-              <Button variant="primary" onClick={handleNext}>
-                Save & Continue
-              </Button>
+              <button className="btn btn-primary" id="wizNext" onClick={handleNext}>
+                Next Step <i className="fas fa-arrow-right"></i>
+              </button>
             ) : (
-              <Button
-                variant="primary"
-                size="lg"
-                loading={submitting}
-                onClick={handleSubmit}
-              >
-                Submit Manuscript
-              </Button>
+              <button className="btn btn-primary" id="wizNext" onClick={handleSubmit} disabled={submitting}>
+                <i className="fas fa-paper-plane"></i> {submitting ? 'Submitting...' : 'Submit Manuscript'}
+              </button>
             )}
           </div>
         </div>
-        </>
-      )}
+      </div>
     </div>
   )
 }
