@@ -189,6 +189,14 @@ export async function submitCheck(manuscriptId, moderatorId, checkData) {
     throw new AppError('Invalid decision', 400)
   }
 
+  // Approve (proceed) is only valid when Scope Assessment = PASS
+  if (decision === 'proceed' && checklist?.scope !== 'pass') {
+    throw new AppError(
+      'Cannot approve: Scope Assessment must be PASS to approve a manuscript',
+      422
+    )
+  }
+
   const conflicted = await isConflicted(moderatorId, manuscriptId)
   if (conflicted) {
     throw new AppError('Conflict of interest detected', 409)
