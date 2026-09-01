@@ -1,77 +1,30 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Button from '../../shared/components/Button'
-import PageHeader from '../../shared/components/PageHeader'
-import StatCard from '../../shared/components/StatCard'
-import Modal from '../../shared/components/Modal'
 import { getMyManuscripts, createDraft, deleteManuscript } from './services/manuscriptService'
-
-const styles = {
-  page: {
-    fontFamily: 'var(--font-body)',
-    padding: '40px',
-    maxWidth: '1100px',
-    margin: '0 auto',
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-    gap: '20px',
-    marginBottom: '40px',
-  },
-  sectionTitle: {
-    fontFamily: 'var(--font-display)',
-    fontSize: 'var(--text-lg)',
-    color: 'var(--color-ink-navy)',
-    marginBottom: '20px',
-  },
-  recentList: {
-    listStyle: 'none',
-    margin: 0,
-    padding: 0,
-  },
-  recentItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '16px 20px',
-    borderBottom: '1px solid var(--color-rule-grey)',
-    borderRadius: '0',
-    cursor: 'pointer',
-    transition: 'background 0.12s ease',
-  },
-  recentTitle: {
-    fontSize: 'var(--text-base)',
-    color: 'var(--color-ink-black)',
-    fontWeight: 500,
-  },
-  recentMeta: {
-    fontSize: 'var(--text-sm)',
-    color: 'var(--color-ink-black)',
-    opacity: 0.55,
-  },
-  recentContainer: {
-    background: 'var(--color-surface)',
-    border: '1px solid var(--color-rule-grey)',
-    borderRadius: 'var(--radius-lg)',
-    boxShadow: 'var(--shadow-elevated)',
-  },
-  emptyText: {
-    padding: '40px 20px',
-    textAlign: 'center',
-    color: 'var(--color-ink-black)',
-    opacity: 0.55,
-    fontSize: 'var(--text-base)',
-  },
-}
+import Modal from '../../shared/components/Modal'
+import Button from '../../shared/components/Button'
+import './AuthorDashboard.css'
 
 function formatDate(dateString) {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
     month: 'short',
     day: 'numeric',
+    year: 'numeric'
   })
+}
+
+function getStatusBadge(status) {
+  switch(status) {
+    case 'draft': return <span className="status-badge status-disabled"><i className="fas fa-circle"></i> Draft</span>
+    case 'submitted': return <span className="status-badge status-info"><i className="fas fa-circle"></i> Submitted</span>
+    case 'under_review': return <span className="status-badge status-info"><i className="fas fa-circle"></i> Under Review</span>
+    case 'revision_requested': return <span className="status-badge status-pending"><i className="fas fa-circle"></i> Revision Requested</span>
+    case 'resubmitted': return <span className="status-badge status-info"><i className="fas fa-circle"></i> Resubmitted</span>
+    case 'accepted': return <span className="status-badge status-active"><i className="fas fa-circle"></i> Accepted</span>
+    case 'rejected': return <span className="status-badge status-locked"><i className="fas fa-circle"></i> Rejected</span>
+    default: return <span className="status-badge status-disabled"><i className="fas fa-circle"></i> {status?.replace(/_/g, ' ')}</span>
+  }
 }
 
 export default function AuthorDashboard() {
@@ -96,6 +49,8 @@ export default function AuthorDashboard() {
   const needsAction = manuscripts.filter((m) =>
     ['revision_requested', 'accepted', 'rejected'].includes(m.current_status)
   )
+  const revisionsNeeded = manuscripts.filter(m => m.current_status === 'revision_requested')
+  const accepted = manuscripts.filter(m => m.current_status === 'accepted')
 
   const handleNewSubmission = async () => {
     const emptyDraft = drafts.find((d) => !d.title || d.title.trim() === '')
@@ -111,11 +66,6 @@ export default function AuthorDashboard() {
     } catch {
       setCreating(false)
     }
-  }
-
-  const requestDelete = (e, id) => {
-    e.stopPropagation()
-    setPendingDeleteId(id)
   }
 
   const confirmDelete = async () => {
@@ -141,85 +91,126 @@ export default function AuthorDashboard() {
   }
 
   return (
-    <div style={styles.page}>
-      <PageHeader
-        title="Author Dashboard"
-        subtitle="Welcome back — here's your submission overview"
-        action={(
-          <Button variant="primary" size="md" loading={creating} onClick={handleNewSubmission}>
-            ➕ New Submission
-          </Button>
-        )}
-      />
-
-      <div style={styles.statsGrid}>
-        <StatCard label="Drafts" value={drafts.length} accent="gold" />
-        <StatCard label="Under Review" value={underReview.length} accent="blue" />
-        <StatCard label="Needing Action" value={needsAction.length} accent="amber" />
-      </div>
-
-      <h2 style={styles.sectionTitle}>Recent Manuscripts</h2>
-      <div style={styles.recentContainer}>
-        {loading ? (
-          <div style={styles.emptyText}>Loading manuscripts...</div>
-        ) : manuscripts.length === 0 ? (
-          <div style={styles.emptyText}>
-            No manuscripts yet. Start your first submission to get going.
+    <div className="content-area">
+      <div className="page active" id="page-dashboard">
+        <div className="page-header">
+          <div className="page-header-row">
+            <div>
+              <h1 className="page-title">Author Dashboard</h1>
+              <p className="page-subtitle">Your manuscripts, submission status, and items needing attention</p>
+            </div>
+            <button className="btn btn-primary" disabled={creating} onClick={handleNewSubmission}>
+              <i className="fas fa-plus"></i> New Submission
+            </button>
           </div>
-        ) : (
-          <ul style={styles.recentList}>
-            {manuscripts.slice(0, 10).map((m) => (
-              <li
-                key={m.id}
-                style={styles.recentItem}
-                onClick={() => handleRowClick(m)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(13, 27, 62, 0.04)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent'
-                }}
-              >
-                <div>
-                  <div style={styles.recentTitle}>{m.title || 'Untitled'}</div>
-                  <div style={styles.recentMeta}>
-                    {m.submission_number && `#${m.submission_number}`}
-                    {m.submitted_at && ` · Submitted ${formatDate(m.submitted_at)}`}
-                    {!m.submitted_at && m.created_at && ` · Created ${formatDate(m.created_at)}`}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span
-                    style={{
-                      fontSize: 'var(--text-sm)',
-                      fontWeight: 600,
-                      color: 'var(--color-citation-gold-dark)',
-                      textTransform: 'capitalize',
-                    }}
-                  >
-                    {m.current_status?.replace(/_/g, ' ')}
-                  </span>
-                  {m.current_status === 'draft' && (
-                    <button
-                      onClick={(e) => requestDelete(e, m.id)}
-                      style={{
-                        background: 'none',
-                        border: '1px solid var(--color-danger)',
-                        borderRadius: '4px',
-                        color: 'var(--color-danger)',
-                        cursor: 'pointer',
-                        padding: '4px 8px',
-                        fontSize: '12px',
-                      }}
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+        </div>
+
+        <div className="kpi-grid">
+          <div className="kpi-card kpi-draft">
+            <div className="kpi-header">
+              <span className="kpi-label">Drafts</span>
+              <div className="kpi-icon"><i className="fas fa-file-pen"></i></div>
+            </div>
+            <div className="kpi-value">{drafts.length}</div>
+            <div className="kpi-trend"><span>Continue where you left off</span></div>
+          </div>
+          <div className="kpi-card kpi-review">
+            <div className="kpi-header">
+              <span className="kpi-label">Under Review</span>
+              <div className="kpi-icon"><i className="fas fa-magnifying-glass"></i></div>
+            </div>
+            <div className="kpi-value">{underReview.length}</div>
+            <div className="kpi-trend"><span>Awaiting reviewer reports</span></div>
+          </div>
+          <div className="kpi-card kpi-revision">
+            <div className="kpi-header">
+              <span className="kpi-label">Revision Needed</span>
+              <div className="kpi-icon"><i className="fas fa-rotate"></i></div>
+            </div>
+            <div className="kpi-value">{revisionsNeeded.length}</div>
+            <div className="kpi-trend">
+              {revisionsNeeded.length > 0 ? (
+                <span style={{color: 'var(--danger)', fontWeight: 600}}>Action required</span>
+              ) : (
+                <span>All up to date</span>
+              )}
+            </div>
+          </div>
+          <div className="kpi-card kpi-accepted">
+            <div className="kpi-header">
+              <span className="kpi-label">Accepted</span>
+              <div className="kpi-icon"><i className="fas fa-circle-check"></i></div>
+            </div>
+            <div className="kpi-value">{accepted.length}</div>
+            <div className="kpi-trend"><span>Proceeding to publication</span></div>
+          </div>
+        </div>
+
+        {revisionsNeeded.length > 0 && (
+          <div className="alert-banner alert-danger mb-lg">
+            <i className="fas fa-triangle-exclamation"></i>
+            <div>
+              <strong>Revision due soon:</strong> You have {revisionsNeeded.length} manuscript(s) needing revision. 
+              Please review the feedback and submit your revised manuscripts.
+            </div>
+          </div>
         )}
+
+        <div className="grid-2">
+          <div className="card">
+            <div className="card-header"><span className="card-title">Needs Attention</span></div>
+            <div className="card-body" style={{padding: 'var(--spacing-md) var(--spacing-lg)'}}>
+              <ul className="activity-list">
+                {needsAction.length === 0 ? (
+                  <div style={{color: 'var(--text-muted)', fontSize: '13px', padding: '12px 0'}}>
+                    You're all caught up! No items need your immediate attention.
+                  </div>
+                ) : (
+                  needsAction.slice(0, 5).map(m => (
+                    <li key={m.id} className="activity-item" style={{cursor:'pointer'}} onClick={() => handleRowClick(m)}>
+                      <div className={`activity-dot ${m.current_status === 'revision_requested' ? 'dot-danger' : m.current_status === 'accepted' ? 'dot-success' : 'dot-warning'}`}></div>
+                      <div className="activity-content">
+                        <div className="activity-text">
+                          <strong>{m.submission_number || m.id}</strong> — {m.current_status?.replace(/_/g, ' ')}
+                        </div>
+                        <div className="activity-time">Updated: {formatDate(m.updated_at || m.created_at)}</div>
+                      </div>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-header">
+              <span className="card-title">Recent Manuscripts</span>
+              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/author/manuscripts')}>
+                View All <i className="fas fa-arrow-right" style={{fontSize: '11px', marginLeft: '4px'}}></i>
+              </button>
+            </div>
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead><tr><th>ID</th><th>Status</th><th>Updated</th></tr></thead>
+                <tbody>
+                  {manuscripts.slice(0, 5).map(m => (
+                    <tr key={m.id} style={{cursor:'pointer'}} onClick={() => handleRowClick(m)}>
+                      <td className="cell-name">{m.submission_number || m.id.substring(0,8)}</td>
+                      <td>{getStatusBadge(m.current_status)}</td>
+                      <td className="cell-muted">{formatDate(m.updated_at || m.created_at)}</td>
+                    </tr>
+                  ))}
+                  {manuscripts.length === 0 && !loading && (
+                    <tr>
+                      <td colSpan="3" style={{textAlign: 'center', padding: '24px', color: 'var(--text-muted)'}}>
+                        No manuscripts found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       <Modal
