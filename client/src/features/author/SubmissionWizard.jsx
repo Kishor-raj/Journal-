@@ -15,11 +15,12 @@ import {
 } from './services/manuscriptService'
 
 const STEPS = [
-    { key: 'metadata', label: 'Metadata' },
+  { key: 'basic', label: 'Basic Information' },
   { key: 'authors', label: 'Authors' },
-  { key: 'files', label: 'Files' },
+  { key: 'files', label: 'Manuscript Files' },
+  { key: 'metadata', label: 'Metadata & Declarations' },
   { key: 'review', label: 'Review' },
-  { key: 'submit', label: 'Declarations' },
+  { key: 'submit', label: 'Submit' },
 ]
 
 const CATEGORIES = [
@@ -31,6 +32,18 @@ const CATEGORIES = [
   'Letter to Editor',
   'Book Review',
   'Technical Note',
+]
+
+const SUBJECTS = [
+  'Machine Learning',
+  'Computer Vision',
+  'Natural Language Processing',
+  'Software Engineering',
+  'Cybersecurity',
+  'Quantum Computing',
+  'IoT / Edge Computing',
+  'Data Science',
+  'Artificial Intelligence',
 ]
 
 const CONTRIBUTION_ROLES = [
@@ -49,166 +62,364 @@ const CONTRIBUTION_ROLES = [
   'Writing – Review & Editing',
 ]
 
+// Enhanced styles matching the author.html design
 const styles = {
   page: {
-    fontFamily: 'var(--font-body)',
-    padding: '40px',
-    maxWidth: '800px',
-    margin: '0 auto',
+    fontFamily: "'DM Sans', sans-serif",
+    maxWidth: '100%',
   },
-  progressBar: {
+  
+  // Wizard progress bar
+  wizardProgress: {
     display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: '40px',
+    alignItems: 'center',
+    gap: '0',
+    marginBottom: '32px',
     position: 'relative',
   },
-  progressTrack: {
-    position: 'absolute',
-    top: '18px',
-    left: '0',
-    right: '0',
-    height: '3px',
-    background: 'var(--color-rule-grey)',
-    zIndex: 0,
-  },
-  progressFill: {
-    position: 'absolute',
-    top: '18px',
-    left: '0',
-    height: '3px',
-    background: 'var(--color-success)',
+  wizardStep: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '6px',
+    position: 'relative',
     zIndex: 1,
-    transition: 'width 0.3s ease',
   },
-  stepDot: (isActive, isCompleted) => ({
+  wizardNum: (isActive, isCompleted) => ({
     width: '36px',
     height: '36px',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: 'var(--text-sm)',
+    fontSize: '13px',
     fontWeight: 700,
-    fontFamily: 'var(--font-body)',
-    position: 'relative',
-    zIndex: 2,
-    background: isCompleted
-      ? 'var(--color-success)'
-      : isActive
-        ? 'var(--color-citation-gold)'
-        : 'var(--color-surface)',
-    color: isCompleted
-      ? 'var(--color-surface)'
-      : isActive
-        ? 'var(--color-ink-navy)'
-        : 'var(--color-text-muted)',
-    border: isCompleted
-      ? '2px solid var(--color-success)'
-      : isActive
-        ? '2px solid var(--color-citation-gold)'
-        : '2px solid var(--color-rule-grey)',
-    cursor: isCompleted ? 'pointer' : 'default',
+    border: `2px solid ${isCompleted ? 'var(--color-success)' : isActive ? 'var(--color-info, #2E6B9E)' : 'var(--color-rule-grey)'}`,
+    background: isCompleted ? 'var(--color-success)' : isActive ? 'var(--color-info, #2E6B9E)' : 'var(--color-surface)',
+    color: isCompleted || isActive ? 'white' : 'var(--color-text-muted)',
+    boxShadow: isActive ? '0 0 0 4px rgba(46, 107, 158, 0.15)' : 'none',
+    transition: 'all 0.15s ease',
   }),
-  stepLabel: (isActive) => ({
-    fontSize: 'var(--text-xs)',
-    color: isActive ? 'var(--color-citation-gold-dark)' : 'var(--color-text-muted)',
-    fontWeight: isActive ? 600 : 400,
-    marginTop: '8px',
+  wizardStepLabel: (isActive, isCompleted) => ({
+    fontSize: '11px',
+    fontWeight: 600,
+    color: isCompleted ? 'var(--color-success)' : isActive ? 'var(--color-info, #2E6B9E)' : 'var(--color-text-muted)',
     textAlign: 'center',
-    whiteSpace: 'nowrap',
   }),
-  stepContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    flex: 1,
+  wizardLine: (isCompleted) => ({
+    position: 'absolute',
+    top: '18px',
+    left: 'calc(50% + 18px)',
+    right: 'calc(-50% + 18px)',
+    height: '2px',
+    background: isCompleted ? 'var(--color-success)' : 'var(--color-rule-grey)',
+    zIndex: 0,
+    transition: 'background 0.2s ease',
+  }),
+  
+  // Card styling
+  card: {
+    background: 'var(--color-surface)',
+    border: '1px solid var(--color-rule-grey)',
+    borderRadius: '12px',
+    overflow: 'hidden',
   },
+  cardBody: {
+    padding: '24px',
+    minHeight: '400px',
+  },
+  
+  // Typography
   sectionTitle: {
-    fontFamily: 'var(--font-display)',
-    fontSize: 'var(--text-lg)',
+    fontSize: '18px',
+    fontWeight: 700,
     color: 'var(--color-ink-navy)',
     marginBottom: '24px',
   },
+  
+  // Form inputs
   input: {
     width: '100%',
-    padding: '10px 14px',
-    fontSize: 'var(--text-base)',
-    fontFamily: 'var(--font-body)',
-    border: 'none',
-    borderRadius: '0 0 5px 5px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    border: '1px solid var(--color-rule-grey)',
+    borderRadius: '8px',
     outline: 'none',
-    background: 'transparent',
+    background: 'var(--color-surface)',
     color: 'var(--color-ink-black)',
-    boxSizing: 'border-box',
+    transition: 'all 0.15s ease',
   },
   textarea: {
     width: '100%',
-    padding: '10px 14px',
-    fontSize: 'var(--text-base)',
-    fontFamily: 'var(--font-body)',
-    border: 'none',
-    borderRadius: '0 0 5px 5px',
+    padding: '9px 12px',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    border: '1px solid var(--color-rule-grey)',
+    borderRadius: '8px',
     outline: 'none',
-    background: 'transparent',
+    background: 'var(--color-surface)',
     color: 'var(--color-ink-black)',
     resize: 'vertical',
-    minHeight: '120px',
-    boxSizing: 'border-box',
+    minHeight: '100px',
+    transition: 'all 0.15s ease',
   },
   select: {
     width: '100%',
-    padding: '10px 14px',
-    fontSize: 'var(--text-base)',
-    fontFamily: 'var(--font-body)',
-    border: 'none',
-    borderRadius: '0 0 5px 5px',
+    padding: '9px 32px 9px 12px',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    border: '1px solid var(--color-rule-grey)',
+    borderRadius: '8px',
     outline: 'none',
-    background: 'transparent',
+    background: 'var(--color-surface)',
     color: 'var(--color-ink-black)',
-    boxSizing: 'border-box',
-    appearance: 'none',
     cursor: 'pointer',
+    appearance: 'none',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238B8F9A' d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 10px center',
+    transition: 'all 0.15s ease',
   },
+  formRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '16px',
+  },
+  formHint: {
+    fontSize: '12px',
+    color: 'var(--color-text-muted)',
+    marginTop: '4px',
+  },
+  
+  // Alert banners
+  alertBanner: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    marginBottom: '16px',
+  },
+  alertInfo: {
+    background: 'rgba(46, 107, 158, 0.08)',
+    border: '1px solid rgba(46, 107, 158, 0.3)',
+    color: '#1A4A6E',
+  },
+  alertWarning: {
+    background: 'rgba(196, 139, 30, 0.08)',
+    border: '1px solid rgba(196, 139, 30, 0.3)',
+    color: '#7A5A10',
+  },
+  alertDanger: {
+    background: 'rgba(184, 51, 51, 0.08)',
+    border: '1px solid rgba(184, 51, 51, 0.3)',
+    color: '#7A1A1A',
+  },
+  alertSuccess: {
+    background: 'rgba(43, 122, 75, 0.08)',
+    border: '1px solid rgba(43, 122, 75, 0.3)',
+    color: '#1A5A30',
+  },
+  
+  // Upload zone
+  uploadZone: {
+    border: '2px dashed var(--color-rule-grey)',
+    borderRadius: '12px',
+    padding: '48px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+    background: 'var(--color-vellum, #F9F8F6)',
+  },
+  uploadZoneHover: {
+    borderColor: 'var(--color-info, #2E6B9E)',
+    background: 'rgba(46, 107, 158, 0.04)',
+  },
+  uploadIcon: {
+    fontSize: '36px',
+    color: 'var(--color-text-muted)',
+    marginBottom: '16px',
+  },
+  uploadText: {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: 'var(--color-ink-navy)',
+    marginBottom: '4px',
+  },
+  uploadHint: {
+    fontSize: '12px',
+    color: 'var(--color-text-muted)',
+  },
+  
+  // File item
+  fileItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px 16px',
+    border: '1px solid var(--color-rule-grey)',
+    borderRadius: '8px',
+    marginBottom: '8px',
+    background: 'var(--color-surface)',
+  },
+  fileItemIcon: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '6px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '18px',
+    flexShrink: 0,
+  },
+  fileItemInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  fileItemName: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--color-ink-navy)',
+  },
+  fileItemMeta: {
+    fontSize: '11px',
+    color: 'var(--color-text-muted)',
+  },
+  
+  // Author chip
+  authorChip: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '10px 14px',
+    border: '1px solid var(--color-rule-grey)',
+    borderRadius: '8px',
+    marginBottom: '8px',
+    background: 'var(--color-surface)',
+  },
+  authorChipAvatar: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '11px',
+    fontWeight: 700,
+    color: 'white',
+    flexShrink: 0,
+  },
+  authorChipInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  authorChipName: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--color-ink-navy)',
+  },
+  authorChipAffil: {
+    fontSize: '11px',
+    color: 'var(--color-text-muted)',
+  },
+  
+  // Co-author notice
+  coauthorNotice: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    padding: '12px 14px',
+    background: 'rgba(124, 58, 237, 0.08)',
+    border: '1px solid rgba(124, 58, 237, 0.3)',
+    borderRadius: '8px',
+    fontSize: '13px',
+    color: '#5B21B6',
+    marginBottom: '16px',
+  },
+  
+  // Navigation buttons
   navButtons: {
     display: 'flex',
     justifyContent: 'space-between',
-    marginTop: '32px',
-    paddingTop: '20px',
-    borderTop: '1px solid var(--color-rule-grey)',
+    marginTop: '16px',
   },
-  authorCard: {
-    background: 'var(--color-vellum)',
-    borderRadius: 'var(--radius-md)',
-    padding: '16px',
-    marginBottom: '12px',
-  },
-  authorHeader: {
+  
+  // Checkbox
+  checkbox: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '8px',
-  },
-  authorName: {
-    fontWeight: 600,
-    color: 'var(--color-ink-navy)',
-    fontSize: 'var(--text-base)',
-  },
-  removeBtn: {
-    background: 'none',
-    border: 'none',
-    color: 'var(--color-danger)',
+    alignItems: 'flex-start',
+    gap: '10px',
+    marginBottom: '16px',
     cursor: 'pointer',
+  },
+  checkboxInput: {
+    width: '18px',
+    height: '18px',
+    marginTop: '2px',
+    accentColor: 'var(--color-success)',
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  checkboxLabel: {
+    fontSize: '14px',
+    color: 'var(--color-ink-black)',
+    lineHeight: 1.5,
+    cursor: 'pointer',
+  },
+  
+  // Review section
+  reviewSection: {
+    padding: '16px',
+    background: 'var(--color-vellum, #F9F8F6)',
+    borderRadius: '8px',
+    marginBottom: '16px',
+    fontSize: '13px',
+    lineHeight: 1.8,
+  },
+  reviewLabel: {
+    fontSize: '11px',
     fontWeight: 600,
-    fontSize: 'var(--text-sm)',
-    padding: '4px 8px',
-  },
-  dragHandle: {
-    cursor: 'grab',
     color: 'var(--color-text-muted)',
-    marginRight: '12px',
-    fontSize: 'var(--text-lg)',
-    userSelect: 'none',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    marginBottom: '4px',
   },
+  
+  // Submit section
+  submitContainer: {
+    textAlign: 'center',
+    padding: '32px 20px',
+  },
+  submitIcon: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    background: 'rgba(43, 122, 75, 0.08)',
+    color: 'var(--color-success)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '28px',
+    margin: '0 auto 24px',
+  },
+  submitTitle: {
+    fontSize: '20px',
+    fontWeight: 700,
+    marginBottom: '8px',
+    color: 'var(--color-ink-navy)',
+  },
+  submitDesc: {
+    fontSize: '14px',
+    color: 'var(--color-text-muted)',
+    maxWidth: '500px',
+    margin: '0 auto 24px',
+    lineHeight: 1.7,
+  },
+  
+  // Keywords
   tagInput: {
     display: 'flex',
     flexWrap: 'wrap',
@@ -216,6 +427,9 @@ const styles = {
     padding: '8px 12px',
     minHeight: '40px',
     alignItems: 'center',
+    border: '1px solid var(--color-rule-grey)',
+    borderRadius: '8px',
+    background: 'var(--color-surface)',
   },
   tag: {
     display: 'inline-flex',
@@ -225,8 +439,8 @@ const styles = {
     color: 'var(--color-ink-navy)',
     borderRadius: '9999px',
     padding: '3px 10px',
-    fontSize: 'var(--text-sm)',
-    fontFamily: 'var(--font-body)',
+    fontSize: '13px',
+    fontWeight: 500,
   },
   tagRemove: {
     background: 'none',
@@ -235,87 +449,21 @@ const styles = {
     cursor: 'pointer',
     padding: 0,
     marginLeft: '2px',
-    fontSize: 'var(--text-sm)',
+    fontSize: '14px',
     fontWeight: 700,
   },
   tagInputField: {
     border: 'none',
     outline: 'none',
-    fontSize: 'var(--text-base)',
-    fontFamily: 'var(--font-body)',
+    fontSize: '14px',
     flex: 1,
     minWidth: '120px',
     background: 'transparent',
     color: 'var(--color-ink-black)',
   },
-  reviewSection: {
-    marginBottom: '24px',
-  },
-  reviewLabel: {
-    fontSize: 'var(--text-sm)',
-    fontWeight: 600,
-    color: 'var(--color-text-muted)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    marginBottom: '6px',
-  },
-  reviewValue: {
-    fontSize: 'var(--text-base)',
-    color: 'var(--color-ink-black)',
-    lineHeight: 1.6,
-  },
-  checkbox: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '10px',
-    marginBottom: '20px',
-    cursor: 'pointer',
-  },
-  checkboxInput: {
-    width: '18px',
-    height: '18px',
-    marginTop: '2px',
-    accentColor: 'var(--color-citation-gold)',
-    cursor: 'pointer',
-    flexShrink: 0,
-  },
-  checkboxLabel: {
-    fontSize: 'var(--text-base)',
-    color: 'var(--color-ink-black)',
-    lineHeight: 1.5,
-    cursor: 'pointer',
-  },
-  errorBanner: {
-    background: '#FDEDEC',
-    border: '1px solid var(--color-danger)',
-    borderRadius: 'var(--radius-md)',
-    padding: '12px 16px',
-    marginBottom: '20px',
-    color: 'var(--color-danger)',
-    fontSize: 'var(--text-sm)',
-  },
-  emptyList: {
-    padding: '32px',
-    textAlign: 'center',
-    color: 'var(--color-text-muted)',
-    fontSize: 'var(--text-sm)',
-    border: '1px dashed var(--color-rule-grey)',
-    borderRadius: 'var(--radius-md)',
-  },
-  correspondingDot: {
-    display: 'inline-block',
-    width: '8px',
-    height: '8px',
-    borderRadius: '50%',
-    background: 'var(--color-citation-gold)',
-    marginRight: '6px',
-  },
 }
 
-const inputStyle = { ...styles.input }
-const textareaStyle = { ...styles.textarea }
-const selectStyle = { ...styles.select }
-
+// Keyword Input Component
 function KeywordInput({ value = [], onChange }) {
   const [inputValue, setInputValue] = useState('')
 
@@ -337,7 +485,7 @@ function KeywordInput({ value = [], onChange }) {
   }
 
   return (
-    <FormField label="Keywords" helperText="Press Enter or comma to add a keyword">
+    <FormField label="Keywords" required helperText="Enter 3-6 keywords separated by commas">
       <div style={styles.tagInput}>
         {value.map((kw, i) => (
           <span key={i} style={styles.tag}>
@@ -352,7 +500,7 @@ function KeywordInput({ value = [], onChange }) {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={value.length === 0 ? 'Type and press Enter...' : ''}
+          placeholder={value.length === 0 ? 'e.g., machine learning, neural networks, NLP' : ''}
           style={styles.tagInputField}
         />
       </div>
@@ -360,51 +508,72 @@ function KeywordInput({ value = [], onChange }) {
   )
 }
 
-function StepMetadata({ manuscript, onChange, errors }) {
+// Step 1: Basic Information
+function StepBasic({ manuscript, onChange, errors }) {
   const handleChange = (field, value) => {
     onChange({ ...manuscript, [field]: value })
   }
 
   return (
     <div>
-      <h2 style={styles.sectionTitle}>Manuscript Metadata</h2>
-      <FormField label="Title" required error={errors.title}>
+      <h2 style={styles.sectionTitle}>Basic Information</h2>
+      
+      <FormField label="Manuscript Title" required error={errors.title}>
         <input
           type="text"
           value={manuscript.title || ''}
           onChange={(e) => handleChange('title', e.target.value)}
-          placeholder="Enter manuscript title"
-          style={inputStyle}
+          placeholder="Enter the full title of your manuscript"
+          style={styles.input}
         />
       </FormField>
-      <FormField label="Abstract" required error={errors.abstract}>
+      
+      <FormField label="Abstract" required error={errors.abstract} helperText="Do not include author names or affiliations if the journal uses double-blind review.">
         <textarea
           value={manuscript.abstract || ''}
           onChange={(e) => handleChange('abstract', e.target.value)}
-          placeholder="Provide a brief summary of the manuscript"
-          style={textareaStyle}
+          placeholder="Structured or unstructured abstract (typically 200-300 words)..."
+          style={{ ...styles.textarea, minHeight: '120px' }}
         />
       </FormField>
+      
+      <div style={styles.formRow}>
+        <FormField label="Article Type" required error={errors.category}>
+          <select
+            value={manuscript.category || ''}
+            onChange={(e) => handleChange('category', e.target.value)}
+            style={styles.select}
+          >
+            <option value="">Select type...</option>
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </FormField>
+        
+        <FormField label="Subject / Category" required error={errors.subject}>
+          <select
+            value={manuscript.subject || ''}
+            onChange={(e) => handleChange('subject', e.target.value)}
+            style={styles.select}
+          >
+            <option value="">Select subject...</option>
+            {SUBJECTS.map((subj) => (
+              <option key={subj} value={subj}>{subj}</option>
+            ))}
+          </select>
+        </FormField>
+      </div>
+      
       <KeywordInput
         value={manuscript.keywords || []}
         onChange={(kw) => handleChange('keywords', kw)}
       />
-      <FormField label="Category" required error={errors.category}>
-        <select
-          value={manuscript.category || ''}
-          onChange={(e) => handleChange('category', e.target.value)}
-          style={selectStyle}
-        >
-          <option value="">Select a category</option>
-          {CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-      </FormField>
     </div>
   )
 }
 
+// Step 2: Authors
 function StepAuthors({ manuscript, onChange }) {
   const { user } = useAuth()
   const authors = manuscript.authors || []
@@ -412,7 +581,6 @@ function StepAuthors({ manuscript, onChange }) {
   const [adding, setAdding] = useState(false)
   const [emailError, setEmailError] = useState('')
 
-  // Co-authors are all authors except the primary (logged-in user)
   const coAuthors = authors.filter(
     (a) => a.email?.toLowerCase() !== user?.email?.toLowerCase()
   )
@@ -471,136 +639,136 @@ function StepAuthors({ manuscript, onChange }) {
     onChange({ ...manuscript, authors: updated })
   }
 
-  const handleDragStart = (e, index) => {
-    e.dataTransfer.setData('text/plain', index.toString())
-    e.dataTransfer.effectAllowed = 'move'
+  const getInitials = (name) => {
+    if (!name) return '??'
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
-  const handleDrop = (e, dropIndex) => {
-    e.preventDefault()
-    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'), 10)
-    if (dragIndex === dropIndex) return
-    const updated = [...coAuthors]
-    const [dragged] = updated.splice(dragIndex, 1)
-    updated.splice(dropIndex, 0, dragged)
-    // Keep primary author record in the full list if present
-    const primaryInList = authors.find(
-      (a) => a.email?.toLowerCase() === user?.email?.toLowerCase()
-    )
-    onChange({ ...manuscript, authors: primaryInList ? [primaryInList, ...updated] : updated })
-  }
-
-  const handleDragOver = (e) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }
+  const avatarColors = ['var(--color-success)', 'var(--color-info, #2E6B9E)', 'var(--color-purple, #7C3AED)']
 
   return (
     <div>
       <h2 style={styles.sectionTitle}>Authors</h2>
-
-      {/* Primary Author — read-only */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-          Primary Author (You)
-        </div>
-        <div style={{ ...styles.authorCard, border: '1px solid var(--color-citation-gold)', background: 'rgba(196,146,46,0.06)' }}>
-          <div style={styles.authorHeader}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <span style={styles.authorName}>
-                <span style={styles.correspondingDot} />
-                {user?.display_name || user?.name || user?.email}
-              </span>
-            </div>
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-citation-gold)', fontWeight: 600, background: 'rgba(196,146,46,0.12)', padding: '3px 10px', borderRadius: '9999px' }}>
-              Primary &amp; Corresponding
-            </span>
-          </div>
-          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>{user?.email}</div>
+      
+      <div style={styles.coauthorNotice}>
+        <i className="fas fa-info-circle" style={{ marginTop: '2px' }}></i>
+        <div>
+          You are automatically added as the corresponding author. Add co-authors below. Author order determines the published byline.
         </div>
       </div>
-
-      {/* Co-Author input */}
+      
+      {/* Primary Author */}
+      <div style={styles.authorChip}>
+        <div style={{ ...styles.authorChipAvatar, background: 'var(--color-success)' }}>
+          {getInitials(user?.display_name || user?.name || user?.email)}
+        </div>
+        <div style={styles.authorChipInfo}>
+          <div style={styles.authorChipName}>
+            {user?.display_name || user?.name || user?.email}
+            <span style={{ 
+              fontSize: '11px', 
+              color: 'var(--color-success)', 
+              fontWeight: 600, 
+              marginLeft: '6px' 
+            }}>
+              Corresponding Author
+            </span>
+          </div>
+          <div style={styles.authorChipAffil}>{user?.organization || user?.email}</div>
+        </div>
+      </div>
+      
+      {/* Co-Authors */}
+      {coAuthors.map((author, index) => (
+        <div key={author.id} style={styles.authorChip}>
+          <div style={{ 
+            ...styles.authorChipAvatar, 
+            background: avatarColors[index % avatarColors.length] 
+          }}>
+            {getInitials(author.name || author.email)}
+          </div>
+          <div style={styles.authorChipInfo}>
+            <div style={styles.authorChipName}>
+              {author.name || author.email}
+              {author.is_corresponding && (
+                <span style={{ 
+                  fontSize: '11px', 
+                  color: 'var(--color-success)', 
+                  fontWeight: 600, 
+                  marginLeft: '6px' 
+                }}>
+                  Corresponding
+                </span>
+              )}
+            </div>
+            <div style={styles.authorChipAffil}>{author.affiliation || author.email}</div>
+          </div>
+          {!author.is_corresponding && (
+            <button
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: 'var(--color-info, #2E6B9E)', 
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 600,
+                padding: '4px 8px',
+                marginRight: '4px',
+              }}
+              onClick={() => handleSetCorresponding(author.id)}
+              type="button"
+            >
+              Set Corresponding
+            </button>
+          )}
+          <button
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'var(--color-danger)', 
+              cursor: 'pointer',
+              fontSize: '14px',
+              padding: '4px',
+            }}
+            onClick={() => handleRemoveAuthor(author.id)}
+            type="button"
+          >
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+      ))}
+      
+      {/* Add Co-Author */}
       <FormField label="Add Co-Author by Email">
-        <div style={{ display: 'flex', gap: '8px', padding: '10px 14px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <input
             type="email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setEmailError('') }}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAuthor())}
             placeholder="colleague@university.edu"
-            style={{ ...styles.tagInputField, flex: 1 }}
+            style={{ ...styles.input, flex: 1 }}
           />
-          <Button variant="secondary" size="sm" onClick={handleAddAuthor} loading={adding}>
-            Add
+          <Button variant="secondary" onClick={handleAddAuthor} loading={adding}>
+            <i className="fas fa-user-plus" style={{ marginRight: '6px' }}></i>
+            Add Co-Author
           </Button>
         </div>
         {emailError && (
-          <div style={{ padding: '0 14px 10px', color: 'var(--color-danger)', fontSize: 'var(--text-sm)' }}>{emailError}</div>
+          <div style={{ ...styles.formHint, color: 'var(--color-danger)', marginTop: '4px' }}>
+            {emailError}
+          </div>
         )}
       </FormField>
-
-      {coAuthors.length === 0 ? (
-        <div style={styles.emptyList}>
-          No co-authors added yet. Add co-authors or proceed to the next step.
-        </div>
-      ) : (
-        coAuthors.map((author, index) => (
-          <div
-            key={author.id}
-            style={styles.authorCard}
-            draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDrop={(e) => handleDrop(e, index)}
-            onDragOver={handleDragOver}
-          >
-            <div style={styles.authorHeader}>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <span style={styles.dragHandle}>⠿</span>
-                <span style={styles.authorName}>
-                  {author.is_corresponding && <span style={styles.correspondingDot} />}
-                  {author.name || author.email}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {!author.is_corresponding && (
-                  <button
-                    style={{ ...styles.removeBtn, color: 'var(--color-citation-gold)' }}
-                    onClick={() => handleSetCorresponding(author.id)}
-                    type="button"
-                  >
-                    Set Corresponding
-                  </button>
-                )}
-                <button
-                  style={styles.removeBtn}
-                  onClick={() => handleRemoveAuthor(author.id)}
-                  type="button"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-            <FormField label="Contribution Role">
-              <select
-                value={author.contribution_role || ''}
-                onChange={(e) => handleUpdateAuthor(author.id, 'contribution_role', e.target.value)}
-                style={selectStyle}
-              >
-                <option value="">Select role</option>
-                {CONTRIBUTION_ROLES.map((role) => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            </FormField>
-          </div>
-        ))
-      )}
+      
+      <div style={styles.formHint}>
+        In a production system, co-authors can be added by email. They will receive a confirmation link to verify their information and affiliate with the manuscript.
+      </div>
     </div>
   )
 }
 
-
+// Step 3: Files
 function StepFiles({ manuscript, onChange, errors }) {
   const [uploading, setUploading] = useState(null)
 
@@ -640,57 +808,84 @@ function StepFiles({ manuscript, onChange, errors }) {
       onChange(updated)
     } catch (err) {
       console.error(err)
-      setUploading(null)
     } finally {
       setUploading(null)
     }
   }
 
   const mainFile = (manuscript.files || []).find((f) => f.file_type === 'main_manuscript')
-  const coverFile = (manuscript.files || []).find((f) => f.file_type === 'cover_letter')
   const suppFiles = (manuscript.files || []).filter((f) => f.file_type === 'supplementary')
+
+  const getFileIcon = (filename) => {
+    const ext = filename?.split('.').pop()?.toLowerCase()
+    if (ext === 'pdf') return { icon: 'fa-file-pdf', color: 'var(--color-danger)', bg: 'rgba(184, 51, 51, 0.08)' }
+    if (['xlsx', 'csv'].includes(ext)) return { icon: 'fa-file-excel', color: 'var(--color-success)', bg: 'rgba(43, 122, 75, 0.08)' }
+    if (['png', 'jpg', 'jpeg', 'svg'].includes(ext)) return { icon: 'fa-file-image', color: 'var(--color-info, #2E6B9E)', bg: 'rgba(46, 107, 158, 0.08)' }
+    return { icon: 'fa-file', color: 'var(--color-text-muted)', bg: 'var(--color-vellum, #F9F8F6)' }
+  }
 
   return (
     <div>
-      <h2 style={styles.sectionTitle}>File Upload</h2>
-
-      <FormField label="Main Manuscript" required error={errors.main_manuscript} helperText="PDF format preferred">
+      <h2 style={styles.sectionTitle}>Manuscript Files</h2>
+      
+      <FormField label="Manuscript File" required error={errors.main_manuscript}>
         {mainFile ? (
           <div style={styles.fileItem}>
-            <span style={styles.fileName}>{mainFile.original_name}</span>
-            <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>Uploaded ✓</span>
+            <div style={{ 
+              ...styles.fileItemIcon, 
+              background: getFileIcon(mainFile.original_name).bg,
+              color: getFileIcon(mainFile.original_name).color,
+            }}>
+              <i className={`fas ${getFileIcon(mainFile.original_name).icon}`}></i>
+            </div>
+            <div style={styles.fileItemInfo}>
+              <div style={styles.fileItemName}>{mainFile.original_name}</div>
+              <div style={styles.fileItemMeta}>
+                {(mainFile.file_size_bytes / 1024 / 1024).toFixed(1)} MB — Uploaded
+              </div>
+            </div>
+            <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px' }}>
+              <i className="fas fa-check-circle"></i>
+            </span>
           </div>
         ) : (
           <FileUpload
             accept=".pdf,.doc,.docx"
             onFileSelect={(f) => handleFileSelect(f, 'main_manuscript')}
-            label="Drag & drop your manuscript, or click to browse"
+            label={
+              <div>
+                <div style={styles.uploadIcon}>
+                  <i className="fas fa-cloud-arrow-up"></i>
+                </div>
+                <div style={styles.uploadText}>Click to upload your manuscript</div>
+                <div style={styles.uploadHint}>PDF only, max 20 MB. Ensure all figures and tables are embedded or attached separately.</div>
+              </div>
+            }
           />
         )}
       </FormField>
-
-      <FormField label="Cover Letter" helperText="Optional">
-        {coverFile ? (
-          <div style={styles.fileItem}>
-            <span style={styles.fileName}>{coverFile.original_name}</span>
-            <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>Uploaded ✓</span>
-          </div>
-        ) : (
-          <FileUpload
-            accept=".pdf,.doc,.docx,.txt"
-            onFileSelect={(f) => handleFileSelect(f, 'cover_letter')}
-            label="Drag & drop your cover letter, or click to browse"
-          />
-        )}
-      </FormField>
-
-      <FormField label="Supplementary Files" helperText="Optional — add figures, tables, data sets, etc.">
+      
+      <FormField label="Supplementary Files (optional)" helperText="ZIP, XLSX, CSV, or individual image files.">
         {suppFiles.length > 0 && (
           <div style={{ marginBottom: '12px' }}>
             {suppFiles.map((f, i) => (
               <div key={i} style={styles.fileItem}>
-                <span style={styles.fileName}>{f.original_name}</span>
-                <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>Uploaded ✓</span>
+                <div style={{ 
+                  ...styles.fileItemIcon, 
+                  background: getFileIcon(f.original_name).bg,
+                  color: getFileIcon(f.original_name).color,
+                }}>
+                  <i className={`fas ${getFileIcon(f.original_name).icon}`}></i>
+                </div>
+                <div style={styles.fileItemInfo}>
+                  <div style={styles.fileItemName}>{f.original_name}</div>
+                  <div style={styles.fileItemMeta}>
+                    {(f.file_size_bytes / 1024 / 1024).toFixed(1)} MB — Uploaded
+                  </div>
+                </div>
+                <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px' }}>
+                  <i className="fas fa-check-circle"></i>
+                </span>
               </div>
             ))}
           </div>
@@ -703,149 +898,260 @@ function StepFiles({ manuscript, onChange, errors }) {
               files.forEach((f) => handleFileSelect(f, 'supplementary'))
             }
           }}
-          label="Drag & drop supplementary files, or click to browse"
+          label={
+            <div>
+              <div style={styles.uploadIcon}>
+                <i className="fas fa-paperclip"></i>
+              </div>
+              <div style={styles.uploadText}>Click to upload supplementary files</div>
+              <div style={styles.uploadHint}>ZIP, XLSX, CSV, images. Multiple files can be uploaded.</div>
+            </div>
+          }
+        />
+      </FormField>
+      
+      <FormField label="Figures (optional)" helperText="PNG, JPG, SVG, EPS. Minimum 300 DPI for print.">
+        <FileUpload
+          accept=".png,.jpg,.jpeg,.svg,.eps"
+          multiple
+          onFileSelect={(files) => {
+            if (Array.isArray(files)) {
+              files.forEach((f) => handleFileSelect(f, 'supplementary'))
+            }
+          }}
+          label={
+            <div>
+              <div style={styles.uploadIcon}>
+                <i className="fas fa-image"></i>
+              </div>
+              <div style={styles.uploadText}>Click to upload figure files</div>
+              <div style={styles.uploadHint}>PNG, JPG, SVG, EPS. Minimum 300 DPI for print.</div>
+            </div>
+          }
         />
       </FormField>
     </div>
   )
 }
 
+// Step 4: Metadata & Declarations
+function StepMetadata({ manuscript, onChange, errors }) {
+  const handleChange = (field, value) => {
+    onChange({ ...manuscript, [field]: value })
+  }
+
+  return (
+    <div>
+      <h2 style={styles.sectionTitle}>Metadata and Declarations</h2>
+      
+      <FormField label="Conflict of Interest" required error={errors.conflict_of_interest}>
+        <textarea
+          value={manuscript.conflict_of_interest || ''}
+          onChange={(e) => handleChange('conflict_of_interest', e.target.value)}
+          placeholder="Declare any financial, personal, or professional conflicts of interest. Write 'None declared' if none apply."
+          style={styles.textarea}
+        />
+      </FormField>
+      
+      <FormField label="Ethics Approval" required error={errors.ethics_approval}>
+        <textarea
+          value={manuscript.ethics_approval || ''}
+          onChange={(e) => handleChange('ethics_approval', e.target.value)}
+          placeholder="If your research involves human or animal subjects, provide the ethics committee name and reference number. If not applicable, state 'Not applicable.'"
+          style={styles.textarea}
+        />
+      </FormField>
+      
+      <FormField label="Funding Information" helperText="List all funding sources with grant numbers.">
+        <textarea
+          value={manuscript.funding || ''}
+          onChange={(e) => handleChange('funding', e.target.value)}
+          placeholder="List all funding sources with grant numbers. Write 'No external funding' if none."
+          style={{ ...styles.textarea, minHeight: '60px' }}
+        />
+      </FormField>
+      
+      <FormField label="Acknowledgements">
+        <textarea
+          value={manuscript.acknowledgements || ''}
+          onChange={(e) => handleChange('acknowledgements', e.target.value)}
+          placeholder="Acknowledge anyone who contributed but does not qualify for authorship."
+          style={{ ...styles.textarea, minHeight: '60px' }}
+        />
+      </FormField>
+      
+      <FormField label="Data Availability Statement">
+        <textarea
+          value={manuscript.data_availability || ''}
+          onChange={(e) => handleChange('data_availability', e.target.value)}
+          placeholder="Describe where the data/code used in this study can be accessed."
+          style={{ ...styles.textarea, minHeight: '60px' }}
+        />
+      </FormField>
+    </div>
+  )
+}
+
+// Step 5: Review
 function StepReview({ manuscript }) {
   return (
     <div>
-      <h2 style={styles.sectionTitle}>Review Submission</h2>
-
+      <h2 style={styles.sectionTitle}>Review Your Submission</h2>
+      
+      <div style={{ ...styles.alertBanner, ...styles.alertInfo }}>
+        <i className="fas fa-info-circle" style={{ marginTop: '2px' }}></i>
+        <div>Review all information below before submitting. You can still go back to make changes.</div>
+      </div>
+      
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Title</div>
-        <div style={styles.reviewValue}>{manuscript.title || '—'}</div>
+        <div>{manuscript.title || <span style={{ color: 'var(--color-text-muted)' }}>Not provided yet</span>}</div>
       </div>
-
-      <div style={styles.reviewSection}>
-        <div style={styles.reviewLabel}>Category</div>
-        <div style={styles.reviewValue}>{manuscript.category || '—'}</div>
-      </div>
-
+      
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Abstract</div>
-        <div style={styles.reviewValue}>{manuscript.abstract || '—'}</div>
+        <div>{manuscript.abstract || <span style={{ color: 'var(--color-text-muted)' }}>Not provided yet</span>}</div>
       </div>
-
+      
+      <div style={styles.reviewSection}>
+        <div style={styles.reviewLabel}>Article Type</div>
+        <div>{manuscript.category || <span style={{ color: 'var(--color-text-muted)' }}>Not selected</span>}</div>
+      </div>
+      
+      <div style={styles.reviewSection}>
+        <div style={styles.reviewLabel}>Subject</div>
+        <div>{manuscript.subject || <span style={{ color: 'var(--color-text-muted)' }}>Not selected</span>}</div>
+      </div>
+      
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Keywords</div>
-        <div style={styles.reviewValue}>
+        <div>
           {(manuscript.keywords || []).length > 0
             ? manuscript.keywords.join(', ')
-            : '—'}
+            : <span style={{ color: 'var(--color-text-muted)' }}>Not provided</span>}
         </div>
       </div>
-
+      
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Authors</div>
-        {(manuscript.authors || []).length > 0 ? (
-          manuscript.authors.map((a, i) => (
-            <div key={a.id || i} style={{ marginBottom: '6px', ...styles.reviewValue }}>
-              {a.name || a.email}
-              {a.is_corresponding && (
-                <span style={{ color: 'var(--color-citation-gold)', marginLeft: '8px', fontSize: 'var(--text-sm)' }}>
-                  (Corresponding)
-                </span>
-              )}
-              {a.contribution_role && (
-                <span style={{ color: 'var(--color-text-muted)', marginLeft: '8px', fontSize: 'var(--text-sm)' }}>
-                  — {a.contribution_role}
-                </span>
-              )}
-            </div>
-          ))
-        ) : (
-          <div style={styles.reviewValue}>No co-authors</div>
-        )}
+        <div>
+          {(manuscript.authors || []).length > 0 ? (
+            manuscript.authors.map((a, i) => (
+              <div key={a.id || i} style={{ marginBottom: '4px' }}>
+                {a.name || a.email}
+                {a.is_corresponding && (
+                  <span style={{ color: 'var(--color-success)', marginLeft: '8px', fontSize: '12px', fontWeight: 600 }}>
+                    (Corresponding)
+                  </span>
+                )}
+              </div>
+            ))
+          ) : (
+            <span style={{ color: 'var(--color-text-muted)' }}>No co-authors</span>
+          )}
+        </div>
       </div>
-
+      
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Files</div>
-        {(manuscript.files || []).length > 0 ? (
-          manuscript.files.map((f, i) => (
-            <div key={i} style={{ marginBottom: '4px', ...styles.reviewValue }}>
-              {f.original_name}
-              <span style={{ color: 'var(--color-text-muted)', marginLeft: '8px', fontSize: 'var(--text-sm)' }}>
-                ({f.file_type?.replace(/_/g, ' ')})
-              </span>
-            </div>
-          ))
-        ) : (
-          <div style={styles.reviewValue}>No files uploaded</div>
-        )}
+        <div>
+          {(manuscript.files || []).length > 0 ? (
+            manuscript.files.map((f, i) => (
+              <div key={i} style={{ marginBottom: '4px' }}>
+                {f.original_name}
+                <span style={{ color: 'var(--color-text-muted)', marginLeft: '8px', fontSize: '12px' }}>
+                  ({f.file_type?.replace(/_/g, ' ')})
+                </span>
+              </div>
+            ))
+          ) : (
+            <span style={{ color: 'var(--color-text-muted)' }}>No files uploaded</span>
+          )}
+        </div>
+      </div>
+      
+      <div style={styles.reviewSection}>
+        <div style={styles.reviewLabel}>Declarations</div>
+        <div>
+          {manuscript.conflict_of_interest ? 'Completed' : <span style={{ color: 'var(--color-text-muted)' }}>Not completed</span>}
+        </div>
+      </div>
+      
+      <div style={{ ...styles.alertBanner, ...styles.alertWarning }}>
+        <i className="fas fa-exclamation-triangle" style={{ marginTop: '2px' }}></i>
+        <div>
+          <strong>Validation warnings:</strong> Several required fields may be incomplete. Please go back to the relevant steps and fill in all required information before submitting.
+        </div>
       </div>
     </div>
   )
 }
 
-function StepDeclarations({ declarations, onChange, errors }) {
+// Step 6: Submit
+function StepSubmit({ manuscript, declarations, onDeclarationChange, onSubmit, submitting, errors }) {
+  const allChecked = declarations.originality && declarations.ethics && declarations.conflicts && declarations.authorship
+
   return (
     <div>
-      <h2 style={styles.sectionTitle}>Declarations</h2>
-      {errors.declarations && (
-        <div style={styles.errorBanner}>{errors.declarations}</div>
-      )}
-
-      <label style={styles.checkbox}>
-        <input
-          type="checkbox"
-          style={styles.checkboxInput}
-          checked={declarations.originality || false}
-          onChange={(e) => onChange({ ...declarations, originality: e.target.checked })}
-        />
-        <span style={styles.checkboxLabel}>
-          I confirm that this manuscript is original, has not been published elsewhere,
-          and is not currently under consideration by another journal.
-        </span>
-      </label>
-
-      <label style={styles.checkbox}>
-        <input
-          type="checkbox"
-          style={styles.checkboxInput}
-          checked={declarations.ethics || false}
-          onChange={(e) => onChange({ ...declarations, ethics: e.target.checked })}
-        />
-        <span style={styles.checkboxLabel}>
-          I confirm that all research involving human subjects or animals was conducted
-          in accordance with relevant ethical guidelines and has received appropriate
-          institutional approval where required.
-        </span>
-      </label>
-
-      <label style={styles.checkbox}>
-        <input
-          type="checkbox"
-          style={styles.checkboxInput}
-          checked={declarations.conflicts || false}
-          onChange={(e) => onChange({ ...declarations, conflicts: e.target.checked })}
-        />
-        <span style={styles.checkboxLabel}>
-          I confirm that all authors have disclosed any potential conflicts of interest,
-          and there are no financial or personal relationships that could inappropriately
-          influence this work.
-        </span>
-      </label>
-
-      <label style={styles.checkbox}>
-        <input
-          type="checkbox"
-          style={styles.checkboxInput}
-          checked={declarations.authorship || false}
-          onChange={(e) => onChange({ ...declarations, authorship: e.target.checked })}
-        />
-        <span style={styles.checkboxLabel}>
-          I confirm that all listed authors have contributed significantly to this work
-          and have approved the final version of the manuscript.
-        </span>
-      </label>
+      <h2 style={styles.sectionTitle}>Submit Manuscript</h2>
+      
+      <div style={styles.submitContainer}>
+        <div style={styles.submitIcon}>
+          <i className="fas fa-paper-plane"></i>
+        </div>
+        <div style={styles.submitTitle}>Ready to Submit</div>
+        <p style={styles.submitDesc}>
+          By submitting, you confirm that this manuscript is original, has not been published elsewhere, and all authors have approved the submission and order.
+        </p>
+        
+        <div style={{ ...styles.alertBanner, ...styles.alertInfo, textAlign: 'left', maxWidth: '500px', margin: '0 auto 24px' }}>
+          <i className="fas fa-shield-halved" style={{ marginTop: '2px' }}></i>
+          <div>
+            <strong>Declaration:</strong> I confirm this manuscript is original work, all authors have approved this submission, and I accept the journal's submission policies and terms.
+          </div>
+        </div>
+        
+        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 600, marginBottom: '24px' }}>
+          <input
+            type="checkbox"
+            style={styles.checkboxInput}
+            checked={allChecked}
+            onChange={(e) => {
+              const checked = e.target.checked
+              onDeclarationChange({
+                originality: checked,
+                ethics: checked,
+                conflicts: checked,
+                authorship: checked,
+              })
+            }}
+          />
+          I confirm the above declaration
+        </label>
+        
+        {errors.submit && (
+          <div style={{ ...styles.alertBanner, ...styles.alertDanger, maxWidth: '500px', margin: '0 auto 16px' }}>
+            <i className="fas fa-triangle-exclamation"></i>
+            <div>{errors.submit}</div>
+          </div>
+        )}
+        
+        <Button
+          variant="primary"
+          size="lg"
+          loading={submitting}
+          disabled={!allChecked}
+          onClick={onSubmit}
+        >
+          <i className="fas fa-paper-plane" style={{ marginRight: '8px' }}></i>
+          Submit Manuscript
+        </Button>
+      </div>
     </div>
   )
 }
 
+// Main Wizard Component
 export default function SubmissionWizard() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -916,32 +1222,46 @@ export default function SubmissionWizard() {
         abstract: manuscript.abstract,
         keywords: manuscript.keywords,
         category: manuscript.category,
+        subject: manuscript.subject,
+        conflict_of_interest: manuscript.conflict_of_interest,
+        ethics_approval: manuscript.ethics_approval,
+        funding: manuscript.funding,
+        acknowledgements: manuscript.acknowledgements,
+        data_availability: manuscript.data_availability,
       }).catch(() => {})
     }, 1000)
     return () => clearTimeout(timeout)
-  }, [manuscript?.id, step, manuscript?.title, manuscript?.abstract, manuscript?.keywords, manuscript?.category])
+  }, [
+    manuscript?.id, step, 
+    manuscript?.title, manuscript?.abstract, manuscript?.keywords, 
+    manuscript?.category, manuscript?.subject,
+    manuscript?.conflict_of_interest, manuscript?.ethics_approval,
+    manuscript?.funding, manuscript?.acknowledgements, manuscript?.data_availability,
+  ])
 
   const validateStep = useCallback(() => {
     const newErrors = {}
+    
     if (step === 1) {
       if (!manuscript?.title?.trim()) newErrors.title = 'Title is required'
       if (!manuscript?.abstract?.trim()) newErrors.abstract = 'Abstract is required'
       if (!manuscript?.category) newErrors.category = 'Category is required'
+      if (!manuscript?.subject) newErrors.subject = 'Subject is required'
     }
+    
     if (step === 3) {
       const hasMain = (manuscript?.files || []).some((f) => f.file_type === 'main_manuscript')
       if (!hasMain) newErrors.main_manuscript = 'Main manuscript file is required'
     }
-    if (step === 5) {
-      const allChecked = declarations.originality && declarations.ethics && declarations.conflicts && declarations.authorship
-      if (!allChecked) newErrors.declarations = 'All declarations must be confirmed before submitting'
-      if (!manuscript?.authors || manuscript.authors.length === 0) {
-        newErrors.submit = 'Manuscript must have at least one author'
-      }
+    
+    if (step === 4) {
+      if (!manuscript?.conflict_of_interest?.trim()) newErrors.conflict_of_interest = 'Conflict of interest statement is required'
+      if (!manuscript?.ethics_approval?.trim()) newErrors.ethics_approval = 'Ethics approval statement is required'
     }
+    
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }, [step, manuscript, declarations])
+  }, [step, manuscript])
 
   const handleSave = async () => {
     if (!manuscript?.id) return
@@ -950,8 +1270,14 @@ export default function SubmissionWizard() {
       await updateManuscript(manuscript.id, {
         title: manuscript.title || '',
         abstract: manuscript.abstract || '',
-        keywords: manuscript.keywords || '',
+        keywords: manuscript.keywords || [],
         category: manuscript.category || '',
+        subject: manuscript.subject || '',
+        conflict_of_interest: manuscript.conflict_of_interest || '',
+        ethics_approval: manuscript.ethics_approval || '',
+        funding: manuscript.funding || '',
+        acknowledgements: manuscript.acknowledgements || '',
+        data_availability: manuscript.data_availability || '',
       })
     } catch {
       // silent
@@ -997,121 +1323,115 @@ export default function SubmissionWizard() {
 
   if (loading) {
     return (
-      <div style={styles.page}>
-        <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '60px 0' }}>
-          Loading...
-        </div>
+      <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '60px 0' }}>
+        <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px', marginBottom: '12px' }}></i>
+        <div>Loading submission wizard...</div>
       </div>
     )
   }
 
-  const progressPercent = (step / (STEPS.length - 1)) * 100
-
   return (
-    <div style={styles.page}>
-      <div style={styles.progressBar}>
-        <div style={styles.progressTrack} />
-        <div style={{ ...styles.progressFill, width: `${progressPercent}%` }} />
+    <div>
+      {/* Page Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 700, color: 'var(--color-ink-navy)', marginBottom: '4px' }}>
+          New Submission
+        </h1>
+        <p style={{ fontSize: '14px', color: 'var(--color-text-muted)' }}>
+          Submit a new manuscript for peer review — progress is saved automatically
+        </p>
+      </div>
+      
+      {/* Wizard Progress */}
+      <div style={styles.wizardProgress}>
         {STEPS.map((s, i) => (
-          <div key={s.key} style={styles.stepContainer}>
+          <div key={s.key} style={styles.wizardStep}>
             <div
-              style={styles.stepDot(i === step, i < step)}
+              style={styles.wizardNum(i === step, i < step)}
               onClick={() => handleStepClick(i)}
             >
-              {i < step ? '✓' : i + 1}
+              {i < step ? <i className="fas fa-check" style={{ fontSize: '12px' }}></i> : i + 1}
             </div>
-            <div style={styles.stepLabel(i === step)}>{s.label}</div>
+            <div style={styles.wizardStepLabel(i === step, i < step)}>{s.label}</div>
+            {i < STEPS.length - 1 && (
+              <div style={styles.wizardLine(i < step)}></div>
+            )}
           </div>
         ))}
       </div>
-
-      <div style={{ minHeight: '400px' }}>
-        
-        
-        
-        {step === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <h2 style={styles.sectionTitle}>Ready to Start</h2>
-            <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px', fontSize: 'var(--text-base)' }}>
-              A draft manuscript has been created. Proceed to enter your manuscript details.
-            </p>
-            <Button variant="primary" size="lg" onClick={handleNext}>
-              Start Entering Details
-            </Button>
-          </div>
-        )}
-        {step === 1 && (
-          <StepMetadata
-            manuscript={manuscript || {}}
-            onChange={handleManuscriptChange}
-            errors={errors}
-          />
-        )}
-        {step === 2 && (
-          <StepAuthors
-            manuscript={manuscript || {}}
-            onChange={handleManuscriptChange}
-          />
-        )}
-        {step === 3 && (
-          <StepFiles
-            manuscript={manuscript || {}}
-            onChange={handleManuscriptChange}
-            errors={errors}
-          />
-        )}
-        {step === 4 && (
-          <StepReview manuscript={manuscript || {}} />
-        )}
-        {step === 5 && (
-          <StepDeclarations
-            declarations={declarations}
-            onChange={setDeclarations}
-            errors={errors}
-          />
-        )}
-      </div>
-
-      {step > 0 && (
-        <>
-          {errors.submit && (
-            <div style={{ padding: '16px', background: 'rgba(192, 57, 43, 0.08)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)', borderRadius: '4px', marginBottom: '16px' }}>
-              {errors.submit}
-            </div>
+      
+      {/* Card with Content */}
+      <div style={styles.card}>
+        <div style={styles.cardBody}>
+          {step === 0 && (
+            <StepBasic
+              manuscript={manuscript || {}}
+              onChange={handleManuscriptChange}
+              errors={errors}
+            />
           )}
-          <div style={styles.navButtons}>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <Button variant="ghost" onClick={handlePrev}>
-              ← Previous
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/author')}>
-              Exit
-            </Button>
-          </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            {saving && (
-              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
-                Saving...
-              </span>
-            )}
-            {step < STEPS.length - 1 ? (
-              <Button variant="primary" onClick={handleNext}>
-                Save & Continue
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="lg"
-                loading={submitting}
-                onClick={handleSubmit}
-              >
-                Submit Manuscript
-              </Button>
-            )}
-          </div>
+          {step === 1 && (
+            <StepAuthors
+              manuscript={manuscript || {}}
+              onChange={handleManuscriptChange}
+            />
+          )}
+          {step === 2 && (
+            <StepFiles
+              manuscript={manuscript || {}}
+              onChange={handleManuscriptChange}
+              errors={errors}
+            />
+          )}
+          {step === 3 && (
+            <StepMetadata
+              manuscript={manuscript || {}}
+              onChange={handleManuscriptChange}
+              errors={errors}
+            />
+          )}
+          {step === 4 && (
+            <StepReview manuscript={manuscript || {}} />
+          )}
+          {step === 5 && (
+            <StepSubmit
+              manuscript={manuscript || {}}
+              declarations={declarations}
+              onDeclarationChange={setDeclarations}
+              onSubmit={handleSubmit}
+              submitting={submitting}
+              errors={errors}
+            />
+          )}
         </div>
-        </>
-      )}
+      </div>
+      
+      {/* Navigation Buttons */}
+      <div style={styles.navButtons}>
+        <Button variant="ghost" onClick={handlePrev} disabled={step === 0}>
+          <i className="fas fa-arrow-left" style={{ marginRight: '8px' }}></i>
+          Previous
+        </Button>
+        
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {saving && (
+            <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+              <i className="fas fa-spinner fa-spin" style={{ marginRight: '6px' }}></i>
+              Saving...
+            </span>
+          )}
+          <Button variant="secondary" onClick={handleSave}>
+            <i className="fas fa-save" style={{ marginRight: '6px' }}></i>
+            Save Draft
+          </Button>
+          {step < STEPS.length - 1 ? (
+            <Button variant="primary" onClick={handleNext}>
+              Next Step
+              <i className="fas fa-arrow-right" style={{ marginLeft: '8px' }}></i>
+            </Button>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }
