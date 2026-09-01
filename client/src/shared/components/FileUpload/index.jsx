@@ -69,6 +69,9 @@ export default function FileUpload({
   const borderColor = isDragging ? 'var(--color-citation-gold)' : 'var(--color-rule-grey)';
   const bgColor = isDragging ? 'rgba(201, 162, 39, 0.06)' : 'transparent';
 
+  // Check if label is a React element (JSX) or a string
+  const isCustomLabel = React.isValidElement(label);
+
   return (
     <div style={{ fontFamily: 'var(--font-body)' }}>
       <div
@@ -78,8 +81,8 @@ export default function FileUpload({
         onDragLeave={handleDragLeave}
         style={{
           border: `2px dashed ${borderColor}`,
-          borderRadius: '8px',
-          padding: '32px 24px',
+          borderRadius: '12px',
+          padding: isCustomLabel ? '48px' : '32px 24px',
           textAlign: 'center',
           cursor: 'pointer',
           background: bgColor,
@@ -96,22 +99,28 @@ export default function FileUpload({
           onChange={handleChange}
           style={{ display: 'none' }}
         />
-        <svg
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--color-text-muted)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ marginBottom: '8px' }}
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
-        <div>{label}</div>
+        {isCustomLabel ? (
+          label
+        ) : (
+          <>
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-text-muted)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ marginBottom: '8px' }}
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <div>{label}</div>
+          </>
+        )}
       </div>
 
       {error && (
