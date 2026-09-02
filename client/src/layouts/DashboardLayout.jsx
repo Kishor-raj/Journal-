@@ -48,9 +48,10 @@ const NAV = {
       {
         label: 'Submissions',
         items: [
-          { to: '/author/dashboard',  label: 'Dashboard',      icon: 'fa-gauge' },
-          { to: '/author/manuscripts', label: 'My Manuscripts', icon: 'fa-file-lines' },
-          { to: '/author/revisions',   label: 'Revisions',      icon: 'fa-rotate' },
+          { to: '/author/dashboard',  label: 'Dashboard',          icon: 'fa-gauge' },
+          { to: '/author/manuscripts', label: 'My Manuscripts',    icon: 'fa-file-lines' },
+          { to: '/author/track',       label: 'Track Manuscript',  icon: 'fa-route' },
+          { to: '/author/revisions',   label: 'Revisions',         icon: 'fa-rotate' },
         ],
       },
       {
@@ -402,7 +403,7 @@ export default function DashboardLayout() {
 
   /* ── MAIN AREA ────────────────────────────────────────────────────────── */
   return (
-    <div style={{
+    <div className="dash-scope" style={{
       display: 'flex',
       height: '100vh',
       overflow: 'hidden',

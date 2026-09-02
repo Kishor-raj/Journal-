@@ -14,7 +14,7 @@ const TABS = [
 
 const styles = {
   page: {
-    fontFamily: 'var(--font-body)',
+    fontFamily: 'inherit',
     padding: '40px',
     maxWidth: '900px',
     margin: '0 auto',
@@ -74,7 +74,7 @@ const styles = {
     width: '100%',
     minHeight: '100px',
     padding: '10px 12px',
-    fontFamily: 'var(--font-body)',
+    fontFamily: 'inherit',
     fontSize: 'var(--text-sm)',
     color: 'var(--color-ink-black)',
     border: 'none',
@@ -86,7 +86,7 @@ const styles = {
   input: {
     width: '100%',
     padding: '10px 12px',
-    fontFamily: 'var(--font-body)',
+    fontFamily: 'inherit',
     fontSize: 'var(--text-sm)',
     color: 'var(--color-ink-black)',
     border: 'none',

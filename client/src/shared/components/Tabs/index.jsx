@@ -9,7 +9,7 @@ export default function Tabs({ tabs = [], activeKey, onChange }) {
         borderBottom: '2px solid var(--color-rule-grey)',
         marginBottom: 'var(--space-4)',
         overflowX: 'auto',
-        fontFamily: 'var(--font-body)',
+        fontFamily: 'inherit',
       }}
     >
       {tabs.map((tab) => {

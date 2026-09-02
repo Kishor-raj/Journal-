@@ -43,3 +43,7 @@ export function requestSignature(manuscriptId, versionId, fileType) {
 export function confirmUpload(manuscriptId, versionId, fileData) {
   return apiClient.post(`/files/manuscripts/${manuscriptId}/files`, { version_id: versionId, ...fileData })
 }
+
+export function getStatusHistory(manuscriptId) {
+  return apiClient.get(`/manuscripts/${manuscriptId}/status-history`)
+}

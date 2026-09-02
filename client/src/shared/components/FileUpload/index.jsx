@@ -66,14 +66,14 @@ export default function FileUpload({
     if (onFileSelect) onFileSelect(multiple ? updated : updated[0] || null);
   };
 
-  const borderColor = isDragging ? 'var(--color-citation-gold)' : 'var(--color-rule-grey)';
-  const bgColor = isDragging ? 'rgba(201, 162, 39, 0.06)' : 'transparent';
+  const borderColor = isDragging ? 'var(--color-info)' : 'var(--color-rule-grey)';
+  const bgColor = isDragging ? 'var(--dash-info-bg)' : 'transparent';
 
   // Check if label is a React element (JSX) or a string
   const isCustomLabel = React.isValidElement(label);
 
   return (
-    <div style={{ fontFamily: 'var(--font-body)' }}>
+    <div style={{ fontFamily: 'inherit' }}>
       <div
         onClick={handleClick}
         onDrop={handleDrop}
@@ -140,7 +140,8 @@ export default function FileUpload({
                 justifyContent: 'space-between',
                 padding: '8px 12px',
                 borderRadius: '6px',
-                background: 'var(--color-vellum)',
+                background: 'var(--dash-surface-hover)',
+                border: '1px solid var(--color-rule-grey)',
                 marginBottom: '6px',
                 fontSize: '0.875rem',
                 color: 'var(--color-ink-black)',

@@ -232,16 +232,16 @@ const styles = {
     textAlign: 'center',
     cursor: 'pointer',
     transition: 'all 0.15s ease',
-    background: 'var(--color-vellum, #F9F8F6)',
+    background: 'var(--color-surface)',
   },
   uploadZoneHover: {
     borderColor: 'var(--color-info, #2E6B9E)',
-    background: 'rgba(46, 107, 158, 0.04)',
+    background: 'var(--dash-info-bg)',
   },
   uploadIcon: {
-    fontSize: '36px',
-    color: 'var(--color-text-muted)',
-    marginBottom: '16px',
+    fontSize: '32px',
+    color: 'var(--color-info, #2E6B9E)',
+    marginBottom: '12px',
   },
   uploadText: {
     fontSize: '14px',
@@ -859,6 +859,12 @@ function StepFiles({ manuscript, onChange, errors }) {
                 </div>
                 <div style={styles.uploadText}>Click to upload your manuscript</div>
                 <div style={styles.uploadHint}>PDF only, max 20 MB. Ensure all figures and tables are embedded or attached separately.</div>
+                {uploading === 'main_manuscript' && (
+                  <div style={{ ...styles.uploadHint, color: 'var(--color-info, #2E6B9E)', marginTop: '8px' }}>
+                    <i className="fas fa-spinner fa-spin" style={{ marginRight: '6px' }}></i>
+                    Uploading manuscript...
+                  </div>
+                )}
               </div>
             }
           />
@@ -905,27 +911,12 @@ function StepFiles({ manuscript, onChange, errors }) {
               </div>
               <div style={styles.uploadText}>Click to upload supplementary files</div>
               <div style={styles.uploadHint}>ZIP, XLSX, CSV, images. Multiple files can be uploaded.</div>
-            </div>
-          }
-        />
-      </FormField>
-      
-      <FormField label="Figures (optional)" helperText="PNG, JPG, SVG, EPS. Minimum 300 DPI for print.">
-        <FileUpload
-          accept=".png,.jpg,.jpeg,.svg,.eps"
-          multiple
-          onFileSelect={(files) => {
-            if (Array.isArray(files)) {
-              files.forEach((f) => handleFileSelect(f, 'supplementary'))
-            }
-          }}
-          label={
-            <div>
-              <div style={styles.uploadIcon}>
-                <i className="fas fa-image"></i>
-              </div>
-              <div style={styles.uploadText}>Click to upload figure files</div>
-              <div style={styles.uploadHint}>PNG, JPG, SVG, EPS. Minimum 300 DPI for print.</div>
+              {uploading === 'supplementary' && (
+                <div style={{ ...styles.uploadHint, color: 'var(--color-info, #2E6B9E)', marginTop: '8px' }}>
+                  <i className="fas fa-spinner fa-spin" style={{ marginRight: '6px' }}></i>
+                  Uploading files...
+                </div>
+              )}
             </div>
           }
         />

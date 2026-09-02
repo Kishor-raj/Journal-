@@ -117,7 +117,7 @@ const wrapperStyle = {
 const tableStyle = {
   width: '100%',
   borderCollapse: 'collapse',
-  fontFamily: 'var(--font-body)',
+  fontFamily: 'inherit',
   fontSize: '0.9375rem',
 };
 
@@ -149,6 +149,6 @@ const emptyStyle = {
   padding: '48px 24px',
   textAlign: 'center',
   color: 'var(--color-text-muted)',
-  fontFamily: 'var(--font-body)',
+  fontFamily: 'inherit',
   fontSize: '1rem',
 };

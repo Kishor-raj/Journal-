@@ -34,6 +34,7 @@ import RevisionResponseForm from '../features/author/RevisionResponseForm'
 import Withdrawals from '../features/author/Withdrawals'
 import AuthorNotifications from '../features/author/Notifications'
 import AuthorHelp from '../features/author/Help'
+import TrackManuscript from '../features/author/TrackManuscript'
 
 import ScreeningQueue from '../features/moderator/ScreeningQueue'
 import ChecklistForm from '../features/moderator/ChecklistForm'
@@ -97,6 +98,7 @@ function AppRouter() {
         <Route path="/author/submissions/:id/edit" element={<ProtectedRoute allowedRoles={['author']}><SubmissionWizard /></ProtectedRoute>} />
         <Route path="/author/manuscripts" element={<ProtectedRoute allowedRoles={['author']}><MyManuscripts /></ProtectedRoute>} />
         <Route path="/author/manuscripts/:id" element={<ProtectedRoute allowedRoles={['author']}><ManuscriptDetail /></ProtectedRoute>} />
+        <Route path="/author/track" element={<ProtectedRoute allowedRoles={['author']}><TrackManuscript /></ProtectedRoute>} />
         <Route path="/author/revisions" element={<ProtectedRoute allowedRoles={['author']}><Revisions /></ProtectedRoute>} />
         <Route path="/author/revisions/:id" element={<ProtectedRoute allowedRoles={['author']}><RevisionResponseForm /></ProtectedRoute>} />
         <Route path="/author/withdrawals" element={<ProtectedRoute allowedRoles={['author']}><Withdrawals /></ProtectedRoute>} />

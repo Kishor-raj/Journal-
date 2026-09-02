@@ -57,7 +57,7 @@ function ToastItem({ toast, onRemove }) {
         borderRadius: '8px',
         background: style.background,
         color: style.color,
-        fontFamily: 'var(--font-body)',
+        fontFamily: 'inherit',
         fontSize: '0.9375rem',
         fontWeight: 500,
         boxShadow: '0 4px 12px rgba(13, 27, 62, 0.15)',

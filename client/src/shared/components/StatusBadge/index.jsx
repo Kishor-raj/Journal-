@@ -20,7 +20,7 @@ export default function StatusBadge({ status }) {
         borderRadius: '9999px',
         fontSize: '0.8125rem',
         fontWeight: 600,
-        fontFamily: 'var(--font-body)',
+        fontFamily: 'inherit',
         lineHeight: 1.4,
         background: colors.bg,
         color: colors.text,

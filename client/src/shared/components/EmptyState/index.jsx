@@ -11,7 +11,7 @@ export default function EmptyState({ icon, message, actionLabel, onAction }) {
         justifyContent: 'center',
         padding: '64px 24px',
         textAlign: 'center',
-        fontFamily: 'var(--font-body)',
+        fontFamily: 'inherit',
       }}
     >
       {icon && (
