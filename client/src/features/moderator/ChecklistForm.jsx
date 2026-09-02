@@ -445,6 +445,7 @@ export default function ChecklistForm() {
   const [submitting, setSubmitting] = useState(false)
   const [fileError, setFileError]   = useState('')
   const [modal, setModal]           = useState(null)  // 'approve' | 'return' | 'reject'
+  const [approvePopup, setApprovePopup] = useState(false)
   const [form, setForm]             = useState(buildInitialState)
 
   useEffect(() => {
@@ -460,6 +461,9 @@ export default function ChecklistForm() {
 
   const { done, total, pct } = useMemo(() => calcProgress(form), [form])
   const allComplete = done === total && total > 0
+  // Approve is only available when Scope Assessment = PASS AND all 6 sections are complete
+  const scopePass = form.scope_radio === 'pass'
+  const canApprove = scopePass && allComplete
 
   async function openFile(fileId, type) {
     try {
@@ -484,11 +488,14 @@ export default function ChecklistForm() {
         checklist[`${s.id}_note`] = form[`${s.id}_note`]
       })
 
+      const ethicsChecks = checklist.ethics || []
+      const ethicsCheckStatus = ethicsChecks.length > 0 && ethicsChecks.every(Boolean) ? 'passed' : 'pending'
+
       await submitCheck(id, {
         checklist,
         plagiarism_score:   form.plagiarism_score ? Number(form.plagiarism_score) : null,
         plagiarism_report:  form.plagiarism_report || null,
-        ethics_check_status: form.ethics_radio || 'pending',
+        ethics_check_status: ethicsCheckStatus,
         files_valid: true,
         decision: type === 'approve' ? 'proceed' : type,
         notes: Object.entries(checklist).filter(([k]) => k.endsWith('_note')).map(([, v]) => v).filter(Boolean).join('\n---\n') || null,
@@ -635,29 +642,105 @@ export default function ChecklistForm() {
         zIndex: 100, flexWrap: 'wrap',
         boxShadow: '0 -4px 20px rgba(27,42,74,0.08)',
       }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: allComplete ? '#2B7A4B' : '#8B8F9A' }}>
-          <i className={`fas ${allComplete ? 'fa-circle-check' : 'fa-circle-half-stroke'}`} style={{ marginRight: '6px' }} />
-          {allComplete
+        <span style={{ fontSize: '13px', fontWeight: 600, color: canApprove ? '#2B7A4B' : '#8B8F9A' }}>
+          <i className={`fas ${canApprove ? 'fa-circle-check' : 'fa-circle-half-stroke'}`} style={{ marginRight: '6px' }} />
+          {canApprove
             ? 'All checks complete — you may now submit a decision'
-            : `${total - done} checklist item${total - done !== 1 ? 's' : ''} remaining`}
+            : !allComplete
+              ? `${total - done} checklist item${total - done !== 1 ? 's' : ''} remaining`
+              : 'Scope Assessment is FAIL — Approve is not available'}
         </span>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', position: 'relative' }}>
+          {/* ── Approve: always visible; blurred when rules not met ── */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => {
+                if (canApprove) { setApprovePopup(false); setModal('approve') }
+                else setApprovePopup(p => !p)
+              }}
+              style={{
+                padding: '9px 16px', borderRadius: '6px', border: 'none',
+                background: '#2B7A4B',
+                color: '#fff',
+                fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '7px',
+                fontFamily: "'DM Sans', sans-serif",
+                transition: 'background 150ms',
+                opacity: canApprove ? 1 : 0.38,
+                filter: canApprove ? 'none' : 'blur(0.6px)',
+              }}
+            >
+              <i className="fas fa-circle-check" style={{ fontSize: '12px' }} />
+              Approve
+            </button>
+
+            {/* ── Rules-not-met popup ── */}
+            {approvePopup && !canApprove && (
+              <div
+                style={{
+                  position: 'absolute', bottom: 'calc(100% + 10px)', left: 0,
+                  background: '#fff', border: '1px solid #E2E4E8', borderRadius: '8px',
+                  boxShadow: '0 8px 28px rgba(27,42,74,0.16)', padding: '14px 16px',
+                  width: '270px', zIndex: 200,
+                }}
+              >
+                {/* arrow */}
+                <div style={{
+                  position: 'absolute', bottom: '-6px', left: '20px',
+                  width: '10px', height: '10px', background: '#fff',
+                  border: '1px solid #E2E4E8', borderTop: 'none', borderLeft: 'none',
+                  transform: 'rotate(45deg)',
+                }} />
+
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#1A1A2E', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <i className="fas fa-triangle-exclamation" style={{ color: '#C48B1E' }} />
+                  Approve requires:
+                </div>
+
+                <ul style={{ margin: 0, padding: '0 0 0 4px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                  {/* Rule 1: Scope = PASS */}
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: scopePass ? '#2B7A4B' : '#B83333' }}>
+                    <i className={`fas ${scopePass ? 'fa-circle-check' : 'fa-circle-xmark'}`} style={{ fontSize: '12px', flexShrink: 0 }} />
+                    Scope Assessment = <strong>PASS</strong>
+                    {!scopePass && form.scope_radio && (
+                      <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, background: '#FCECEC', color: '#B83333', padding: '1px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                        {form.scope_radio}
+                      </span>
+                    )}
+                  </li>
+
+                  {/* Rule 2: all 6 sections complete */}
+                  <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: allComplete ? '#2B7A4B' : '#B83333' }}>
+                    <i className={`fas ${allComplete ? 'fa-circle-check' : 'fa-circle-xmark'}`} style={{ fontSize: '12px', flexShrink: 0 }} />
+                    All 6 modules checked
+                    {!allComplete && (
+                      <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, background: '#FCECEC', color: '#B83333', padding: '1px 6px', borderRadius: '4px' }}>
+                        {done}/{total}
+                      </span>
+                    )}
+                  </li>
+                </ul>
+
+                <button
+                  onClick={() => setApprovePopup(false)}
+                  style={{ marginTop: '12px', width: '100%', padding: '6px', border: '1px solid #E2E4E8', borderRadius: '5px', background: '#FAFAFA', fontSize: '11px', color: '#8B8F9A', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+          </div>
+          {/* Return to Author: always visible */}
           <DecisionBarBtn
-            disabled={!allComplete}
-            bg="#2B7A4B" hoverBg="#246540"
-            icon="fa-circle-check"
-            label="Approve"
-            onClick={() => setModal('approve')}
-          />
-          <DecisionBarBtn
-            disabled={!allComplete}
+            disabled={false}
             bg="#C48B1E" hoverBg="#A97618"
             icon="fa-rotate-left"
             label="Return to Author"
             onClick={() => setModal('return')}
           />
+          {/* Reject: always visible */}
           <DecisionBarBtn
-            disabled={!allComplete}
+            disabled={false}
             bg="#B83333" hoverBg="#9A2B2B"
             icon="fa-circle-xmark"
             label="Reject"

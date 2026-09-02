@@ -5,8 +5,8 @@ const ROLE_DASHBOARDS = {
   admin: '/admin/dashboard',
   author: '/author/dashboard',
   moderator: '/moderator/screening',
-  editor: '/editor/queue',
-  reviewer: '/reviewer/invitations',
+  editor: '/editor/dashboard',
+  reviewer: '/reviewer/dashboard',
 }
 
 export default function ProtectedRoute({ children, allowedRoles, requireProfileComplete = true }) {

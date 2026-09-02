@@ -38,8 +38,10 @@ async function request(endpoint, options = {}) {
   const response = await fetch(url, config)
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }))
-    throw new Error(error.error || `HTTP ${response.status}`)
+    const errorBody = await response.json().catch(() => ({}))
+    const error = new Error(errorBody.error || `HTTP ${response.status}`)
+    error.response = { status: response.status, data: errorBody }
+    throw error
   }
 
   if (response.status === 204) {
