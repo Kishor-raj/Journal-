@@ -102,6 +102,16 @@ function buildInitialState() {
    PROGRESS CALCULATION
    ═══════════════════════════════════════════════════════════════════════════ */
 function calcProgress(form) {
+  // Scope Assessment = FAIL → manuscript is not relevant.
+  // Jump straight to 100% — remaining sections are skipped.
+  if (form.scope_radio === 'fail') {
+    const total = SECTIONS.reduce((acc, s) => {
+      if (s.type === 'radio') return acc + 1
+      return acc + (s.items?.length ?? 0)
+    }, 0)
+    return { done: total, total, pct: 100, scopeFail: true }
+  }
+
   let done = 0, total = 0
   SECTIONS.forEach(s => {
     if (s.type === 'radio') {
@@ -114,7 +124,7 @@ function calcProgress(form) {
       })
     }
   })
-  return { done, total, pct: total > 0 ? Math.round((done / total) * 100) : 0 }
+  return { done, total, pct: total > 0 ? Math.round((done / total) * 100) : 0, scopeFail: false }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -459,11 +469,13 @@ export default function ChecklistForm() {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
-  const { done, total, pct } = useMemo(() => calcProgress(form), [form])
+  const { done, total, pct, scopeFail } = useMemo(() => calcProgress(form), [form])
   const allComplete = done === total && total > 0
   // Approve is only available when Scope Assessment = PASS AND all 6 sections are complete
   const scopePass = form.scope_radio === 'pass'
-  const canApprove = scopePass && allComplete
+  // When scope = FAIL the manuscript is not relevant — allow Reject/Return immediately
+  const canDecide = scopeFail || allComplete   // Return / Reject gate
+  const canApprove = scopePass && allComplete   // Approve gate (never true when scope=fail)
 
   async function openFile(fileId, type) {
     try {
@@ -613,42 +625,52 @@ export default function ChecklistForm() {
       )}
 
       {/* ── Progress ring ──────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', background: '#fff', border: '1px solid #E2E4E8', borderRadius: '8px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', background: scopeFail ? '#FCECEC' : '#fff', border: `1px solid ${scopeFail ? '#E8B8B8' : '#E2E4E8'}`, borderRadius: '8px', marginBottom: '20px' }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <ProgressRing pct={pct} />
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: '#1A1A2E' }}>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: scopeFail ? '#B83333' : '#1A1A2E' }}>
             {pct}%
           </div>
         </div>
         <div>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: '#1A1A2E', marginBottom: '2px' }}>Screening Progress</div>
-          <div style={{ fontSize: '12px', color: '#8B8F9A' }}>
-            {done} of {total} items completed{allComplete ? ' — Ready for decision' : ' — Continue screening below'}
+          <div style={{ fontSize: '13px', fontWeight: 600, color: scopeFail ? '#B83333' : '#1A1A2E', marginBottom: '2px' }}>
+            {scopeFail ? 'Scope Assessment: FAIL' : 'Screening Progress'}
+          </div>
+          <div style={{ fontSize: '12px', color: scopeFail ? '#B83333' : '#8B8F9A' }}>
+            {scopeFail
+              ? 'Manuscript is not within journal scope — ready to Reject or Return to Author'
+              : `${done} of ${total} items completed${allComplete ? ' — Ready for decision' : ' — Continue screening below'}`}
           </div>
         </div>
       </div>
 
       {/* ── 6 Checklist sections ───────────────────────────────────────── */}
-      {SECTIONS.map(section => (
+      {/* Always show Section 1 (Scope Assessment) */}
+      <ChecklistSection key="scope" section={SECTIONS[0]} form={form} update={update} />
+
+      {/* Sections 2–6: only when scope is NOT fail */}
+      {!scopeFail && SECTIONS.slice(1).map(section => (
         <ChecklistSection key={section.id} section={section} form={form} update={update} />
       ))}
 
       {/* ── Sticky decision bar ────────────────────────────────────────── */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        background: '#fff', borderTop: '2px solid #E2E4E8',
+        background: '#fff', borderTop: `2px solid ${scopeFail ? '#E8B8B8' : '#E2E4E8'}`,
         padding: '14px 40px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
         zIndex: 100, flexWrap: 'wrap',
         boxShadow: '0 -4px 20px rgba(27,42,74,0.08)',
       }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: canApprove ? '#2B7A4B' : '#8B8F9A' }}>
-          <i className={`fas ${canApprove ? 'fa-circle-check' : 'fa-circle-half-stroke'}`} style={{ marginRight: '6px' }} />
-          {canApprove
-            ? 'All checks complete — you may now submit a decision'
-            : !allComplete
-              ? `${total - done} checklist item${total - done !== 1 ? 's' : ''} remaining`
-              : 'Scope Assessment is FAIL — Approve is not available'}
+        <span style={{ fontSize: '13px', fontWeight: 600, color: scopeFail ? '#B83333' : canApprove ? '#2B7A4B' : '#8B8F9A' }}>
+          <i className={`fas ${scopeFail ? 'fa-ban' : canApprove ? 'fa-circle-check' : 'fa-circle-half-stroke'}`} style={{ marginRight: '6px' }} />
+          {scopeFail
+            ? 'Scope FAIL — manuscript not relevant. Reject or Return to Author.'
+            : canApprove
+              ? 'All checks complete — you may now submit a decision'
+              : !allComplete
+                ? `${total - done} checklist item${total - done !== 1 ? 's' : ''} remaining`
+                : 'Scope Assessment is FAIL — Approve is not available'}
         </span>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', position: 'relative' }}>
           {/* ── Approve: always visible; blurred when rules not met ── */}
@@ -730,7 +752,7 @@ export default function ChecklistForm() {
               </div>
             )}
           </div>
-          {/* Return to Author: always visible */}
+          {/* Return to Author: always visible and enabled */}
           <DecisionBarBtn
             disabled={false}
             bg="#C48B1E" hoverBg="#A97618"
@@ -738,7 +760,7 @@ export default function ChecklistForm() {
             label="Return to Author"
             onClick={() => setModal('return')}
           />
-          {/* Reject: always visible */}
+          {/* Reject: always visible and enabled */}
           <DecisionBarBtn
             disabled={false}
             bg="#B83333" hoverBg="#9A2B2B"
