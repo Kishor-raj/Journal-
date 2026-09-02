@@ -8,7 +8,7 @@ export default function FormField({
   required = false,
 }) {
   return (
-    <div style={{ marginBottom: '20px', fontFamily: 'var(--font-body)' }}>
+    <div style={{ marginBottom: '20px', fontFamily: 'inherit' }}>
       {label && (
         <label
           style={{

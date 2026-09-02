@@ -9,7 +9,7 @@ import { formatDate } from '../../shared/utils/formatDate'
 
 const styles = {
   page: {
-    fontFamily: 'var(--font-body)',
+    fontFamily: 'inherit',
     padding: '40px',
     maxWidth: '1100px',
     margin: '0 auto',

@@ -1,39 +1,47 @@
 import React from 'react';
 
 const sizes = {
-  sm: { padding: '6px 12px', fontSize: '0.875rem', borderRadius: '4px' },
-  md: { padding: '10px 20px', fontSize: '1rem', borderRadius: '6px' },
-  lg: { padding: '14px 28px', fontSize: '1.125rem', borderRadius: '8px' },
+  sm: { padding: '6px 12px', fontSize: '0.8125rem', borderRadius: '6px' },
+  md: { padding: '9px 18px', fontSize: '0.875rem', borderRadius: '8px' },
+  lg: { padding: '12px 28px', fontSize: '0.9375rem', borderRadius: '8px' },
 };
 
 const variants = {
   primary: {
-    background: 'var(--color-citation-gold)',
-    color: 'var(--color-ink-navy)',
-    border: '2px solid var(--color-citation-gold)',
+    background: 'var(--dash-primary)',
+    color: 'var(--color-surface)',
+    border: '1px solid var(--dash-primary)',
+    shadow: 'none',
+    hoverShadow: 'var(--dash-shadow-md)',
   },
   secondary: {
-    background: 'transparent',
-    color: 'var(--color-ink-navy)',
-    border: '2px solid var(--color-rule-grey)',
+    background: 'var(--color-surface)',
+    color: 'var(--color-ink-body)',
+    border: '1px solid var(--color-rule-grey)',
+    shadow: 'none',
+    hoverShadow: 'none',
   },
   danger: {
     background: 'var(--color-danger)',
     color: 'var(--color-surface)',
-    border: '2px solid var(--color-danger)',
+    border: '1px solid var(--color-danger)',
+    shadow: 'none',
+    hoverShadow: 'none',
   },
   ghost: {
     background: 'transparent',
-    color: 'var(--color-ink-navy)',
-    border: '2px solid transparent',
+    color: 'var(--color-ink-muted)',
+    border: '1px solid transparent',
+    shadow: 'none',
+    hoverShadow: 'none',
   },
 };
 
 const hoverVariants = {
-  primary: { background: 'var(--color-citation-gold-dark)', borderColor: 'var(--color-citation-gold-dark)' },
-  secondary: { background: 'rgba(13, 27, 62, 0.06)' },
+  primary: { background: 'var(--dash-primary-light)', borderColor: 'var(--dash-primary-light)' },
+  secondary: { background: 'var(--dash-surface-hover)', borderColor: 'var(--color-ink-muted)' },
   danger: { background: '#a52d20', borderColor: '#a52d20' },
-  ghost: { background: 'rgba(13, 27, 62, 0.06)' },
+  ghost: { background: 'var(--dash-bg)', color: 'var(--color-ink-body)' },
 };
 
 const spinnerKeyframes = `
@@ -81,7 +89,7 @@ export default function Button({
   const hv = hoverVariants[variant] || hoverVariants.primary;
 
   const computedBg = isDisabled
-    ? 'var(--color-rule-grey)'
+    ? 'var(--color-rule-light)'
     : isHovered
     ? hv.background || v.background
     : v.background;
@@ -92,10 +100,12 @@ export default function Button({
     ? hv.borderColor
     : v.border;
 
-  const computedColor = isDisabled ? '#888' : v.color;
+  const computedColor = isDisabled ? 'var(--color-ink-muted)' : isHovered ? (hv.color || v.color) : v.color;
+
+  const computedShadow = isHovered ? (hv.hoverShadow || v.hoverShadow) : v.shadow;
 
   const focusRing = isFocused
-    ? { outline: '3px solid rgba(201, 162, 39, 0.4)', outlineOffset: '2px' }
+    ? { outline: '3px solid rgba(27, 42, 74, 0.15)', outlineOffset: '2px' }
     : {};
 
   return (
@@ -114,14 +124,16 @@ export default function Button({
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontFamily: 'var(--font-body)',
+          fontFamily: 'inherit',
           fontWeight: 600,
+          lineHeight: 1.3,
           cursor: isDisabled ? 'not-allowed' : 'pointer',
-          transition: 'all 0.15s ease',
+          transition: 'all 0.15s ease, box-shadow 0.2s ease',
           opacity: isDisabled ? 0.6 : 1,
           background: computedBg,
           color: computedColor,
           border: computedBorder,
+          boxShadow: computedShadow,
           ...base,
           ...focusRing,
           ...styleProp,

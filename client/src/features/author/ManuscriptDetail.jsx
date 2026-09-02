@@ -14,7 +14,7 @@ const TABS = [
 
 const styles = {
   page: {
-    fontFamily: 'var(--font-body)',
+    fontFamily: 'inherit',
     padding: '40px',
     maxWidth: '900px',
     margin: '0 auto',
@@ -178,7 +178,7 @@ const styles = {
   errorContainer: {
     padding: '60px 24px',
     textAlign: 'center',
-    fontFamily: 'var(--font-body)',
+    fontFamily: 'inherit',
   },
   errorMsg: {
     color: 'var(--color-danger)',

@@ -28,5 +28,5 @@ export default function NewSubmissionRedirect() {
     init()
   }, [navigate])
 
-  return <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-body)' }}>Preparing your submission...</div>
+  return <div style={{ padding: 40, textAlign: 'center', fontFamily: 'inherit' }}>Preparing your submission...</div>
 }

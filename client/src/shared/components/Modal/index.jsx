@@ -116,7 +116,7 @@ export default function Modal({
               <h2
                 style={{
                   margin: 0,
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'inherit',
                   fontSize: '1.25rem',
                   fontWeight: 600,
                   color: 'var(--color-ink-navy)',

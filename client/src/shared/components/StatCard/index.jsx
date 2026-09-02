@@ -1,52 +1,78 @@
 import React from 'react';
 
-const ACCENT_COLORS = {
-  gold: 'var(--color-citation-gold)',
-  blue: '#1565C0',
-  amber: 'var(--color-warning)',
-  green: 'var(--color-success)',
-  purple: '#7C3AED',
-  red: 'var(--color-danger)',
-};
-
-export default function StatCard({ label, value, sublabel, accent = 'gold' }) {
-  const borderColor = ACCENT_COLORS[accent] || accent || ACCENT_COLORS.gold;
+export default function StatCard({ label, value, sublabel, icon, iconBg, iconColor, accentColor }) {
+  const resolvedIconBg = iconBg || 'var(--dash-bg, #F4F5F7)';
+  const resolvedIconColor = iconColor || 'var(--dash-text-muted, #8B8F9A)';
 
   return (
     <div
       style={{
-        background: 'var(--color-surface)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-elevated)',
-        borderTop: `3px solid ${borderColor}`,
-        padding: '18px 20px',
-        fontFamily: 'var(--font-body)',
+        background: 'var(--dash-surface, #FFFFFF)',
+        borderRadius: '12px',
+        border: '1px solid var(--dash-surface-border, #E2E4E8)',
+        borderTop: `3px solid ${accentColor || 'var(--dash-accent, #C4922E)'}`,
+        padding: '24px',
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
       <div
         style={{
-          fontSize: 'var(--text-xs)',
-          fontWeight: 600,
-          color: 'var(--color-ink-black)',
-          opacity: 0.6,
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
         }}
       >
-        {label}
+        <span
+          style={{
+            fontSize: '12px',
+            fontWeight: 600,
+            color: 'var(--dash-text-muted, #8B8F9A)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+          }}
+        >
+          {label}
+        </span>
+        {icon && (
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '15px',
+              background: resolvedIconBg,
+              color: resolvedIconColor,
+            }}
+          >
+            <i className={icon} />
+          </div>
+        )}
       </div>
       <div
         style={{
-          fontSize: '1.75rem',
-          fontWeight: 800,
-          color: 'var(--color-ink-navy)',
-          marginTop: '6px',
+          fontSize: '32px',
+          fontWeight: 700,
+          color: 'var(--dash-text-primary, #1A1A2E)',
+          lineHeight: 1,
+          marginBottom: '4px',
         }}
       >
         {value}
       </div>
       {sublabel && (
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-black)', opacity: 0.6, marginTop: '4px' }}>
+        <div
+          style={{
+            fontSize: '12px',
+            color: 'var(--dash-text-muted, #8B8F9A)',
+            marginTop: '4px',
+          }}
+        >
           {sublabel}
         </div>
       )}

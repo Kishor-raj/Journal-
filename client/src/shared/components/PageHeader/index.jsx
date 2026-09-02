@@ -16,7 +16,7 @@ export default function PageHeader({ title, subtitle, action }) {
         <h1
           style={{
             margin: 0,
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-heading)',
             fontSize: 'var(--text-xl)',
             fontWeight: 700,
             color: 'var(--color-ink-navy)',

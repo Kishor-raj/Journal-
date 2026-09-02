@@ -30,7 +30,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
     borderRadius: '6px',
     background: 'var(--color-surface)',
     color: 'var(--color-ink-navy)',
-    fontFamily: 'var(--font-body)',
+    fontFamily: 'inherit',
     fontSize: '0.875rem',
     cursor: 'pointer',
     transition: 'all 0.12s ease',
@@ -55,7 +55,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
         display: 'flex',
         alignItems: 'center',
         gap: '6px',
-        fontFamily: 'var(--font-body)',
+        fontFamily: 'inherit',
       }}
       aria-label="Pagination"
     >

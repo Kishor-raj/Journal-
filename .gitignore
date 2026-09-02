@@ -20,6 +20,7 @@ lerna-debug.log*
 # OS and Editor files
 .DS_Store
 Thumbs.db
+env.js
 .idea/
 .vscode/
 *.suo
