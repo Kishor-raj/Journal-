@@ -1,16 +1,20 @@
+import { useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { login, resendVerification } from '../../services/authService'
+import { setStoredToken } from '../../services/apiClient'
+import { useAuth } from '../../context/AuthContext'
+
 const GOOGLE_AUTH_URL = `${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/google`
 
 function DeskIllustration() {
   return (
     <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      {/* wall decor */}
       <rect x="54" y="34" width="66" height="48" rx="4" fill="var(--color-vellum)" stroke="var(--color-rule)" strokeWidth="2" />
       <path d="M62 72 L 80 50 L 92 64 L 102 52 L 114 72 Z" fill="var(--color-gold-light)" opacity="0.7" />
       <circle cx="300" cy="58" r="20" fill="none" stroke="var(--color-rule)" strokeWidth="3" />
       <line x1="300" y1="58" x2="300" y2="46" stroke="var(--color-rule)" strokeWidth="2" strokeLinecap="round" />
       <line x1="300" y1="58" x2="309" y2="58" stroke="var(--color-rule)" strokeWidth="2" strokeLinecap="round" />
 
-      {/* bookshelf */}
       <rect x="44" y="112" width="100" height="104" rx="3" fill="var(--color-vellum)" stroke="var(--color-rule)" strokeWidth="2" />
       <rect x="56" y="126" width="12" height="78" fill="var(--color-ink-navy)" />
       <rect x="72" y="126" width="12" height="78" fill="var(--color-gold)" />
@@ -18,14 +22,11 @@ function DeskIllustration() {
       <rect x="104" y="126" width="12" height="78" fill="var(--color-gold-light)" />
       <rect x="120" y="126" width="12" height="78" fill="var(--color-ink-navy)" />
 
-      {/* chair back, behind person */}
       <path d="M100 220 C 78 224, 70 250, 78 284" stroke="var(--color-ink-subtle)" strokeWidth="9" strokeLinecap="round" fill="none" />
 
-      {/* desk legs (behind desktop so top overlaps cleanly) */}
       <rect x="58" y="304" width="9" height="46" fill="var(--color-ink-subtle)" />
       <rect x="357" y="304" width="9" height="46" fill="var(--color-ink-subtle)" />
 
-      {/* person: head, torso, arm to keyboard, legs under desk */}
       <circle cx="144" cy="210" r="19" fill="#C98A5E" />
       <rect x="120" y="228" width="48" height="64" rx="16" fill="var(--color-ink-navy)" />
       <path d="M156 244 C 172 250, 182 262, 186 278" stroke="var(--color-ink-navy)" strokeWidth="11" strokeLinecap="round" fill="none" />
@@ -34,23 +35,19 @@ function DeskIllustration() {
       <rect x="118" y="352" width="28" height="12" rx="6" fill="var(--color-ink-body)" />
       <rect x="146" y="352" width="28" height="12" rx="6" fill="var(--color-ink-body)" />
 
-      {/* monitor sitting on desk */}
       <rect x="192" y="226" width="128" height="80" rx="5" fill="var(--color-ink-navy)" />
       <rect x="200" y="234" width="112" height="60" rx="2" fill="var(--color-surface)" />
       <rect x="210" y="244" width="92" height="9" rx="2" fill="var(--color-vellum)" />
       <rect x="210" y="260" width="92" height="9" rx="2" fill="var(--color-vellum)" />
       <rect x="210" y="278" width="92" height="11" rx="5.5" fill="var(--color-gold)" />
 
-      {/* plant */}
       <path d="M338 268 C 328 256, 328 240, 338 228" stroke="var(--color-archive-green)" strokeWidth="5" strokeLinecap="round" fill="none" />
       <path d="M338 268 C 346 254, 350 240, 342 230" stroke="var(--color-archive-green)" strokeWidth="5" strokeLinecap="round" fill="none" />
       <path d="M338 268 C 334 250, 340 236, 338 224" stroke="var(--color-archive-green)" strokeWidth="5" strokeLinecap="round" fill="none" />
       <rect x="324" y="266" width="28" height="24" rx="4" fill="var(--color-gold-dark)" />
 
-      {/* desk top (drawn after legs/plant/person feet so the surface reads on top) */}
       <rect x="50" y="292" width="316" height="12" rx="3" fill="var(--color-ink-navy)" />
 
-      {/* waste bin, in front of desk */}
       <path d="M64 348 L 70 380 L 94 380 L 100 348 Z" fill="var(--color-ink-light)" opacity="0.75" />
       <rect x="61" y="344" width="42" height="7" rx="2" fill="var(--color-ink-light)" />
     </svg>
@@ -68,7 +65,82 @@ function GoogleIcon() {
   )
 }
 
+function safeReturnTo(value) {
+  if (!value) return null
+  const candidate = String(value)
+  if (!candidate.startsWith('/')) return null
+  if (candidate.startsWith('//')) return null
+  if (/^\/[^/]*:/.test(candidate) || candidate.includes('://')) return null
+  return candidate
+}
+
 export default function Login() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { refetchUser } = useAuth()
+
+  const returnTo = safeReturnTo(searchParams.get('returnTo'))
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [errorCode, setErrorCode] = useState('')
+  const [resendSent, setResendSent] = useState(false)
+
+  const urlError = searchParams.get('error')
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    setErrorCode('')
+    setResendSent(false)
+
+    if (!email.trim() || !password) {
+      setError('Please enter your email and password.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const data = await login({ email, password })
+      setStoredToken(data.token)
+      const userData = await refetchUser()
+      if (returnTo) {
+        navigate(returnTo, { replace: true })
+      } else if (userData) {
+        navigate('/auth/select-role', { replace: true })
+      } else {
+        navigate('/', { replace: true })
+      }
+    } catch (err) {
+      const code = err?.response?.data?.code
+      const message = err?.response?.data?.error || 'Login failed. Please try again.'
+      setError(message)
+      setErrorCode(code || '')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleResend() {
+    setResendSent(false)
+    if (!email.trim()) {
+      setError('Enter your email to resend the verification link.')
+      return
+    }
+    setLoading(true)
+    try {
+      await resendVerification(email)
+      setError('')
+      setResendSent(true)
+    } catch {
+      setError('Unable to resend verification email. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="login-page">
       <div className="login-illustration">
@@ -84,10 +156,59 @@ export default function Login() {
           <h1 className="login-card-title">Hello!</h1>
           <p className="login-card-subtitle">Sign in to continue to Asgard Publications</p>
 
+          {(urlError || error) && (
+            <div className="auth-alert auth-alert--error">
+              {urlError === 'auth_failed' ? 'Authentication failed. Please try again.' : error}
+              {errorCode === 'EMAIL_NOT_VERIFIED' && (
+                <button type="button" className="auth-alert-link" onClick={handleResend} disabled={loading}>
+                  {resendSent ? 'Verification email sent. Check your inbox.' : 'Resend verification email'}
+                </button>
+              )}
+            </div>
+          )}
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <label className="auth-field">
+              <span>Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </label>
+
+            <label className="auth-field">
+              <span>Password</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </label>
+
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="auth-links">
+            <Link to="/forgot-password" className="auth-link">Forgot password?</Link>
+          </div>
+
+          <div className="auth-divider"><span>OR</span></div>
+
           <a href={GOOGLE_AUTH_URL} className="login-google-btn">
             <GoogleIcon />
             Continue with Google
           </a>
+
+          <p className="login-footer">
+            Don't have an account? <Link to="/register" className="auth-link">Create account</Link>
+          </p>
 
           <p className="login-footer">
             By signing in, you agree to our terms of service and privacy policy.

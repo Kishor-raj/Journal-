@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import Button from '../../shared/components/Button'
 import FormField from '../../shared/components/FormField'
 import EmptyState from '../../shared/components/EmptyState'
@@ -28,6 +29,21 @@ const styles = {
     fontWeight: 600,
     color: 'var(--color-ink-navy)',
     margin: '0 0 8px 0',
+    textDecoration: 'none',
+  },
+  manuscriptTitleLink: {
+    textDecoration: 'none',
+    color: 'var(--color-ink-navy)',
+  },
+  expiredBadge: {
+    display: 'inline-block',
+    marginLeft: '8px',
+    padding: '2px 8px',
+    borderRadius: '9999px',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    background: '#FDEDEC',
+    color: 'var(--color-danger)',
   },
   meta: {
     fontSize: 'var(--text-sm)',
@@ -193,7 +209,13 @@ export default function Invitations() {
               {pending.map((inv) => (
                 <div key={inv.id} style={styles.invitationCard}>
                   <h3 style={styles.manuscriptTitle}>
-                    {inv.manuscript_title || 'Untitled Manuscript'}
+                    <Link
+                      to={`/reviewer/invitations/${inv.id}`}
+                      style={styles.manuscriptTitleLink}
+                    >
+                      {inv.manuscript_title || 'Untitled Manuscript'}
+                    </Link>
+                    {inv.expired && <span style={styles.expiredBadge}>Expired</span>}
                   </h3>
                   <div style={styles.meta}>
                     {inv.submitted_at && (
@@ -207,7 +229,7 @@ export default function Invitations() {
                     )}
                   </div>
 
-                  {respondingId !== inv.id && (
+                  {!inv.expired && respondingId !== inv.id && (
                     <div style={styles.actions}>
                       <Button
                         variant="primary"
@@ -226,7 +248,13 @@ export default function Invitations() {
                     </div>
                   )}
 
-                  {respondingId === inv.id && (
+                  {inv.expired && (
+                    <div style={styles.meta}>
+                      This invitation has expired. Contact the editorial office if you believe this is a mistake.
+                    </div>
+                  )}
+
+                  {!inv.expired && respondingId === inv.id && (
                     <div style={styles.declineForm}>
                       <h4 style={styles.declineTitle}>Decline with Suggestion</h4>
                       <FormField label="Reason (optional)">

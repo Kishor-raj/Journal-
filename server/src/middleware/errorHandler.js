@@ -6,5 +6,11 @@ export function errorHandler(err, req, res, _next) {
     console.error('Unexpected error:', err)
   }
 
-  res.status(statusCode).json({ error: message })
+  const body = { error: message }
+  if (err.code) {
+    body.code = err.code
+    if (err.code === 'EMAIL_NOT_VERIFIED') body.resend = true
+  }
+
+  res.status(statusCode).json(body)
 }

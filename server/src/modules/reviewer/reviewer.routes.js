@@ -1,9 +1,35 @@
 import { Router } from 'express'
+import crypto from 'crypto'
 import { authenticate } from '../../middleware/authenticate.js'
 import { requireRole } from '../../middleware/authorize.js'
 import * as reviewerService from './reviewer.service.js'
+import { findSession } from '../auth/auth.service.js'
 
 const router = Router()
+
+function sha256(str) {
+  return crypto.createHash('sha256').update(str).digest('hex')
+}
+
+async function resolveOptionalUser(req) {
+  const authHeader = req.headers.authorization
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : null
+  const rawToken = bearerToken || req.cookies?.session_token
+  if (!rawToken) return null
+  const session = await findSession(sha256(rawToken))
+  return session || null
+}
+
+router.get('/invitations/:id/validate', async (req, res) => {
+  const { token } = req.query
+  const authenticated = await resolveOptionalUser(req)
+  const invitation = await reviewerService.validateInvitation(req.params.id, token, authenticated?.uid || null)
+  if (invitation.valid && invitation.owner_uid && (!authenticated || authenticated.uid !== invitation.owner_uid)) {
+    invitation.requires_login = true
+    invitation.owns_invitation = false
+  }
+  res.json(invitation)
+})
 
 router.get('/invitations', authenticate, requireRole('reviewer'), async (req, res) => {
   const invitations = await reviewerService.getInvitations(req.user.uid)

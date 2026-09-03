@@ -1,9 +1,18 @@
 import { Router } from 'express'
+import rateLimit from 'express-rate-limit'
 import { authenticate } from '../../middleware/authenticate.js'
 import { requireRole } from '../../middleware/authorize.js'
 import * as editorialService from './editorial.service.js'
 
 const router = Router()
+
+const resendInvitationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many resend attempts, please try again later.', code: 'RATE_LIMITED' },
+})
 
 router.get('/dashboard', authenticate, requireRole('editor'), async (req, res) => {
   const stats = await editorialService.getDashboardStats(req.user.uid)
@@ -55,6 +64,11 @@ router.post('/manuscripts/:id/invite-reviewer', authenticate, requireRole('edito
 router.patch('/manuscripts/:id/assignments/:assignmentId/deadline', authenticate, requireRole('editor'), async (req, res) => {
   const { deadline } = req.body
   const result = await editorialService.setReviewerDeadline(req.params.id, req.user.uid, req.params.assignmentId, deadline)
+  res.json(result)
+})
+
+router.post('/manuscripts/:id/assignments/:assignmentId/resend-invitation', authenticate, requireRole('editor'), resendInvitationLimiter, async (req, res) => {
+  const result = await editorialService.resendInvitation(req.params.id, req.user.uid, req.params.assignmentId)
   res.json(result)
 })
 

@@ -12,6 +12,10 @@ export function respondToInvitation(invitationId, data) {
   return apiClient.patch(`/reviewer/invitations/${invitationId}`, data)
 }
 
+export function validateInvitation(invitationId, token) {
+  return apiClient.get(`/reviewer/invitations/${invitationId}/validate?token=${encodeURIComponent(token)}`)
+}
+
 export function getAssignments() {
   return apiClient.get('/reviewer/assignments')
 }
