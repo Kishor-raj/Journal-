@@ -1,4 +1,3 @@
-import { env } from '../../config/env.js'
 import {
   getGoogleAuthUrl,
   exchangeCode,
@@ -31,7 +30,8 @@ function isHttpsOrigin(origin) {
 }
 
 function getSessionCookieOptions(expires) {
-  const secureCookie = env.NODE_ENV === 'production' || isHttpsOrigin(env.SERVER_ORIGIN)
+  const serverOrigin = process.env.SERVER_ORIGIN || 'http://localhost:3001'
+  const secureCookie = process.env.NODE_ENV === 'production' || isHttpsOrigin(serverOrigin)
   const cookieOptions = {
     httpOnly: true,
     secure: secureCookie,
@@ -48,25 +48,27 @@ function getSessionCookieOptions(expires) {
 }
 
 export async function googleAuth(req, res) {
+  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173'
   try {
     const { url } = getGoogleAuthUrl()
     res.redirect(url)
   } catch (err) {
     console.error('Google auth error:', err)
-    res.redirect(`${env.CLIENT_ORIGIN}/login?error=auth_failed`)
+    res.redirect(`${clientOrigin}/login?error=auth_failed`)
   }
 }
 
 export async function googleCallback(req, res) {
   const { code, error } = req.query
+  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173'
 
   if (error) {
     console.error('Google OAuth error:', error)
-    return res.redirect(`${env.CLIENT_ORIGIN}/login?error=oauth_rejected`)
+    return res.redirect(`${clientOrigin}/login?error=oauth_rejected`)
   }
 
   if (!code) {
-    return res.redirect(`${env.CLIENT_ORIGIN}/login?error=no_code`)
+    return res.redirect(`${clientOrigin}/login?error=no_code`)
   }
 
   try {
@@ -77,10 +79,10 @@ export async function googleCallback(req, res) {
     const cookieOptions = getSessionCookieOptions(session.expiresAt)
     res.cookie('session_token', session.token, cookieOptions)
 
-    res.redirect(`${env.CLIENT_ORIGIN}/auth/callback?token=${session.token}`)
+    res.redirect(`${clientOrigin}/auth/callback?token=${session.token}`)
   } catch (err) {
     console.error('Google callback error:', err)
-    res.redirect(`${env.CLIENT_ORIGIN}/login?error=auth_failed`)
+    res.redirect(`${clientOrigin}/login?error=auth_failed`)
   }
 }
 

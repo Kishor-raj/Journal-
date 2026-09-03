@@ -1,16 +1,16 @@
 import { OAuth2Client } from 'google-auth-library'
 import crypto from 'crypto'
-import { env } from '../../config/env.js'
 import pool from '../../config/db.js'
 import { hashPassword, verifyPassword } from './password.js'
 import { hashToken, generateTokenWithExpiry, buildAppUrl } from '../../modules/email/email.utils.js'
 import { sendEmailVerificationEmail, sendPasswordResetEmail, sendPasswordChangedEmail } from '../../modules/email/email.templates.js'
 import { logSecurityEvent } from '../../modules/security/security.service.js'
 
+const callbackOrigin = process.env.AUTH_CALLBACK_ORIGIN || process.env.SERVER_ORIGIN || 'http://localhost:3001'
 const googleClient = new OAuth2Client(
-  env.GOOGLE_CLIENT_ID,
-  env.GOOGLE_CLIENT_SECRET,
-  `${env.AUTH_CALLBACK_ORIGIN || 'http://localhost:3001'}/api/auth/google/callback`
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  `${callbackOrigin}/api/auth/google/callback`
 )
 
 function sha256(str) {
@@ -27,7 +27,8 @@ function generateState() {
 
 export function getGoogleAuthUrl() {
   const state = generateState()
-  const redirectUri = `${env.AUTH_CALLBACK_ORIGIN}/api/auth/google/callback`
+  const redirectOrigin = process.env.AUTH_CALLBACK_ORIGIN || process.env.SERVER_ORIGIN || 'http://localhost:3001'
+  const redirectUri = `${redirectOrigin}/api/auth/google/callback`
   const url = googleClient.generateAuthUrl({
     access_type: 'offline',
     scope: ['openid', 'email', 'profile'],
@@ -41,7 +42,7 @@ export async function exchangeCode(code) {
   const { tokens } = await googleClient.getToken(code)
   const ticket = await googleClient.verifyIdToken({
     idToken: tokens.id_token,
-    audience: env.GOOGLE_CLIENT_ID,
+    audience: process.env.GOOGLE_CLIENT_ID,
   })
   return ticket.getPayload()
 }
