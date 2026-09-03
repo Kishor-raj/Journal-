@@ -1,5 +1,10 @@
 # Phase 6 — Email Integration, Reliability, Testing & Production Hardening
 
+- [x] Removed Resend/verification rate limiter duplication and unified idempotent event keys — DONE
+- [x] Added background email worker with retry/backoff + draft-reminder scheduler — DONE
+- [x] Added admin delivery/stats/retry troubleshooting endpoints — DONE
+- [x] Added automated backend tests (events, utils, password, notification idempotency/retry, manuscript dispatcher) — DONE
+
 ## Objective
 
 Complete the integration of all email/authentication features from Phases 1–5 and make the system reliable enough for production.
@@ -67,8 +72,8 @@ All emails should be associated with a predictable event type.
 
 ## TODO
 
-- [ ] Define a notification-event enum/constants module.
-- [ ] Add event names for every required email.
+- [x] Define a notification-event enum/constants module.
+- [x] Add event names for every required email.
 
 Recommended events:
 
@@ -86,9 +91,9 @@ MANUSCRIPT_MAJOR_REVISION
 DRAFT_MANUSCRIPT_REMINDER
 ```
 
-- [ ] Ensure each notification has a stable event type.
-- [ ] Ensure event naming does not depend on email subject text.
-- [ ] Add a helper that maps workflow actions to notification events.
+- [x] Ensure each notification has a stable event type.
+- [x] Ensure event naming does not depend on email subject text.
+- [x] Add a helper that maps workflow actions to notification events.
 
 ---
 
@@ -98,14 +103,14 @@ A workflow operation can accidentally execute more than once because of retries,
 
 ## TODO
 
-- [ ] Identify notifications that should normally be sent once per workflow event.
-- [ ] Create a deterministic notification key.
-- [ ] Prevent duplicate submission emails for the same manuscript submission event.
-- [ ] Prevent duplicate decision emails for the same editorial decision event.
-- [ ] Prevent duplicate reviewer invitation emails unless an explicit resend operation is requested.
-- [ ] Prevent multiple verification emails from creating multiple active tokens unnecessarily.
-- [ ] Prevent multiple reset requests from producing confusing active tokens.
-- [ ] Allow intentional resend operations to bypass ordinary idempotency rules when appropriate.
+- [x] Identify notifications that should normally be sent once per workflow event.
+- [x] Create a deterministic notification key.
+- [x] Prevent duplicate submission emails for the same manuscript submission event.
+- [x] Prevent duplicate decision emails for the same editorial decision event.
+- [x] Prevent duplicate reviewer invitation emails unless an explicit resend operation is requested.
+- [x] Prevent multiple verification emails from creating multiple active tokens unnecessarily.
+- [x] Prevent multiple reset requests from producing confusing active tokens.
+- [x] Allow intentional resend operations to bypass ordinary idempotency rules when appropriate.
 
 ## Recommended notification key examples
 
@@ -126,9 +131,9 @@ The application should distinguish between an email that was requested and an em
 
 ## TODO
 
-- [ ] Review existing `email_notifications` structure.
-- [ ] Ensure the notification record can represent lifecycle state.
-- [ ] Add status values where necessary.
+- [x] Review existing `email_notifications` structure.
+- [x] Ensure the notification record can represent lifecycle state.
+- [x] Add status values where necessary.
 
 Recommended statuses:
 
@@ -141,10 +146,10 @@ RETRYING
 CANCELLED
 ```
 
-- [ ] Store provider message ID when Resend returns one.
-- [ ] Store error information safely for troubleshooting.
-- [ ] Do not store sensitive token values in notification logs.
-- [ ] Store timestamps for created, attempted, sent, failed, and last retry.
+- [x] Store provider message ID when Resend returns one.
+- [x] Store error information safely for troubleshooting.
+- [x] Do not store sensitive token values in notification logs.
+- [x] Store timestamps for created, attempted, sent, failed, and last retry.
 
 ---
 
@@ -189,14 +194,14 @@ Temporary provider/network errors should be retried without manually repeating t
 
 ## TODO
 
-- [ ] Define retryable errors.
-- [ ] Define non-retryable errors.
-- [ ] Implement bounded retries.
-- [ ] Add exponential backoff.
-- [ ] Add maximum retry count.
-- [ ] Preserve the original notification/event ID during retries.
-- [ ] Do not create a new business event for every retry.
-- [ ] Mark permanently failed emails as `FAILED` after retry exhaustion.
+- [x] Define retryable errors.
+- [x] Define non-retryable errors.
+- [x] Implement bounded retries.
+- [x] Add exponential backoff.
+- [x] Add maximum retry count.
+- [x] Preserve the original notification/event ID during retries.
+- [x] Do not create a new business event for every retry.
+- [x] Mark permanently failed emails as `FAILED` after retry exhaustion.
 
 Recommended retry schedule:
 
@@ -216,15 +221,15 @@ Do not retry invalid recipient addresses indefinitely.
 
 ## TODO
 
-- [ ] Handle network timeout.
-- [ ] Handle DNS/connection failures.
-- [ ] Handle provider API errors.
-- [ ] Handle rate limiting.
-- [ ] Handle invalid sender configuration.
-- [ ] Handle invalid recipient address.
-- [ ] Handle malformed email payloads.
-- [ ] Log provider errors without exposing API credentials.
-- [ ] Return safe user-facing messages.
+- [x] Handle network timeout.
+- [x] Handle DNS/connection failures.
+- [x] Handle provider API errors.
+- [x] Handle rate limiting.
+- [x] Handle invalid sender configuration.
+- [x] Handle invalid recipient address.
+- [x] Handle malformed email payloads.
+- [x] Log provider errors without exposing API credentials.
+- [x] Return safe user-facing messages.
 
 Example user-facing behavior:
 
@@ -343,15 +348,15 @@ Phase 5 defines the draft reminder behavior. Phase 6 makes it operationally reli
 
 ## TODO
 
-- [ ] Create the scheduled/background task for draft reminders.
-- [ ] Define exactly when a draft becomes eligible.
-- [ ] Define reminder frequency.
-- [ ] Define a maximum number of reminders.
-- [ ] Do not remind authors after submission.
-- [ ] Do not remind authors after withdrawal if withdrawn drafts should no longer be reminded.
-- [ ] Do not remind disabled accounts unless explicitly required.
-- [ ] Prevent duplicate reminders within the same reminder window.
-- [ ] Record each reminder event.
+- [x] Create the scheduled/background task for draft reminders.
+- [x] Define exactly when a draft becomes eligible.
+- [x] Define reminder frequency.
+- [x] Define a maximum number of reminders.
+- [x] Do not remind authors after submission.
+- [x] Do not remind authors after withdrawal if withdrawn drafts should no longer be reminded.
+- [x] Do not remind disabled accounts unless explicitly required.
+- [x] Prevent duplicate reminders within the same reminder window.
+- [x] Record each reminder event.
 - [ ] Provide a safe unsubscribe/notification preference strategy if product requirements later introduce one.
 
 ---
@@ -362,18 +367,18 @@ Review every template before production.
 
 ## TODO
 
-- [ ] Verify subject is present.
-- [ ] Verify HTML is valid.
-- [ ] Verify plain-text fallback exists where supported.
-- [ ] Verify application URL is correct.
-- [ ] Verify manuscript IDs are not exposed unnecessarily.
-- [ ] Verify reviewer invitation links are valid.
-- [ ] Verify reset links are valid.
-- [ ] Verify verification links are valid.
-- [ ] Verify names are escaped before insertion into HTML.
-- [ ] Verify manuscript titles are escaped before insertion into HTML.
-- [ ] Verify editor/reviewer comments are never inserted as raw untrusted HTML.
-- [ ] Verify no internal database IDs are unnecessarily exposed.
+- [x] Verify subject is present.
+- [x] Verify HTML is valid.
+- [x] Verify plain-text fallback exists where supported.
+- [x] Verify application URL is correct.
+- [x] Verify manuscript IDs are not exposed unnecessarily.
+- [x] Verify reviewer invitation links are valid.
+- [x] Verify reset links are valid.
+- [x] Verify verification links are valid.
+- [x] Verify names are escaped before insertion into HTML.
+- [x] Verify manuscript titles are escaped before insertion into HTML.
+- [x] Verify editor/reviewer comments are never inserted as raw untrusted HTML.
+- [x] Verify no internal database IDs are unnecessarily exposed.
 
 ---
 
@@ -523,8 +528,8 @@ Editor Decision
 
 Add unit/integration tests for:
 
-- [ ] Password hashing.
-- [ ] Password verification.
+- [x] Password hashing.
+- [x] Password verification.
 - [ ] Registration validation.
 - [ ] Verification token generation.
 - [ ] Verification token validation.
@@ -532,11 +537,11 @@ Add unit/integration tests for:
 - [ ] Password-reset token validation.
 - [ ] Session creation.
 - [ ] Session revocation.
-- [ ] Notification creation.
-- [ ] Notification idempotency.
-- [ ] Retry handling.
+- [x] Notification creation.
+- [x] Notification idempotency.
+- [x] Retry handling.
 - [ ] Reviewer invitation token validation.
-- [ ] Decision-to-email event mapping.
+- [x] Decision-to-email event mapping.
 - [ ] Draft reminder eligibility.
 
 ---
@@ -618,25 +623,25 @@ Do not hard-code assumptions about provider pricing or quotas into business logi
 
 Add structured logs for:
 
-- [ ] Email requested.
-- [ ] Email queued.
-- [ ] Email send started.
-- [ ] Email sent successfully.
-- [ ] Email failed.
-- [ ] Email retry scheduled.
-- [ ] Email permanently failed.
+- [x] Email requested.
+- [x] Email queued.
+- [x] Email send started.
+- [x] Email sent successfully.
+- [x] Email failed.
+- [x] Email retry scheduled.
+- [x] Email permanently failed.
 - [ ] Verification success/failure.
 - [ ] Password reset success/failure.
 - [ ] Invitation accept/decline.
 
 Never log:
 
-- [ ] Passwords.
-- [ ] Password reset tokens.
-- [ ] Verification tokens.
-- [ ] Invitation tokens.
-- [ ] Resend API keys.
-- [ ] Session secrets.
+- [x] Passwords.
+- [x] Password reset tokens.
+- [x] Verification tokens.
+- [x] Invitation tokens.
+- [x] Resend API keys.
+- [x] Session secrets.
 
 ---
 
@@ -648,16 +653,16 @@ Admin should be able to determine why a notification failed without viewing sens
 
 Consider adding an admin email-delivery view with:
 
-- [ ] Notification ID.
-- [ ] Event type.
-- [ ] Recipient email.
-- [ ] Manuscript reference where applicable.
-- [ ] Status.
-- [ ] Created time.
-- [ ] Last attempt time.
-- [ ] Retry count.
-- [ ] Provider message ID.
-- [ ] Sanitized failure reason.
+- [x] Notification ID.
+- [x] Event type.
+- [x] Recipient email.
+- [x] Manuscript reference where applicable.
+- [x] Status.
+- [x] Created time.
+- [x] Last attempt time.
+- [x] Retry count.
+- [x] Provider message ID.
+- [x] Sanitized failure reason.
 
 Do not expose token values or passwords.
 
@@ -670,9 +675,9 @@ Do not expose token values or passwords.
 Review all migrations created in Phases 1–5.
 
 - [ ] Foreign keys are correct.
-- [ ] Unique constraints prevent duplicates.
+- [x] Unique constraints prevent duplicates.
 - [ ] Expiration columns have appropriate indexes.
-- [ ] Notification lookup columns are indexed.
+- [x] Notification lookup columns are indexed.
 - [ ] Session lookup columns are indexed.
 - [ ] Verification/reset token hash columns are indexed where needed.
 - [ ] Reviewer invitation lookup columns are indexed.

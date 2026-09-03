@@ -4,6 +4,12 @@ import { AppError } from '../../shared/errors/AppError.js'
 import { isConflicted } from '../../shared/utils/conflictCheck.js'
 import { enqueueNotification } from '../notification/notification.service.js'
 import { buildAppUrl } from '../email/email.utils.js'
+import {
+  sendEditorialAccepted,
+  sendEditorialRejected,
+  sendMinorRevisionRequested,
+  sendMajorRevisionRequested,
+} from '../notification/manuscript-notification.service.js'
 
 const INVITATION_PATH = '/reviewer/invitations'
 
@@ -1135,6 +1141,7 @@ export async function submitDecision(manuscriptId, editorId, decisionData) {
        RETURNING id`,
       [manuscriptId, editorId, decision, comments_to_author || null, internal_notes || null]
     )
+    const editorialDecisionId = decisionResult.rows[0].id
 
     if (decision === 'minor_revision' || decision === 'major_revision') {
       const currentRound = manuscript.revision_round || 1
@@ -1163,6 +1170,20 @@ export async function submitDecision(manuscriptId, editorId, decisionData) {
     )
 
     await client.query('COMMIT')
+
+    const notifyByDecision = {
+      accept: () => sendEditorialAccepted(manuscriptId, editorialDecisionId),
+      reject: () => sendEditorialRejected(manuscriptId, editorialDecisionId),
+      minor_revision: () => sendMinorRevisionRequested(manuscriptId, editorialDecisionId),
+      major_revision: () => sendMajorRevisionRequested(manuscriptId, editorialDecisionId),
+    }
+
+    const notifyFn = notifyByDecision[decision]
+    if (notifyFn) {
+      notifyFn().catch((err) => {
+        console.error(`Post-commit ${decision} email failed for manuscript ${manuscriptId}:`, err.message)
+      })
+    }
 
     return { success: true, manuscript_id: manuscriptId, decision, new_status: newStatus }
   } catch (err) {

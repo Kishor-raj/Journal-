@@ -30,6 +30,15 @@ const NAV = {
         ],
       },
       {
+        label: 'Notifications',
+        items: [
+          { to: '/admin/notifications', label: 'History', icon: 'fa-inbox' },
+          { to: '/admin/email-templates', label: 'Email Templates', icon: 'fa-envelope-circle-check' },
+          { to: '/admin/email-stats', label: 'Delivery Stats', icon: 'fa-chart-column' },
+          { to: '/admin/email-provider', label: 'Provider Status', icon: 'fa-server' },
+        ],
+      },
+      {
         label: 'Account',
         items: [
           { to: '/profile', label: 'Profile', icon: 'fa-user-circle' },

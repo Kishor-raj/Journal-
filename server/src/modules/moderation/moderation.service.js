@@ -1,6 +1,7 @@
 import pool from '../../config/db.js'
 import { AppError } from '../../shared/errors/AppError.js'
 import { isConflicted } from '../../shared/utils/conflictCheck.js'
+import { sendDeskRejected } from '../notification/manuscript-notification.service.js'
 
 export async function getDashboardStats(moderatorId) {
   // KPI counts from the live queue
@@ -227,11 +228,13 @@ export async function submitCheck(manuscriptId, moderatorId, checkData) {
       [manuscriptId, moderatorId, JSON.stringify(checklist), plagiarism_score || null, ethics_check_status || null, files_valid || false, decision, notes || null]
     )
 
-    await client.query(
+    const decisionResult = await client.query(
       `INSERT INTO moderator_decisions (manuscript_id, moderator_id, decision, reason, notes_to_author)
-       VALUES ($1, $2, $3, $4, $5)`,
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
       [manuscriptId, moderatorId, decision, notes || null, notes_to_author || null]
     )
+    const moderatorDecisionId = decisionResult.rows[0].id
 
     const statusMap = {
       proceed: 'editor_assignment',
@@ -260,6 +263,12 @@ export async function submitCheck(manuscriptId, moderatorId, checkData) {
     )
 
     await client.query('COMMIT')
+
+    if (decision === 'reject') {
+      sendDeskRejected(manuscriptId, moderatorDecisionId).catch((err) => {
+        console.error('Post-commit desk rejection email failed:', err.message)
+      })
+    }
 
     return {
       manuscript_id: manuscriptId,
