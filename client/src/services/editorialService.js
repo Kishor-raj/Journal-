@@ -44,6 +44,10 @@ export function setReviewerDeadline(manuscriptId, assignmentId, deadline) {
   return apiClient.patch(`/editorial/manuscripts/${manuscriptId}/assignments/${assignmentId}/deadline`, { deadline })
 }
 
+export function resendInvitation(manuscriptId, assignmentId) {
+  return apiClient.post(`/editorial/manuscripts/${manuscriptId}/assignments/${assignmentId}/resend-invitation`, {})
+}
+
 export function getExtensionRequests(manuscriptId) {
   return apiClient.get(`/editorial/manuscripts/${manuscriptId}/extensions`)
 }

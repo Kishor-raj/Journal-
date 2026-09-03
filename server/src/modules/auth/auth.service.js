@@ -1,6 +1,10 @@
 import { OAuth2Client } from 'google-auth-library'
 import crypto from 'crypto'
 import pool from '../../config/db.js'
+import { hashPassword, verifyPassword } from './password.js'
+import { hashToken, generateTokenWithExpiry, buildAppUrl } from '../../modules/email/email.utils.js'
+import { sendEmailVerificationEmail, sendPasswordResetEmail, sendPasswordChangedEmail } from '../../modules/email/email.templates.js'
+import { logSecurityEvent } from '../../modules/security/security.service.js'
 
 const callbackOrigin = process.env.AUTH_CALLBACK_ORIGIN || process.env.SERVER_ORIGIN || 'http://localhost:3001'
 const googleClient = new OAuth2Client(
@@ -297,4 +301,421 @@ export async function touchSession(sessionId) {
     'UPDATE user_sessions SET last_seen_at = now() WHERE id = $1',
     [sessionId]
   )
+}
+
+const PASSWORD_MIN_LENGTH = 8
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase()
+}
+
+export class AuthError extends Error {
+  constructor(message, code, statusCode = 400) {
+    super(message)
+    this.name = 'AuthError'
+    this.code = code
+    this.statusCode = statusCode
+    this.isOperational = true
+  }
+}
+
+export async function registerUser({ email, password, first_name, last_name }) {
+  const normalizedEmail = normalizeEmail(email)
+  const trimmedFirstName = (first_name || '').trim()
+  const trimmedLastName = (last_name || '').trim()
+
+  if (!normalizedEmail) throw new AuthError('Email is required', 'VALIDATION_ERROR')
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    throw new AuthError('Invalid email format', 'VALIDATION_ERROR')
+  }
+  if (!password || String(password).trim() === '') {
+    throw new AuthError('Password is required', 'VALIDATION_ERROR')
+  }
+  if (String(password).length < PASSWORD_MIN_LENGTH) {
+    throw new AuthError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`, 'VALIDATION_ERROR')
+  }
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    const existing = await client.query(
+      'SELECT id, is_email_verified FROM users WHERE email = $1',
+      [normalizedEmail]
+    )
+
+    if (existing.rows.length > 0) {
+      const user = existing.rows[0]
+      const credential = await client.query(
+        'SELECT password_hash FROM user_password_credentials WHERE user_id = $1',
+        [user.id]
+      )
+      await client.query('ROLLBACK')
+      return { duplicate: true, user: { id: user.id, is_email_verified: user.is_email_verified, hasPassword: credential.rows.length > 0 } }
+    }
+
+    const authorRole = await client.query("SELECT id FROM roles WHERE name = 'author'")
+    const authorRoleId = authorRole.rows[0]?.id || null
+    const firstNameValue = trimmedFirstName || null
+    const lastNameValue = trimmedLastName || null
+    const displayName = [firstNameValue, lastNameValue].filter(Boolean).join(' ').trim() || normalizedEmail.split('@')[0]
+
+    const newUser = await client.query(
+      `INSERT INTO users (role_id, email, first_name, last_name, display_name, is_email_verified, account_status)
+       VALUES ($1, $2, $3, $4, $5, false, 'active')
+       RETURNING id`,
+      [authorRoleId, normalizedEmail, firstNameValue, lastNameValue, displayName]
+    )
+
+    const userId = newUser.rows[0].id
+
+    const passwordHash = await hashPassword(String(password))
+    await client.query(
+      `INSERT INTO user_password_credentials (user_id, password_hash)
+       VALUES ($1, $2)`,
+      [userId, passwordHash]
+    )
+
+    await client.query(
+      `INSERT INTO user_roles (user_id, role_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, role_id) DO NOTHING`,
+      [userId, authorRoleId]
+    )
+
+    const { token, expiresAt } = generateTokenWithExpiry('short', env.EMAIL_VERIFICATION_TOKEN_TTL_MINUTES)
+    await client.query(
+      `INSERT INTO email_verification_tokens (user_id, token_hash, expires_at)
+       VALUES ($1, $2, $3)`,
+      [userId, hashToken(token), expiresAt]
+    )
+
+    await client.query('COMMIT')
+
+    const emailResult = await sendEmailVerificationEmail({
+      to: normalizedEmail,
+      firstName: firstNameValue || displayName,
+      token,
+      expiresAt,
+    })
+
+    return { id: userId, email: normalizedEmail, verificationEmail: emailResult }
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
+export async function loginWithPassword({ email, password, ip, userAgent }) {
+  const normalizedEmail = normalizeEmail(email)
+  if (!normalizedEmail) throw new AuthError('Email is required', 'VALIDATION_ERROR')
+  if (!password || String(password).trim() === '') {
+    throw new AuthError('Invalid email or password', 'INVALID_CREDENTIALS', 401)
+  }
+
+  const userResult = await pool.query(
+    'SELECT * FROM users WHERE email = $1',
+    [normalizedEmail]
+  )
+  const user = userResult.rows[0]
+  if (!user) {
+    await logSecurityEvent({ eventType: 'login_failed', severity: 'warning', ip, userAgent, details: { reason: 'invalid_credentials' } })
+    throw new AuthError('Invalid email or password', 'INVALID_CREDENTIALS', 401)
+  }
+
+  if (user.account_status === 'locked') {
+    await logSecurityEvent({ eventType: 'login_blocked_locked', severity: 'warning', userId: user.id, ip, userAgent })
+    throw new AuthError('Account is locked', 'ACCOUNT_LOCKED', 403)
+  }
+
+  if (user.account_status === 'disabled') {
+    await logSecurityEvent({ eventType: 'login_blocked_disabled', severity: 'warning', userId: user.id, ip, userAgent })
+    throw new AuthError('Account is disabled', 'ACCOUNT_DISABLED', 403)
+  }
+
+  const credentialResult = await pool.query(
+    'SELECT * FROM user_password_credentials WHERE user_id = $1',
+    [user.id]
+  )
+  const credential = credentialResult.rows[0]
+  if (!credential) {
+    await logSecurityEvent({ eventType: 'login_failed', severity: 'warning', userId: user.id, ip, userAgent, details: { reason: 'no_password' } })
+    throw new AuthError('Invalid email or password', 'INVALID_CREDENTIALS', 401)
+  }
+
+  if (credential.locked_until && new Date(credential.locked_until) > new Date()) {
+    await logSecurityEvent({ eventType: 'login_blocked_locked', severity: 'warning', userId: user.id, ip, userAgent })
+    throw new AuthError('Account is locked', 'ACCOUNT_LOCKED', 403)
+  }
+
+  const valid = await verifyPassword(String(password), credential.password_hash)
+  if (!valid) {
+    await logSecurityEvent({ eventType: 'login_failed', severity: 'warning', userId: user.id, ip, userAgent, details: { reason: 'wrong_password' } })
+    throw new AuthError('Invalid email or password', 'INVALID_CREDENTIALS', 401)
+  }
+
+  if (credential.failed_login_attempts > 0) {
+    await pool.query(
+      `UPDATE user_password_credentials SET failed_login_attempts = 0, locked_until = NULL, updated_at = now() WHERE user_id = $1`,
+      [user.id]
+    )
+  }
+
+  if (!user.is_email_verified) {
+    await logSecurityEvent({ eventType: 'login_unverified_email', severity: 'info', userId: user.id, ip, userAgent })
+    throw new AuthError('Email not verified', 'EMAIL_NOT_VERIFIED', 403)
+  }
+
+  const session = await createSession(user.id, ip, userAgent)
+  await logSecurityEvent({ eventType: 'login_success', severity: 'info', userId: user.id, ip, userAgent })
+
+  return { session, user: { id: user.id, email: user.email } }
+}
+
+export async function verifyEmailToken(rawToken, ip, userAgent) {
+  if (!rawToken) throw new AuthError('Verification token is required', 'VERIFICATION_INVALID', 400)
+
+  const tokenHash = hashToken(String(rawToken))
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    const tokenResult = await client.query(
+      'SELECT * FROM email_verification_tokens WHERE token_hash = $1',
+      [tokenHash]
+    )
+    const token = tokenResult.rows[0]
+    if (!token) {
+      await client.query('ROLLBACK')
+      await logSecurityEvent({ eventType: 'verification_failed', severity: 'warning', ip, userAgent, details: { reason: 'invalid_token' } })
+      throw new AuthError('This verification link is no longer valid', 'VERIFICATION_INVALID', 400)
+    }
+
+    if (token.used_at) {
+      await client.query('ROLLBACK')
+      await logSecurityEvent({ eventType: 'verification_used', severity: 'warning', userId: token.user_id, ip, userAgent })
+      throw new AuthError('This verification link is no longer valid', 'VERIFICATION_INVALID', 400)
+    }
+
+    if (new Date(token.expires_at) < new Date()) {
+      await client.query('ROLLBACK')
+      await logSecurityEvent({ eventType: 'verification_expired', severity: 'warning', userId: token.user_id, ip, userAgent })
+      throw new AuthError('Verification link expired', 'VERIFICATION_EXPIRED', 400)
+    }
+
+    await client.query(
+      'UPDATE email_verification_tokens SET used_at = now() WHERE id = $1',
+      [token.id]
+    )
+
+    await client.query(
+      'UPDATE users SET is_email_verified = true, updated_at = now() WHERE id = $1',
+      [token.user_id]
+    )
+
+    await client.query('COMMIT')
+    await logSecurityEvent({ eventType: 'verification_success', severity: 'info', userId: token.user_id, ip, userAgent })
+    return { success: true }
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
+export async function resendEmailVerification({ email, ip, userAgent }) {
+  const normalizedEmail = normalizeEmail(email)
+
+  const userResult = await pool.query(
+    'SELECT id, email, first_name, is_email_verified FROM users WHERE email = $1',
+    [normalizedEmail]
+  )
+
+  if (userResult.rows.length === 0 || userResult.rows[0].is_email_verified) {
+    return { sent: true }
+  }
+
+  const user = userResult.rows[0]
+
+  await pool.query(
+    'DELETE FROM email_verification_tokens WHERE user_id = $1 AND used_at IS NULL',
+    [user.id]
+  )
+
+  const { token, expiresAt } = generateTokenWithExpiry('short', env.EMAIL_VERIFICATION_TOKEN_TTL_MINUTES)
+  await pool.query(
+    `INSERT INTO email_verification_tokens (user_id, token_hash, expires_at)
+     VALUES ($1, $2, $3)`,
+    [user.id, hashToken(token), expiresAt]
+  )
+
+  await sendEmailVerificationEmail({
+    to: user.email,
+    firstName: user.first_name || user.email.split('@')[0],
+    token,
+    expiresAt,
+  })
+
+  await logSecurityEvent({ eventType: 'verification_resend', severity: 'info', userId: user.id, ip, userAgent })
+  return { sent: true }
+}
+
+export async function requestPasswordReset({ email, ip, userAgent }) {
+  const normalizedEmail = normalizeEmail(email)
+
+  const userResult = await pool.query(
+    'SELECT id, email, first_name, account_status, is_email_verified FROM users WHERE email = $1',
+    [normalizedEmail]
+  )
+
+  const user = userResult.rows[0]
+  if (!user) {
+    return { sent: true }
+  }
+
+  await pool.query(
+    `DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL AND expires_at > now()`,
+    [user.id]
+  )
+
+  const { token, expiresAt } = generateTokenWithExpiry('default', env.PASSWORD_RESET_TOKEN_TTL_MINUTES)
+  await pool.query(
+    `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, requested_ip, user_agent)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [user.id, hashToken(token), expiresAt, ip || null, userAgent || null]
+  )
+
+  const resetUrl = buildAppUrl('/reset-password', { token })
+  try {
+    await sendPasswordResetEmail({
+      to: user.email,
+      firstName: user.first_name || user.email.split('@')[0],
+      resetUrl,
+      expiresAt,
+    })
+  } catch (emailErr) {
+    console.error('Failed to send password reset email:', emailErr)
+  }
+
+  await logSecurityEvent({
+    eventType: 'password_reset_requested',
+    severity: 'info',
+    userId: user.id,
+    ip,
+    userAgent,
+  })
+
+  return { sent: true }
+}
+
+export async function validateResetToken(rawToken) {
+  if (!rawToken) throw new AuthError('Reset token is required', 'VALIDATION_ERROR', 400)
+
+  const tokenHash = hashToken(String(rawToken))
+  const result = await pool.query(
+    `SELECT expires_at, used_at FROM password_reset_tokens WHERE token_hash = $1`,
+    [tokenHash]
+  )
+  const token = result.rows[0]
+
+  if (!token || token.used_at || new Date(token.expires_at) < new Date()) {
+    return { valid: false }
+  }
+
+  return { valid: true, expires_at: token.expires_at }
+}
+
+export async function resetPassword({ token, password, ip, userAgent }) {
+  if (!token) throw new AuthError('Reset token is required', 'VALIDATION_ERROR', 400)
+  if (!password || String(password).trim() === '') {
+    throw new AuthError('New password is required', 'VALIDATION_ERROR', 400)
+  }
+  if (String(password).length < PASSWORD_MIN_LENGTH) {
+    throw new AuthError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`, 'VALIDATION_ERROR', 400)
+  }
+
+  const tokenHash = hashToken(String(token))
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    const tokenResult = await client.query(
+      `SELECT * FROM password_reset_tokens WHERE token_hash = $1 FOR UPDATE`,
+      [tokenHash]
+    )
+    const resetToken = tokenResult.rows[0]
+    if (!resetToken || resetToken.used_at || new Date(resetToken.expires_at) < new Date()) {
+      await client.query('ROLLBACK')
+      await logSecurityEvent({ eventType: 'password_reset_failed', severity: 'warning', ip, userAgent, details: { reason: 'invalid_token' } })
+      throw new AuthError('This password reset link is invalid or has expired', 'RESET_TOKEN_INVALID', 400)
+    }
+
+    const userResult = await client.query(
+      'SELECT id, email, first_name, account_status FROM users WHERE id = $1',
+      [resetToken.user_id]
+    )
+    const user = userResult.rows[0]
+    if (!user) {
+      await client.query('ROLLBACK')
+      throw new AuthError('This password reset link is invalid or has expired', 'RESET_TOKEN_INVALID', 400)
+    }
+
+    if (user.account_status === 'disabled' || user.account_status === 'locked') {
+      await client.query('ROLLBACK')
+      await logSecurityEvent({ eventType: 'password_reset_failed', severity: 'warning', userId: user.id, ip, userAgent, details: { reason: 'account_not_active' } })
+      throw new AuthError('This account cannot reset its password', 'ACCOUNT_NOT_ACTIVE', 403)
+    }
+
+    const passwordHash = await hashPassword(String(password))
+    await client.query(
+      `INSERT INTO user_password_credentials (user_id, password_hash, password_changed_at, failed_login_attempts, locked_until)
+       VALUES ($1, $2, now(), 0, NULL)
+       ON CONFLICT (user_id) DO UPDATE
+       SET password_hash = EXCLUDED.password_hash,
+           password_changed_at = now(),
+           failed_login_attempts = 0,
+           locked_until = NULL,
+           updated_at = now()`,
+      [user.id, passwordHash]
+    )
+
+    await client.query(
+      'UPDATE password_reset_tokens SET used_at = now() WHERE id = $1',
+      [resetToken.id]
+    )
+
+    await client.query(
+      `UPDATE user_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`,
+      [user.id]
+    )
+
+    await client.query('COMMIT')
+
+    try {
+      await sendPasswordChangedEmail({
+        to: user.email,
+        firstName: user.first_name || user.email.split('@')[0],
+      })
+    } catch (emailErr) {
+      console.error('Failed to send password changed email:', emailErr)
+    }
+
+    await logSecurityEvent({
+      eventType: 'password_reset_completed',
+      severity: 'info',
+      userId: user.id,
+      ip,
+      userAgent,
+    })
+
+    return { success: true }
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
 }

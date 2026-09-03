@@ -1,13 +1,19 @@
 import pool from '../../config/db.js'
+import crypto from 'crypto'
 import { AppError } from '../../shared/errors/AppError.js'
 import { getManuscriptForRole } from '../manuscripts/manuscripts.service.js'
 
+function sha256(value) {
+  return crypto.createHash('sha256').update(value).digest('hex')
+}
+
 export async function getInvitations(reviewerId) {
   const result = await pool.query(
-    `SELECT ri.id, ri.manuscript_id, ri.sent_at, ri.expires_at,
+    `SELECT ri.id, ri.manuscript_id, ri.sent_at, ri.expires_at, ri.email_status,
             CASE WHEN ri.response IS NULL THEN 'pending' ELSE ri.response::text END AS status,
+            CASE WHEN ri.response IS NULL AND ri.expires_at < now() THEN true ELSE false END AS expired,
             m.title AS manuscript_title, m.submission_number, m.submitted_at,
-            ra.due_at AS deadline
+            ra.due_at AS deadline, ra.id AS assignment_id
      FROM reviewer_invitations ri
      JOIN manuscripts m ON m.id = ri.manuscript_id
      LEFT JOIN reviewer_assignments ra ON ra.id = ri.assignment_id
@@ -24,13 +30,69 @@ export async function getInvitations(reviewerId) {
   return result.rows
 }
 
+export async function validateInvitation(invitationId, token, authenticatedUserId = null) {
+  const tokenHash = sha256(token)
+
+  const result = await pool.query(
+    `SELECT ri.id, ri.reviewer_id, ri.response, ri.responded_at, ri.expires_at, ri.expires_at < now() AS expired,
+            ri.assignment_id, ri.sent_at,
+            m.title AS manuscript_title, m.submission_number,
+            ra.assignment_status
+     FROM reviewer_invitations ri
+     JOIN manuscripts m ON m.id = ri.manuscript_id
+     LEFT JOIN reviewer_assignments ra ON ra.id = ri.assignment_id
+     WHERE ri.id = $1 AND ri.token_hash = $2`,
+    [invitationId, tokenHash]
+  )
+
+  if (result.rows.length === 0) {
+    return { valid: false, reason: 'invalid' }
+  }
+
+  const invitation = result.rows[0]
+
+  if (invitation.response !== null) {
+    return {
+      valid: false,
+      reason: invitation.response === 'accepted' ? 'accepted' : 'declined',
+      invitation_id: invitation.id,
+      response: invitation.response,
+    }
+  }
+
+  if (invitation.expired) {
+    return { valid: false, reason: 'expired', invitation_id: invitation.id }
+  }
+
+  const reviewerResult = await pool.query(
+    'SELECT account_status, email FROM users WHERE id = $1',
+    [invitation.reviewer_id]
+  )
+  const reviewer = reviewerResult.rows[0]
+  if (!reviewer || reviewer.account_status !== 'active') {
+    return { valid: false, reason: 'inactive', invitation_id: invitation.id }
+  }
+
+  return {
+    valid: true,
+    invitation_id: invitation.id,
+    manuscript_title: invitation.manuscript_title,
+    submission_number: invitation.submission_number,
+    deadline: invitation.expires_at,
+    reviewer_email: reviewer.email,
+    owner_uid: invitation.reviewer_id,
+    requires_login: !authenticatedUserId,
+    owns_invitation: authenticatedUserId ? authenticatedUserId === invitation.reviewer_id : false,
+  }
+}
+
 export async function respondToInvitation(invitationId, reviewerId, response, suggestionData) {
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
 
     const invResult = await client.query(
-      `SELECT ri.id, ri.assignment_id, ri.reviewer_id, ri.response, ri.manuscript_id
+      `SELECT ri.id, ri.assignment_id, ri.reviewer_id, ri.response, ri.manuscript_id, ri.expires_at
        FROM reviewer_invitations ri
        WHERE ri.id = $1 AND ri.reviewer_id = $2 FOR UPDATE`,
       [invitationId, reviewerId]
@@ -44,6 +106,18 @@ export async function respondToInvitation(invitationId, reviewerId, response, su
 
     if (invitation.response !== null) {
       throw new AppError('Invitation already responded to', 400)
+    }
+
+    if (invitation.expires_at && new Date(invitation.expires_at).getTime() < Date.now()) {
+      throw new AppError('This invitation has expired', 410)
+    }
+
+    const accountResult = await client.query(
+      'SELECT account_status FROM users WHERE id = $1',
+      [reviewerId]
+    )
+    if (accountResult.rows.length === 0 || accountResult.rows[0].account_status !== 'active') {
+      throw new AppError('Your account is not active', 403)
     }
 
     const validResponse = response === 'accepted' || response === 'declined'
@@ -110,6 +184,17 @@ export async function respondToInvitation(invitationId, reviewerId, response, su
       `INSERT INTO user_activity (user_id, activity_type, entity_type, entity_id)
        VALUES ($1, 'invitation_responded', 'reviewer_invitations', $2)`,
       [reviewerId, invitationId]
+    )
+
+    await client.query(
+      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_values)
+       VALUES ($1, $2, 'reviewer_invitations', $3, $4)`,
+      [
+        reviewerId,
+        response === 'accepted' ? 'reviewer_invitation_accepted' : 'reviewer_invitation_declined',
+        invitationId,
+        JSON.stringify({ manuscript_id: invitation.manuscript_id, assignment_id: invitation.assignment_id }),
+      ]
     )
 
     await client.query('COMMIT')

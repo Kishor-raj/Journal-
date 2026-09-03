@@ -74,6 +74,7 @@ export default function ReviewerSelectionPanel() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [invitedIds, setInvitedIds] = useState(new Set())
+  const [invitingIds, setInvitingIds] = useState(new Set())
   const [deadlines, setDeadlines] = useState({})
   const [inviteError, setInviteError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -92,16 +93,31 @@ export default function ReviewerSelectionPanel() {
   }
 
   const handleInvite = async (reviewerId) => {
+    if (invitedIds.has(reviewerId) || invitingIds.has(reviewerId)) return
     const deadline = deadlines[reviewerId] || defaultDeadline()
+    setInviteError('')
+    setSuccessMessage('')
+    setInvitingIds((prev) => new Set([...prev, reviewerId]))
     try {
-      setInviteError('')
-      setSuccessMessage('')
-      await inviteReviewer(id, { reviewer_id: reviewerId, deadline })
+      const result = await inviteReviewer(id, { reviewer_id: reviewerId, deadline })
       setInvitedIds((prev) => new Set([...prev, reviewerId]))
       const reviewer = reviewers.find((item) => item.id === reviewerId)
-      setSuccessMessage(`Invitation sent to ${reviewer?.name || 'the reviewer'}.`)
+      const emailStatus = result?.email_status
+      if (emailStatus === 'failed') {
+        setInviteError(`Invitation created for ${reviewer?.name || 'the reviewer'}, but the email could not be delivered. You can resend it from Reviewer Management.`)
+      } else if (emailStatus === 'skipped') {
+        setSuccessMessage(`Invitation sent to ${reviewer?.name || 'the reviewer'}.`)
+      } else {
+        setSuccessMessage(`Invitation sent to ${reviewer?.name || 'the reviewer'}.`)
+      }
     } catch (err) {
       setInviteError(err?.message || 'Unable to send the reviewer invitation.')
+    } finally {
+      setInvitingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(reviewerId)
+        return next
+      })
     }
   }
 
@@ -169,8 +185,14 @@ export default function ReviewerSelectionPanel() {
         ) : reviewer.conflict_reason || reviewer.exclusion_reason ? (
           <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>Not eligible</span>
         ) : (
-          <Button variant="secondary" size="sm" onClick={() => handleInvite(reviewer.id)}>
-            Invite
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={invitingIds.has(reviewer.id)}
+            disabled={invitingIds.has(reviewer.id)}
+            onClick={() => handleInvite(reviewer.id)}
+          >
+            {invitingIds.has(reviewer.id) ? 'Sending...' : 'Invite'}
           </Button>
         ),
     },
