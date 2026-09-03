@@ -19,6 +19,10 @@ import AuthCallback from '../features/public/AuthCallback'
 
 import CompleteProfile from '../features/auth/CompleteProfile'
 import RoleSelect from '../features/auth/RoleSelect'
+import Register from '../features/auth/Register'
+import VerifyEmail from '../features/auth/VerifyEmail'
+import ForgotPassword from '../features/auth/ForgotPassword'
+import ResetPassword from '../features/auth/ResetPassword'
 
 import AdminDashboard from '../features/admin/AdminDashboard'
 import UserManagement from '../features/admin/UserManagement'
@@ -53,6 +57,7 @@ import EditorNotifications from '../features/editor/EditorNotifications'
 import AcceptedManuscripts from '../features/editor/AcceptedManuscripts'
 
 import Invitations from '../features/reviewer/Invitations'
+import InvitationDetails from '../features/reviewer/InvitationDetails'
 import Assignments from '../features/reviewer/Assignments'
 import ReviewForm from '../features/reviewer/ReviewForm'
 import ExtensionRequest from '../features/reviewer/ExtensionRequest'
@@ -77,8 +82,14 @@ function AppRouter() {
 
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
       </Route>
+
+      <Route path="/reviewer/invitations/:id" element={<InvitationDetails />} />
 
       <Route element={<DashboardLayout />}>
         <Route path="/dashboard" element={<DashboardRedirect />} />

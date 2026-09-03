@@ -5,7 +5,7 @@ import StatusBadge from '../../shared/components/StatusBadge'
 import EmptyState from '../../shared/components/EmptyState'
 import Button from '../../shared/components/Button'
 import PageHeader from '../../shared/components/PageHeader'
-import { getReviewerManagement } from '../../services/editorialService'
+import { getReviewerManagement, resendInvitation } from '../../services/editorialService'
 import { formatDate } from '../../shared/utils/formatDate'
 
 const styles = {
@@ -83,6 +83,9 @@ export default function ReviewerManagement() {
   const navigate = useNavigate()
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(true)
+  const [resendingId, setResendingId] = useState(null)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     getReviewerManagement()
@@ -90,6 +93,29 @@ export default function ReviewerManagement() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  const handleResend = async (assignmentId) => {
+    const row = assignments.find((a) => a.assignment_id === assignmentId)
+    if (!row || resendingId) return
+    setResendingId(assignmentId)
+    setMessage('')
+    setError('')
+    try {
+      await resendInvitation(row.manuscript_id, assignmentId)
+      setMessage('Invitation resent to the reviewer.')
+      setAssignments((prev) =>
+        prev.map((a) =>
+          a.assignment_id === assignmentId
+            ? { ...a, email_status: 'sent', resend_count: (a.resend_count || 0) + 1 }
+            : a
+        )
+      )
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Unable to resend the invitation.')
+    } finally {
+      setResendingId(null)
+    }
+  }
 
   const active = assignments.filter((a) => ['invited', 'accepted'].includes(a.assignment_status))
   const completed = assignments.filter((a) => a.assignment_status === 'completed')
@@ -139,19 +165,46 @@ export default function ReviewerManagement() {
       render: (val, row) => <DeadlineCell assignment={row.assignment_status} dueAt={val} />,
     },
     {
+      key: 'email_status',
+      label: 'Email',
+      render: (val, row) => {
+        if (row.assignment_status !== 'invited') return <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+        if (val === 'failed') return <span style={{ color: 'var(--color-danger)' }}>Delivery failed</span>
+        if (val === 'skipped') return <span style={{ color: 'var(--color-text-muted)' }}>Queued</span>
+        if (val && val !== 'pending') return <span style={{ color: 'var(--color-success)' }}>Sent</span>
+        return <span style={{ color: 'var(--color-text-muted)' }}>Pending</span>
+      },
+    },
+    {
       key: 'actions',
       label: '',
       render: (_, row) => (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate(`/editor/manuscripts/${row.manuscript_id}`)
-          }}
-        >
-          View
-        </Button>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          {row.assignment_status === 'invited' && row.invitation_id && (
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={resendingId === row.assignment_id}
+              disabled={resendingId !== null}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleResend(row.assignment_id)
+              }}
+            >
+              {resendingId === row.assignment_id ? 'Resending...' : 'Resend'}
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/editor/manuscripts/${row.manuscript_id}`)
+            }}
+          >
+            View
+          </Button>
+        </div>
       ),
     },
   ]
@@ -159,6 +212,17 @@ export default function ReviewerManagement() {
   return (
     <div style={styles.page}>
       <PageHeader title="Reviewer Management" subtitle="Track reviewer invitations and assignments across your manuscripts" />
+
+      {message && (
+        <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: '#EAF7F0', color: 'var(--color-success)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
+          {message}
+        </div>
+      )}
+      {error && (
+        <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: '#FDEDEC', color: 'var(--color-danger)', fontSize: 'var(--text-sm)' }}>
+          {error}
+        </div>
+      )}
 
       <div style={styles.chips}>
         <div style={styles.chip}>

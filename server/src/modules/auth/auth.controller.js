@@ -8,6 +8,13 @@ import {
   findSession,
   getAssignedRoles,
   selectRoleForSession,
+  registerUser,
+  loginWithPassword,
+  verifyEmailToken,
+  resendEmailVerification,
+  requestPasswordReset,
+  validateResetToken,
+  resetPassword as resetUserPassword,
 } from './auth.service.js'
 import crypto from 'crypto'
 
@@ -149,4 +156,121 @@ export async function getMe(req, res) {
     profile_image_url: user.profile_image_url,
     profile_complete: !!profileComplete,
   })
+}
+
+export async function register(req, res) {
+  const { email, password, first_name, last_name, role } = req.body || {}
+
+  if (role) {
+    return res.status(400).json({ error: 'Role cannot be set during registration', code: 'VALIDATION_ERROR' })
+  }
+
+  const result = await registerUser({
+    email,
+    password,
+    first_name,
+    last_name,
+  })
+
+  if (result.duplicate) {
+    if (result.user.hasPassword && !result.user.is_email_verified) {
+      return res.status(409).json({
+        error: 'An account with this email already exists and is awaiting email verification',
+        code: 'EMAIL_UNVERIFIED_EXISTS',
+        resend: true,
+      })
+    }
+    return res.status(409).json({
+      error: 'An account with this email already exists',
+      code: 'EMAIL_ALREADY_EXISTS',
+    })
+  }
+
+  res.status(201).json({
+    message: 'Registration successful. Check your email to verify your account.',
+    code: 'REGISTRATION_SUCCESS',
+    requiresVerification: true,
+    id: result.id,
+  })
+}
+
+export async function login(req, res) {
+  const { email, password } = req.body || {}
+
+  const { session, user } = await loginWithPassword({
+    email,
+    password,
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+  })
+
+  const cookieOptions = getSessionCookieOptions(session.expiresAt)
+  res.cookie('session_token', session.token, cookieOptions)
+
+  res.json({
+    message: 'Login successful',
+    token: session.token,
+    user: { id: user.id, email: user.email },
+  })
+}
+
+export async function verifyEmail(req, res) {
+  const { token } = req.body || {}
+
+  await verifyEmailToken(token, req.ip, req.get('user-agent'))
+
+  res.json({ message: 'Email verified successfully', code: 'VERIFICATION_SUCCESS' })
+}
+
+export async function resendVerification(req, res) {
+  const { email } = req.body || {}
+
+  await resendEmailVerification({
+    email,
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+  })
+
+  res.json({
+    message: 'If an account requires verification, a new verification email will be sent.',
+  })
+}
+
+export async function forgotPassword(req, res) {
+  const { email } = req.body || {}
+
+  await requestPasswordReset({
+    email,
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+  })
+
+  res.json({
+    message: 'If an account exists for this email, a password reset link has been sent.',
+  })
+}
+
+export async function validateResetPasswordToken(req, res) {
+  const { token } = req.query || {}
+
+  const result = await validateResetToken(token)
+
+  if (!result.valid) {
+    return res.status(400).json({ valid: false, error: 'This password reset link is invalid or has expired' })
+  }
+
+  res.json({ valid: true, expires_at: result.expires_at })
+}
+
+export async function resetPassword(req, res) {
+  const { token, password } = req.body || {}
+
+  await resetUserPassword({
+    token,
+    password,
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+  })
+
+  res.json({ message: 'Password reset successfully.' })
 }

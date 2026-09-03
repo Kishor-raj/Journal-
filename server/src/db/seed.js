@@ -78,14 +78,38 @@ async function seed() {
       { key: 'desk_rejected', subject: 'Manuscript Desk Rejected' },
       { key: 'reviewer_invited', subject: 'Review Invitation' },
       { key: 'decision_issued', subject: 'Editorial Decision' },
+      {
+        key: 'account_verification',
+        subject: 'Verify your email address',
+        body_html: `<p>Hello {{first_name}},</p><p>Thank you for creating an account with Asgard Publications. Please verify your email address by clicking the button below.</p><p><a href="{{verification_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Verify Email</a></p><p>This link will expire in {{expires_in}}.</p><p>If you did not create this account, you can safely ignore this email.</p>`,
+        body_text: `Hello {{first_name}},\n\nThank you for creating an account with Asgard Publications. Please verify your email address by visiting:\n\n{{verification_url}}\n\nThis link will expire in {{expires_in}}.\n\nIf you did not create this account, you can safely ignore this email.`,
+      },
+      {
+        key: 'password_reset',
+        subject: 'Reset your password',
+        body_html: `<p>Hello {{first_name}},</p><p>We received a request to reset your password. Click the button below to choose a new password.</p><p><a href="{{reset_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Reset Password</a></p><p>This link will expire in {{expires_in}}.</p><p>If you did not request this, you can safely ignore this email.</p>`,
+        body_text: `Hello {{first_name}},\n\nWe received a request to reset your password. Please visit:\n\n{{reset_url}}\n\nThis link will expire in {{expires_in}}.\n\nIf you did not request this, you can safely ignore this email.`,
+      },
+      {
+        key: 'password_changed',
+        subject: 'Your password has been changed',
+        body_html: `<p>Hello {{first_name}},</p><p>Your password was changed successfully.</p><p>If you did not make this change, please contact the journal administrator immediately.</p>`,
+        body_text: `Hello {{first_name}},\n\nYour password was changed successfully.\n\nIf you did not make this change, please contact the journal administrator immediately.`,
+      },
+      {
+        key: 'reviewer_invitation',
+        subject: 'You are invited to review a manuscript for {{journal_name}}',
+        body_html: `<p>Dear {{reviewer_name}},</p><p>You have been invited to review the following manuscript for {{journal_name}}:</p><p><strong>Title:</strong> {{manuscript_title}}<br/><strong>Submission:</strong> {{submission_number}}<br/><strong>Review deadline:</strong> {{review_deadline}}</p><p>Please review the invitation and respond using the secure link below:</p><p><a href="{{invitation_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">View Review Invitation</a></p><p>If the button does not work, copy and paste this link into your browser:<br/>{{invitation_url}}</p><p>Thank you,<br/>{{journal_name}}</p>`,
+        body_text: `Dear {{reviewer_name}},\n\nYou have been invited to review the following manuscript for {{journal_name}}:\n\nTitle: {{manuscript_title}}\nSubmission: {{submission_number}}\nReview deadline: {{review_deadline}}\n\nPlease review the invitation and respond using the secure link below:\n\n{{invitation_url}}\n\nIf the button does not work, copy and paste this link into your browser.\n\nThank you,\n{{journal_name}}`,
+      },
     ]
     for (const t of templates) {
       await client.query(
         `INSERT INTO email_templates (journal_id, template_key, subject, body_html, body_text)
-         SELECT id, $1, $2, '<p>Placeholder</p>', 'Placeholder'
+         SELECT id, $1, $2, $3, $4
          FROM journals WHERE short_name = 'JAR'
          ON CONFLICT (journal_id, template_key) DO NOTHING`,
-        [t.key, t.subject]
+        [t.key, t.subject, t.body_html || '<p>Placeholder</p>', t.body_text || 'Placeholder']
       )
     }
     console.log('✓ Email templates seeded')
