@@ -3,7 +3,6 @@ import 'express-async-errors'
 import cors from 'cors'
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
-import { env } from './config/env.js'
 import { requestLogger } from './middleware/requestLogger.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import healthRoutes from './modules/auth/health.routes.js'
@@ -22,7 +21,8 @@ import auditRoutes from './modules/audit/audit.routes.js'
 
 const app = express()
 
-const isProductionLike = env.NODE_ENV === 'production' || env.SERVER_ORIGIN.startsWith('https://') || process.env.RENDER === 'true'
+const serverOrigin = process.env.SERVER_ORIGIN || `http://localhost:${process.env.PORT || 3001}`
+const isProductionLike = process.env.NODE_ENV === 'production' || serverOrigin.startsWith('https://') || process.env.RENDER === 'true'
 
 if (isProductionLike) {
   app.set('trust proxy', 1)
@@ -30,7 +30,7 @@ if (isProductionLike) {
 
 app.use(helmet())
 const allowedOrigins = new Set([
-  env.CLIENT_ORIGIN,
+  process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://localhost:3001',

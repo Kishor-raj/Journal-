@@ -1,5 +1,4 @@
 import cloudinary from '../../config/cloudinary.js'
-import { env } from '../../config/env.js'
 import pool from '../../config/db.js'
 import { AppError } from '../../shared/errors/AppError.js'
 
@@ -14,13 +13,13 @@ export function generateSignature(manuscriptId, versionId, fileType) {
     public_id: publicId,
   }
 
-  const signature = cloudinary.utils.api_sign_request(paramsToSign, env.CLOUDINARY_API_SECRET)
+  const signature = cloudinary.utils.api_sign_request(paramsToSign, process.env.CLOUDINARY_API_SECRET)
 
   return {
     signature,
     timestamp,
-    api_key: env.CLOUDINARY_API_KEY,
-    cloud_name: env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     folder,
     public_id: publicId,
   }

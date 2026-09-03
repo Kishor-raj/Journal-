@@ -4,7 +4,7 @@ import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom'
 const NAV_ITEMS = [
   { label: 'Home', to: '/' },
   { label: 'About', to: '/about' },
-  { label: 'Board', to: '/board' },
+  { label: 'Editorial Board', to: '/board' },
   { label: 'Guidelines', to: '/guidelines' },
   { label: 'Current Issue', to: '/current-issue' },
   { label: 'Archives', to: '/archives' },
