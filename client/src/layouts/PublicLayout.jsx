@@ -113,13 +113,36 @@ export default function PublicLayout() {
           {/* Logo */}
           <div
             onClick={() => { navigate('/'); handleNavClick() }}
-            style={{ display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', minWidth: 0 }}
           >
             <img
               src="/asgard-logo.jpg"
               alt="Asgard Publications"
-              style={{ height: 'clamp(40px, 8.5vw, 62px)', width: 'auto', mixBlendMode: 'multiply' }}
+              style={{ height: 'clamp(42px, 8.8vw, 64px)', width: 'auto', mixBlendMode: 'multiply' }}
             />
+            <div style={{ display: 'grid', gap: '2px', lineHeight: 1.05 }}>
+              <span style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 'clamp(23px, 3.2vw, 34px)',
+                fontWeight: 700,
+                color: '#0B1B3A',
+                letterSpacing: '0.04em',
+                whiteSpace: 'nowrap',
+              }}>
+                ASGARD
+              </span>
+              <span style={{
+                fontFamily: 'Jost, sans-serif',
+                fontSize: 'clamp(10px, 1.25vw, 13px)',
+                fontWeight: 600,
+                color: '#C4A24C',
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+              }}>
+                Research Foundation
+              </span>
+            </div>
           </div>
 
           {/* Desktop nav */}
@@ -156,7 +179,7 @@ export default function PublicLayout() {
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
                   color: '#0B1B3A',
-                  padding: '10px 16px',
+                  padding: '11px 17px',
                   border: '1px solid #0B1B3A',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
@@ -230,12 +253,12 @@ export default function PublicLayout() {
                 to="/login"
                 onClick={handleNavClick}
                 style={{
-                  fontFamily: 'Jost, sans-serif',
-                  fontSize: '13.5px',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#0B1B3A',
-                  padding: '15px',
+                fontFamily: 'Jost, sans-serif',
+                fontSize: '13.5px',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#0B1B3A',
+                padding: '16px',
                   border: '1px solid #0B1B3A',
                   textAlign: 'center',
                   cursor: 'pointer',

@@ -350,7 +350,7 @@ export default function SubmissionGuidelines() {
               background: '#C4A24C',
               color: '#071228',
               fontWeight: 600,
-              padding: '14px',
+              padding: '15px',
               textAlign: 'center',
               marginTop: '26px',
               cursor: 'pointer',

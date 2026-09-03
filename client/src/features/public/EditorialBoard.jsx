@@ -440,7 +440,7 @@ export default function EditorialBoard() {
               background: '#C4A24C',
               color: '#071228',
               fontWeight: 600,
-              padding: '14px 28px',
+              padding: '15px 29px',
               borderRadius: '2px',
               textDecoration: 'none',
               whiteSpace: 'nowrap',

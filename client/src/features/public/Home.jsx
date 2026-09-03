@@ -59,11 +59,10 @@ function Book3D() {
   }, [])
 
   return (
-    <div style={{ border: '1px solid rgba(196,162,76,0.45)', padding: '12px', background: 'rgba(255,255,255,0.03)' }}>
+    <div style={{ width: '96%', margin: '0 auto', padding: '12px', transform: 'translateX(3%)' }}>
       <div style={{
         aspectRatio: '3 / 4',
-        background: 'repeating-linear-gradient(135deg, rgba(196,162,76,0.16) 0 2px, transparent 2px 9px)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'transparent',
         position: 'relative',
         overflow: 'hidden',
       }}>
@@ -139,10 +138,10 @@ export default function Home() {
               Advancing scholarly discourse through rigorous double-blind peer review in the humanities, social sciences, and interdisciplinary studies.
             </p>
             <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-              <HoverLink to="/guidelines" bg="#C4A24C" hoverBg="#E3CB86" textColor="#071228" style={{ padding: '15px 30px' }}>
+              <HoverLink to="/guidelines" bg="#C4A24C" hoverBg="#E3CB86" textColor="#071228" style={{ padding: '16px 32px' }}>
                 Submit a manuscript
               </HoverLink>
-              <OutlineLink to="/current-issue" style={{ padding: '15px 30px' }}>
+              <OutlineLink to="/current-issue" style={{ padding: '16px 32px' }}>
                 Read current issue
               </OutlineLink>
             </div>
@@ -257,7 +256,7 @@ export default function Home() {
               Abstracts due 30 November 2026 · Full manuscripts due 28 February 2027
             </p>
           </div>
-          <HoverLink to="/guidelines" bg="#C4A24C" hoverBg="#E3CB86" textColor="#071228" style={{ padding: '16px 32px', whiteSpace: 'nowrap' }}>
+          <HoverLink to="/guidelines" bg="#C4A24C" hoverBg="#E3CB86" textColor="#071228" style={{ padding: '17px 34px', whiteSpace: 'nowrap' }}>
             Read guidelines
           </HoverLink>
         </div>

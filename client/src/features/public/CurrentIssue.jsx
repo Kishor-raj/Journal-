@@ -81,7 +81,7 @@ function ActionButton({ children, onClick, active }) {
         letterSpacing: '0.04em',
         textTransform: 'uppercase',
         fontWeight: 600,
-        padding: '2px 4px',
+        padding: '3px 5px',
         cursor: 'pointer',
         transition: 'color 0.15s, border-color 0.15s',
       }}
@@ -160,7 +160,7 @@ function ArticleItem({ article }) {
                 background: '#0B1B3A',
                 color: '#FFFFFF',
                 border: 'none',
-                padding: '4px 10px',
+                padding: '5px 11px',
                 borderRadius: '2px',
                 cursor: 'pointer',
               }}
@@ -194,7 +194,7 @@ function ArticleItem({ article }) {
             fontWeight: 600,
             textTransform: 'uppercase',
             fontSize: '12.5px',
-            padding: '2px 4px',
+            padding: '3px 5px',
           }}
         >
           Full Text (PDF) ↗
@@ -265,7 +265,7 @@ export default function CurrentIssue() {
               border: '1px solid #0B1B3A',
               color: downloadHovered ? '#FFFFFF' : '#0B1B3A',
               background: downloadHovered ? '#0B1B3A' : 'transparent',
-              padding: '13px',
+              padding: '14px',
               textAlign: 'center',
               marginTop: '16px',
               cursor: 'pointer',
@@ -378,7 +378,7 @@ export default function CurrentIssue() {
                   background: '#C4A24C',
                   color: '#071228',
                   fontWeight: 600,
-                  padding: '12px 22px',
+                  padding: '13px 23px',
                   borderRadius: '2px',
                   textDecoration: 'none',
                   transition: 'background 0.15s',
@@ -397,7 +397,7 @@ export default function CurrentIssue() {
                   textTransform: 'uppercase',
                   border: '1px solid rgba(255,255,255,0.35)',
                   color: '#FFFFFF',
-                  padding: '12px 22px',
+                  padding: '13px 23px',
                   borderRadius: '2px',
                   textDecoration: 'none',
                   transition: 'border-color 0.15s, color 0.15s',
