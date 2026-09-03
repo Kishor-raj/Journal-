@@ -42,7 +42,7 @@ const styles = {
     fontFamily: 'var(--font-body)',
     fontSize: '1rem',
     fontWeight: 600,
-    padding: '0.875rem 1.75rem',
+    padding: '0.9375rem 1.875rem',
     backgroundColor: 'var(--color-archive-green)',
     color: 'var(--color-surface)',
     border: 'none',
