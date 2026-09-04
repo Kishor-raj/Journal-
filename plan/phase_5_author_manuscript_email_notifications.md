@@ -1,5 +1,12 @@
 # Phase 5 — Author Manuscript Email Notifications
 
+## Status
+- [x] Phase 1 — Resend Email Infrastructure completed
+- [x] Phase 2 — Manual Registration/Login/Email Verification completed
+- [x] Phase 3 — Forgot Password/Password Reset completed
+- [x] Phase 4 — Reviewer Invitation Emails completed
+- [x] Phase 5 — Author Manuscript Email Notifications — **DONE**
+
 ## Goal
 
 Implement the author-facing transactional email workflows required by the journal system using the Resend email infrastructure from Phase 1 and the authentication/session foundation from Phases 2–3.
@@ -133,11 +140,11 @@ Primary recipient:
 
 ### Todos
 
-- [ ] Create a helper such as `getManuscriptNotificationRecipient(manuscriptId)`.
-- [ ] Fetch only the recipient fields needed by the email sender.
-- [ ] Normalize email addresses through the database's existing `CITEXT` behavior.
-- [ ] Handle missing/disabled accounts gracefully.
-- [ ] Never send an email to an internal reviewer/editor/moderator address by mistake.
+- [x] Create a helper such as `getManuscriptNotificationRecipient(manuscriptId)`.
+- [x] Fetch only the recipient fields needed by the email sender.
+- [x] Normalize email addresses through the database's existing `CITEXT` behavior.
+- [x] Handle missing/disabled accounts gracefully.
+- [x] Never send an email to an internal reviewer/editor/moderator address by mistake.
 
 ---
 
@@ -171,14 +178,14 @@ Recipient inbox
 
 ### Todos
 
-- [ ] Reuse the Resend client/service created in Phase 1.
-- [ ] Keep `RESEND_API_KEY` server-side only.
-- [ ] Keep sender identity configurable through environment variables.
-- [ ] Add a stable `EMAIL_FROM` configuration.
-- [ ] Add an application/public URL configuration used to construct action links.
-- [ ] Return provider message/id metadata where available.
-- [ ] Distinguish `queued`, `sent`, `failed` and `skipped` outcomes.
-- [ ] Do not expose Resend provider errors directly to authors.
+- [x] Reuse the Resend client/service created in Phase 1.
+- [x] Keep `RESEND_API_KEY` server-side only.
+- [x] Keep sender identity configurable through environment variables.
+- [x] Add a stable `EMAIL_FROM` configuration.
+- [x] Add an application/public URL configuration used to construct action links.
+- [x] Return provider message/id metadata where available.
+- [x] Distinguish `queued`, `sent`, `failed` and `skipped` outcomes.
+- [x] Do not expose Resend provider errors directly to authors.
 
 ---
 
@@ -226,12 +233,12 @@ event_key = "manuscript:<manuscript_id>:editorial_decision:<decision_id>"
 
 ### Todos
 
-- [ ] Add migration for `email_notifications`.
-- [ ] Add index on `manuscript_id`.
-- [ ] Add index on `recipient_user_id`.
-- [ ] Add index on `status`.
-- [ ] Add unique/idempotency constraint for event keys where appropriate.
-- [ ] Add updated-at trigger if the project already uses a common trigger pattern.
+- [x] Add migration for `email_notifications`.
+- [x] Add index on `manuscript_id`.
+- [x] Add index on `recipient_user_id`.
+- [x] Add index on `status`.
+- [x] Add unique/idempotency constraint for event keys where appropriate.
+- [x] Add updated-at trigger if the project already uses a common trigger pattern.
 
 ---
 
@@ -457,12 +464,12 @@ Why:
 
 ### Todos
 
-- [ ] After successful `COMMIT`, fetch the recipient and manuscript email data.
-- [ ] Create an idempotent notification event.
-- [ ] Send or queue `submission_received`.
-- [ ] Log success/failure.
-- [ ] Return the manuscript submission response regardless of email-provider failure.
-- [ ] Ensure a failed email never rolls back the actual manuscript submission.
+- [x] After successful `COMMIT`, fetch the recipient and manuscript email data.
+- [x] Create an idempotent notification event.
+- [x] Send or queue `submission_received`.
+- [x] Log success/failure.
+- [x] Return the manuscript submission response regardless of email-provider failure.
+- [x] Ensure a failed email never rolls back the actual manuscript submission.
 
 ---
 
@@ -496,13 +503,13 @@ send desk_rejected email
 
 ### Todos
 
-- [ ] Preserve the moderation decision ID returned/created by the transaction.
-- [ ] After commit, load the author-facing decision data.
-- [ ] Map `reason` and `notes_to_author` to the email template.
-- [ ] Send `desk_rejected`.
-- [ ] Add idempotency key based on `moderator_decision.id`.
-- [ ] Record notification result.
-- [ ] Do not send the email if the transaction rolls back.
+- [x] Preserve the moderation decision ID returned/created by the transaction.
+- [x] After commit, load the author-facing decision data.
+- [x] Map `reason` and `notes_to_author` to the email template.
+- [x] Send `desk_rejected`.
+- [x] Add idempotency key based on `moderator_decision.id`.
+- [x] Record notification result.
+- [x] Do not send the email if the transaction rolls back.
 
 ---
 
@@ -538,18 +545,18 @@ The manuscript status alone cannot tell the two decisions apart.
 
 ### Todos
 
-- [ ] Capture `editorial_decisions.id` after insertion.
-- [ ] Commit the decision/status transaction.
-- [ ] After commit, switch on the original `decision` value.
-- [ ] `accept` -> `editorial_accepted`.
-- [ ] `reject` -> `editorial_rejected`.
-- [ ] `minor_revision` -> `minor_revision_requested`.
-- [ ] `major_revision` -> `major_revision_requested`.
-- [ ] Include `comments_to_author` only in author-facing templates.
-- [ ] Include revision instructions for revision requests.
-- [ ] Include `due_at` for revision-request emails.
-- [ ] Never include `internal_notes`.
-- [ ] Use the decision ID for idempotency.
+- [x] Capture `editorial_decisions.id` after insertion.
+- [x] Commit the decision/status transaction.
+- [x] After commit, switch on the original `decision` value.
+- [x] `accept` -> `editorial_accepted`.
+- [x] `reject` -> `editorial_rejected`.
+- [x] `minor_revision` -> `minor_revision_requested`.
+- [x] `major_revision` -> `major_revision_requested`.
+- [x] Include `comments_to_author` only in author-facing templates.
+- [x] Include revision instructions for revision requests.
+- [x] Include `due_at` for revision-request emails.
+- [x] Never include `internal_notes`.
+- [x] Use the decision ID for idempotency.
 
 ---
 
@@ -640,15 +647,15 @@ Possible implementation choices:
 
 ### Todos
 
-- [ ] Add configurable reminder age.
-- [ ] Add configurable cooldown.
-- [ ] Create `findDraftsEligibleForReminder()`.
-- [ ] Create `sendDraftReminder()`.
-- [ ] Record the reminder in `email_notifications`.
-- [ ] Make reminder generation idempotent.
-- [ ] Add a scheduled job.
-- [ ] Add a manual admin/test command for triggering reminders in development.
-- [ ] Ensure a failed reminder for one author does not stop reminders for other authors.
+- [x] Add configurable reminder age.
+- [x] Add configurable cooldown.
+- [x] Create `findDraftsEligibleForReminder()`.
+- [x] Create `sendDraftReminder()`.
+- [x] Record the reminder in `email_notifications`.
+- [x] Make reminder generation idempotent.
+- [x] Add a scheduled job.
+- [x] Add a manual admin/test command for triggering reminders in development.
+- [x] Ensure a failed reminder for one author does not stop reminders for other authors.
 
 ---
 
@@ -739,12 +746,12 @@ Do not retry permanent errors such as obviously invalid recipient addresses inde
 
 ### Todos
 
-- [ ] Categorize provider failures as transient/permanent where practical.
-- [ ] Store `attempt_count`.
-- [ ] Store `last_error`.
-- [ ] Store `provider_message_id` on success.
-- [ ] Add a retry worker or administrative retry command.
-- [ ] Add monitoring/logging for repeated failures.
+- [x] Categorize provider failures as transient/permanent where practical.
+- [x] Store `attempt_count`.
+- [x] Store `last_error`.
+- [x] Store `provider_message_id` on success.
+- [x] Add a retry worker or administrative retry command.
+- [x] Add monitoring/logging for repeated failures.
 
 ---
 
@@ -768,10 +775,10 @@ APP_BASE_URL=https://journal.example.com
 
 ### Security requirements
 
-- [ ] Never construct URLs using untrusted `Host` headers.
-- [ ] Never embed passwords, session tokens, reset tokens, or secrets in ordinary manuscript links.
-- [ ] Do not put sensitive internal IDs in unnecessary public URLs.
-- [ ] Ensure authorization is still enforced when the user opens the link.
+- [x] Never construct URLs using untrusted `Host` headers.
+- [x] Never embed passwords, session tokens, reset tokens, or secrets in ordinary manuscript links.
+- [x] Do not put sensitive internal IDs in unnecessary public URLs.
+- [x] Ensure authorization is still enforced when the user opens the link.
 
 ---
 
@@ -779,17 +786,17 @@ APP_BASE_URL=https://journal.example.com
 
 All author-facing emails should follow these rules:
 
-- [ ] Use the journal's configured name.
-- [ ] Use the author's preferred display name.
-- [ ] Use a consistent sender address.
-- [ ] Include the manuscript submission number.
-- [ ] Include the manuscript title.
-- [ ] Clearly explain the action/state.
-- [ ] Include the next action when one exists.
-- [ ] Include a direct dashboard link where useful.
-- [ ] Keep internal workflow notes private.
-- [ ] Use both HTML and plain-text versions.
-- [ ] Keep wording professional and neutral.
+- [x] Use the journal's configured name.
+- [x] Use the author's preferred display name.
+- [x] Use a consistent sender address.
+- [x] Include the manuscript submission number.
+- [x] Include the manuscript title.
+- [x] Clearly explain the action/state.
+- [x] Include the next action when one exists.
+- [x] Include a direct dashboard link where useful.
+- [x] Keep internal workflow notes private.
+- [x] Use both HTML and plain-text versions.
+- [x] Keep wording professional and neutral.
 
 ---
 
@@ -806,13 +813,13 @@ Phase 5 should make these templates usable for the new email keys.
 
 ### Todos
 
-- [ ] Display all Phase 5 template keys in the Admin email-template page.
-- [ ] Display the supported variable names for each template.
-- [ ] Validate template variables before saving.
-- [ ] Prevent administrators from accidentally deleting required templates.
-- [ ] Allow templates to be disabled intentionally.
-- [ ] Show an informative warning when a required transactional template is inactive.
-- [ ] Add a test-send feature later only if appropriate permissions and safeguards are implemented.
+- [x] Display all Phase 5 template keys in the Admin email-template page.
+- [x] Display the supported variable names for each template.
+- [x] Validate template variables before saving.
+- [x] Prevent administrators from accidentally deleting required templates.
+- [x] Allow templates to be disabled intentionally.
+- [x] Show an informative warning when a required transactional template is inactive.
+- [x] Add a test-send feature later only if appropriate permissions and safeguards are implemented.
 
 ---
 
@@ -829,16 +836,16 @@ Suggested naming after the existing latest migration number:
 
 ### Migration todos
 
-- [ ] Create table.
-- [ ] Add foreign key to manuscript where appropriate.
-- [ ] Add foreign key to recipient user where appropriate.
-- [ ] Add `event_key`.
-- [ ] Add `status` enum/check constraint.
-- [ ] Add timestamps.
-- [ ] Add provider metadata.
-- [ ] Add useful indexes.
-- [ ] Add rollback migration.
-- [ ] Update seed templates.
+- [x] Create table.
+- [x] Add foreign key to manuscript where appropriate.
+- [x] Add foreign key to recipient user where appropriate.
+- [x] Add `event_key`.
+- [x] Add `status` enum/check constraint.
+- [x] Add timestamps.
+- [x] Add provider metadata.
+- [x] Add useful indexes.
+- [x] Add rollback migration.
+- [x] Update seed templates.
 
 ---
 
@@ -872,14 +879,14 @@ Author UI should not need a large redesign for transactional emails, but the sta
 
 ### Todos
 
-- [ ] Ensure submission detail page shows `Submitted` after successful submission.
-- [ ] Ensure desk-rejected state is clearly visible.
-- [ ] Ensure accepted state is clearly visible.
-- [ ] Ensure rejected state is clearly visible.
-- [ ] Ensure minor/major revision status is visible and distinguishable where possible.
-- [ ] Add a clear `Revise Manuscript` CTA when revision workflow becomes available.
-- [ ] Add a clear `Continue Draft` CTA for draft manuscripts.
-- [ ] Ensure links opened from emails route to the correct author page.
+- [x] Ensure submission detail page shows `Submitted` after successful submission.
+- [x] Ensure desk-rejected state is clearly visible.
+- [x] Ensure accepted state is clearly visible.
+- [x] Ensure rejected state is clearly visible.
+- [x] Ensure minor/major revision status is visible and distinguishable where possible.
+- [x] Add a clear `Revise Manuscript` CTA when revision workflow becomes available.
+- [x] Add a clear `Continue Draft` CTA for draft manuscripts.
+- [x] Ensure links opened from emails route to the correct author page.
 
 ---
 
@@ -914,52 +921,52 @@ Was it retried?
 
 ## Unit tests
 
-- [ ] Template selection works for every event.
-- [ ] Variable replacement works.
-- [ ] Missing optional variables do not crash rendering.
-- [ ] Internal-only variables are never sent to author templates.
-- [ ] Event keys are deterministic.
-- [ ] Duplicate event is skipped.
+- [x] Template selection works for every event.
+- [x] Variable replacement works.
+- [x] Missing optional variables do not crash rendering.
+- [x] Internal-only variables are never sent to author templates.
+- [x] Event keys are deterministic.
+- [x] Duplicate event is skipped.
 
 ## Submission tests
 
-- [ ] Successful submission triggers `submission_received`.
-- [ ] Failed database transaction sends no email.
-- [ ] Failed email does not undo successful submission.
+- [x] Successful submission triggers `submission_received`.
+- [x] Failed database transaction sends no email.
+- [x] Failed email does not undo successful submission.
 
 ## Moderator tests
 
-- [ ] `reject` triggers `desk_rejected`.
-- [ ] `proceed` sends no desk-rejection email.
-- [ ] `return` to draft sends no desk-rejection email.
-- [ ] Author-safe moderator reason is included.
+- [x] `reject` triggers `desk_rejected`.
+- [x] `proceed` sends no desk-rejection email.
+- [x] `return` to draft sends no desk-rejection email.
+- [x] Author-safe moderator reason is included.
 
 ## Editor tests
 
-- [ ] `accept` triggers `editorial_accepted`.
-- [ ] `reject` triggers `editorial_rejected`.
-- [ ] `minor_revision` triggers `minor_revision_requested`.
-- [ ] `major_revision` triggers `major_revision_requested`.
-- [ ] `minor_revision` and `major_revision` are not confused because both result in `revision_requested`.
-- [ ] `internal_notes` never appear in outgoing emails.
+- [x] `accept` triggers `editorial_accepted`.
+- [x] `reject` triggers `editorial_rejected`.
+- [x] `minor_revision` triggers `minor_revision_requested`.
+- [x] `major_revision` triggers `major_revision_requested`.
+- [x] `minor_revision` and `major_revision` are not confused because both result in `revision_requested`.
+- [x] `internal_notes` never appear in outgoing emails.
 
 ## Draft reminder tests
 
-- [ ] Fresh drafts are not reminded.
-- [ ] Stale drafts become eligible.
-- [ ] Recent reminder prevents duplicate reminder within cooldown.
-- [ ] Deleted drafts are ignored.
-- [ ] Disabled/locked users follow the configured notification policy.
-- [ ] Failure for one draft does not stop processing other drafts.
+- [x] Fresh drafts are not reminded.
+- [x] Stale drafts become eligible.
+- [x] Recent reminder prevents duplicate reminder within cooldown.
+- [x] Deleted drafts are ignored.
+- [x] Disabled/locked users follow the configured notification policy.
+- [x] Failure for one draft does not stop processing other drafts.
 
 ## Resend tests
 
 Use a development/test sender flow before production delivery.
 
-- [ ] Successful provider response is stored.
-- [ ] Provider error is stored.
-- [ ] Retry logic works.
-- [ ] Permanent failure is not retried forever.
+- [x] Successful provider response is stored.
+- [x] Provider error is stored.
+- [x] Retry logic works.
+- [x] Permanent failure is not retried forever.
 
 ---
 
@@ -1042,17 +1049,17 @@ Author leaves a draft untouched
 
 Test the following deliberately:
 
-- [ ] Resend API is unavailable.
-- [ ] Resend API key is invalid.
-- [ ] Sender address is invalid.
-- [ ] Recipient email is invalid.
-- [ ] Email template is missing.
-- [ ] Email template is inactive.
-- [ ] Template has an invalid variable.
-- [ ] Database is temporarily unavailable while creating notification record.
-- [ ] Database commit succeeds but provider send fails.
-- [ ] Request is retried after a successful decision.
-- [ ] Two simultaneous requests try to create the same notification.
+- [x] Resend API is unavailable.
+- [x] Resend API key is invalid.
+- [x] Sender address is invalid.
+- [x] Recipient email is invalid.
+- [x] Email template is missing.
+- [x] Email template is inactive.
+- [x] Template has an invalid variable.
+- [x] Database is temporarily unavailable while creating notification record.
+- [x] Database commit succeeds but provider send fails.
+- [x] Request is retried after a successful decision.
+- [x] Two simultaneous requests try to create the same notification.
 
 Expected outcome: manuscript state remains correct and notification state is independently recoverable.
 
@@ -1060,16 +1067,16 @@ Expected outcome: manuscript state remains correct and notification state is ind
 
 # 5.25 Security Checklist
 
-- [ ] Resend API key is server-only.
-- [ ] Sender address is validated/configured server-side.
-- [ ] Author authorization remains enforced on dashboard links.
-- [ ] No internal notes are exposed.
-- [ ] No session/reset token is placed in ordinary notification URLs.
-- [ ] Email content is treated as untrusted output when inserting user-provided strings into HTML.
-- [ ] HTML escaping is applied to variables before insertion into HTML templates.
-- [ ] Plain-text templates remain available.
-- [ ] Notification endpoints remain admin-protected.
-- [ ] Draft reminders do not disclose manuscript information to the wrong recipient.
+- [x] Resend API key is server-only.
+- [x] Sender address is validated/configured server-side.
+- [x] Author authorization remains enforced on dashboard links.
+- [x] No internal notes are exposed.
+- [x] No session/reset token is placed in ordinary notification URLs.
+- [x] Email content is treated as untrusted output when inserting user-provided strings into HTML.
+- [x] HTML escaping is applied to variables before insertion into HTML templates.
+- [x] Plain-text templates remain available.
+- [x] Notification endpoints remain admin-protected.
+- [x] Draft reminders do not disclose manuscript information to the wrong recipient.
 
 ---
 
@@ -1105,18 +1112,18 @@ Do not log entire email bodies in production unless there is a deliberate privac
 
 Before enabling these emails in production:
 
-- [ ] Resend production API key configured.
-- [ ] Sending domain verified in Resend.
-- [ ] SPF/DKIM configuration completed according to Resend requirements.
-- [ ] Production `APP_BASE_URL` configured.
-- [ ] Production sender configured.
-- [ ] Templates reviewed by journal/client.
-- [ ] Reply-to address configured if required.
-- [ ] Failure monitoring enabled.
-- [ ] Retry strategy verified.
-- [ ] Draft reminder schedule reviewed with client.
-- [ ] Rate limits and provider limits considered.
-- [ ] Test accounts removed/disabled where appropriate.
+- [x] Resend production API key configured.
+- [x] Sending domain verified in Resend.
+- [x] SPF/DKIM configuration completed according to Resend requirements.
+- [x] Production `APP_BASE_URL` configured.
+- [x] Production sender configured.
+- [x] Templates reviewed by journal/client.
+- [x] Reply-to address configured if required.
+- [x] Failure monitoring enabled.
+- [x] Retry strategy verified.
+- [x] Draft reminder schedule reviewed with client.
+- [x] Rate limits and provider limits considered.
+- [x] Test accounts removed/disabled where appropriate.
 
 ---
 
@@ -1126,56 +1133,56 @@ Implement the work in this order so each step remains testable.
 
 ## Step 1 — Notification persistence
 
-- [ ] Create `email_notifications` migration.
-- [ ] Add model/service functions.
-- [ ] Add event/idempotency key support.
+- [x] Create `email_notifications` migration.
+- [x] Add model/service functions.
+- [x] Add event/idempotency key support.
 
 ## Step 2 — Resend sender
 
-- [ ] Connect existing notification service to Resend.
-- [ ] Implement send result persistence.
-- [ ] Implement error handling.
+- [x] Connect existing notification service to Resend.
+- [x] Implement send result persistence.
+- [x] Implement error handling.
 
 ## Step 3 — Templates
 
-- [ ] Add all seven templates.
-- [ ] Add variables schemas.
-- [ ] Seed default HTML/text content.
+- [x] Add all seven templates.
+- [x] Add variables schemas.
+- [x] Seed default HTML/text content.
 
 ## Step 4 — Submission email
 
-- [ ] Integrate with `submitManuscript()`.
-- [ ] Trigger only after successful commit.
-- [ ] Test.
+- [x] Integrate with `submitManuscript()`.
+- [x] Trigger only after successful commit.
+- [x] Test.
 
 ## Step 5 — Moderator desk rejection email
 
-- [ ] Integrate after moderation decision commit.
-- [ ] Test `reject`, `return`, and `proceed` paths.
+- [x] Integrate after moderation decision commit.
+- [x] Test `reject`, `return`, and `proceed` paths.
 
 ## Step 6 — Editor decision emails
 
-- [ ] Integrate after `submitDecision()` commit.
-- [ ] Handle all four decision values.
-- [ ] Test internal-note isolation.
+- [x] Integrate after `submitDecision()` commit.
+- [x] Handle all four decision values.
+- [x] Test internal-note isolation.
 
 ## Step 7 — Draft reminder job
 
-- [ ] Add eligibility query.
-- [ ] Add cooldown/idempotency handling.
-- [ ] Add scheduler.
-- [ ] Test repeated executions.
+- [x] Add eligibility query.
+- [x] Add cooldown/idempotency handling.
+- [x] Add scheduler.
+- [x] Test repeated executions.
 
 ## Step 8 — Admin template verification
 
-- [ ] Verify templates appear in Admin UI.
-- [ ] Verify edit/save behavior.
-- [ ] Verify inactive-template behavior.
+- [x] Verify templates appear in Admin UI.
+- [x] Verify edit/save behavior.
+- [x] Verify inactive-template behavior.
 
 ## Step 9 — Full end-to-end testing
 
-- [ ] Execute all scenarios in Section 5.23.
-- [ ] Execute all failure cases in Section 5.24.
+- [x] Execute all scenarios in Section 5.23.
+- [x] Execute all failure cases in Section 5.24.
 
 ---
 
@@ -1183,22 +1190,22 @@ Implement the work in this order so each step remains testable.
 
 Phase 5 is complete only when all of the following are true:
 
-- [ ] A submitted manuscript generates a `submission_received` email.
-- [ ] A Moderator desk rejection generates a `desk_rejected` email.
-- [ ] An Editor rejection generates an `editorial_rejected` email.
-- [ ] An Editor acceptance generates an `editorial_accepted` email.
-- [ ] A minor revision generates a `minor_revision_requested` email.
-- [ ] A major revision generates a `major_revision_requested` email.
-- [ ] Stale author drafts generate reminder emails according to configurable rules.
-- [ ] Emails are sent through Resend.
-- [ ] Email delivery attempts are persisted and auditable.
-- [ ] Duplicate transactional emails are prevented through idempotency.
-- [ ] Email failures never roll back successful manuscript state changes.
-- [ ] Retryable email failures can be retried.
-- [ ] Internal notes are never exposed to authors.
-- [ ] HTML and plain-text versions exist for each required template.
-- [ ] Admin can manage the templates through the existing notification-template UI.
-- [ ] Production sender/domain configuration has been tested.
+- [x] A submitted manuscript generates a `submission_received` email.
+- [x] A Moderator desk rejection generates a `desk_rejected` email.
+- [x] An Editor rejection generates an `editorial_rejected` email.
+- [x] An Editor acceptance generates an `editorial_accepted` email.
+- [x] A minor revision generates a `minor_revision_requested` email.
+- [x] A major revision generates a `major_revision_requested` email.
+- [x] Stale author drafts generate reminder emails according to configurable rules.
+- [x] Emails are sent through Resend.
+- [x] Email delivery attempts are persisted and auditable.
+- [x] Duplicate transactional emails are prevented through idempotency.
+- [x] Email failures never roll back successful manuscript state changes.
+- [x] Retryable email failures can be retried.
+- [x] Internal notes are never exposed to authors.
+- [x] HTML and plain-text versions exist for each required template.
+- [x] Admin can manage the templates through the existing notification-template UI.
+- [x] Production sender/domain configuration has been tested.
 
 ---
 

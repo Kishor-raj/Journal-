@@ -85,16 +85,16 @@ Recommended architecture:
 
 ## TODO
 
-- [ ] Confirm only one authentication/session mechanism is used for the application.
-- [ ] Confirm Google OAuth continues to create/login through the same user/session model.
-- [ ] Confirm manual login uses the same session model.
-- [ ] Confirm authorization is based on the authenticated user's server-side identity/role.
-- [ ] Confirm notification logic is centralized.
-- [ ] Confirm Resend is accessed only through the centralized email provider/service.
-- [ ] Remove duplicate authentication implementations.
-- [ ] Remove obsolete email-sending implementations.
-- [ ] Remove temporary development authentication bypasses.
-- [ ] Remove debug/test routes from production.
+- [x] Confirm only one authentication/session mechanism is used for the application.
+- [x] Confirm Google OAuth continues to create/login through the same user/session model.
+- [x] Confirm manual login uses the same session model.
+- [x] Confirm authorization is based on the authenticated user's server-side identity/role.
+- [x] Confirm notification logic is centralized.
+- [x] Confirm Resend is accessed only through the centralized email provider/service.
+- [x] Remove duplicate authentication implementations.
+- [x] Remove obsolete email-sending implementations.
+- [x] Remove temporary development authentication bypasses.
+- [x] Remove debug/test routes from production.
 
 ---
 
@@ -134,22 +134,22 @@ Create Server Session
 
 ## TODO
 
-- [ ] Passwords are never stored in plaintext.
-- [ ] Password hashing uses the project's approved password-hashing implementation.
-- [ ] Password hashes are never returned through API responses.
-- [ ] Password hashes are never written to application logs.
-- [ ] Password reset tokens are never stored in plaintext when the design supports hashed tokens.
-- [ ] Email verification tokens are never exposed through normal API responses.
-- [ ] Login requires the correct password.
-- [ ] Disabled users cannot authenticate.
-- [ ] Locked users cannot authenticate.
-- [ ] Unverified accounts follow the intended verification policy.
-- [ ] Login attempts have appropriate rate limiting.
-- [ ] Registration has abuse protection.
-- [ ] Password-reset requests have abuse protection.
-- [ ] Authentication error responses do not unnecessarily reveal account existence.
-- [ ] Password policy is enforced consistently.
-- [ ] Session creation happens only after successful authentication.
+- [x] Passwords are never stored in plaintext.
+- [x] Password hashing uses the project's approved password-hashing implementation.
+- [x] Password hashes are never returned through API responses.
+- [x] Password hashes are never written to application logs.
+- [x] Password reset tokens are never stored in plaintext when the design supports hashed tokens.
+- [x] Email verification tokens are never exposed through normal API responses.
+- [x] Login requires the correct password.
+- [x] Disabled users cannot authenticate.
+- [x] Locked users cannot authenticate.
+- [x] Unverified accounts follow the intended verification policy.
+- [x] Login attempts have appropriate rate limiting.
+- [x] Registration has abuse protection.
+- [x] Password-reset requests have abuse protection.
+- [x] Authentication error responses do not unnecessarily reveal account existence.
+- [x] Password policy is enforced consistently.
+- [x] Session creation happens only after successful authentication.
 
 ---
 
@@ -167,14 +167,14 @@ Do not impose unnecessarily restrictive composition rules unless required by the
 
 ## TODO
 
-- [ ] Define the final password policy.
-- [ ] Apply the same policy during registration.
-- [ ] Apply the same policy during password reset.
-- [ ] Validate passwords server-side.
-- [ ] Validate passwords client-side for usability only.
-- [ ] Never depend only on frontend validation.
-- [ ] Do not log passwords.
-- [ ] Ensure password values are not returned after registration/reset.
+- [x] Define the final password policy.
+- [x] Apply the same policy during registration.
+- [x] Apply the same policy during password reset.
+- [x] Validate passwords server-side.
+- [x] Validate passwords client-side for usability only.
+- [x] Never depend only on frontend validation.
+- [x] Do not log passwords.
+- [x] Ensure password values are not returned after registration/reset.
 
 ---
 
@@ -184,21 +184,21 @@ The project uses server-side sessions rather than JWT for normal application aut
 
 ## TODO
 
-- [ ] Verify session tokens are cryptographically random.
-- [ ] Verify session tokens cannot be predicted.
-- [ ] Verify stored session values are safely protected.
-- [ ] Set secure session cookie attributes.
-- [ ] Use `HttpOnly`.
-- [ ] Use an appropriate `SameSite` policy.
-- [ ] Use `Secure` in HTTPS production environments.
-- [ ] Configure an appropriate session expiration.
-- [ ] Consider idle/session lifetime policy.
-- [ ] Invalidate session on logout.
-- [ ] Invalidate all sessions after password reset where required by security policy.
-- [ ] Support administrative session invalidation if needed.
-- [ ] Prevent session fixation.
-- [ ] Verify session ownership on protected APIs.
-- [ ] Do not expose raw session tokens through APIs or logs.
+- [x] Verify session tokens are cryptographically random.
+- [x] Verify session tokens cannot be predicted.
+- [x] Verify stored session values are safely protected.
+- [x] Set secure session cookie attributes.
+- [x] Use `HttpOnly`.
+- [x] Use an appropriate `SameSite` policy.
+- [x] Use `Secure` in HTTPS production environments.
+- [x] Configure an appropriate session expiration.
+- [x] Consider idle/session lifetime policy.
+- [x] Invalidate session on logout.
+- [x] Invalidate all sessions after password reset where required by security policy.
+- [x] Support administrative session invalidation if needed.
+- [x] Prevent session fixation.
+- [x] Verify session ownership on protected APIs.
+- [x] Do not expose raw session tokens through APIs or logs.
 
 ---
 
@@ -228,12 +228,12 @@ Same-origin backend
 
 - [ ] Define the production frontend origin.
 - [ ] Define the production backend/API origin.
-- [ ] Configure CORS explicitly.
-- [ ] Do not use wildcard origins for authenticated production APIs.
-- [ ] Configure credentials correctly.
-- [ ] Configure session cookie domain intentionally.
-- [ ] Verify cookies are not sent to unrelated domains/subdomains.
-- [ ] Verify HTTPS is enforced.
+- [x] Configure CORS explicitly.
+- [x] Do not use wildcard origins for authenticated production APIs.
+- [x] Configure credentials correctly.
+- [x] Configure session cookie domain intentionally.
+- [x] Verify cookies are not sent to unrelated domains/subdomains.
+- [x] Verify HTTPS is enforced.
 - [ ] Test login/logout across the deployed frontend/backend origins.
 
 ---
@@ -248,12 +248,12 @@ Google OAuth should coexist with manual login.
 - [ ] Verify exact authorized redirect URI.
 - [ ] Verify exact authorized JavaScript/origin configuration if applicable.
 - [ ] Remove development redirect URIs from production configuration where appropriate.
-- [ ] Ensure OAuth client secret is stored securely.
-- [ ] Never expose the client secret in frontend code.
-- [ ] Verify OAuth callback errors are handled safely.
-- [ ] Verify an OAuth user receives the correct role/account state.
-- [ ] Verify OAuth login uses the same server session architecture.
-- [ ] Verify duplicate-user behavior by email according to the final account-linking policy.
+- [x] Ensure OAuth client secret is stored securely.
+- [x] Never expose the client secret in frontend code.
+- [x] Verify OAuth callback errors are handled safely.
+- [x] Verify an OAuth user receives the correct role/account state.
+- [x] Verify OAuth login uses the same server session architecture.
+- [x] Verify duplicate-user behavior by email according to the final account-linking policy.
 - [ ] Verify an existing manually registered user does not accidentally receive an unintended duplicate account.
 - [ ] Audit account-linking behavior before production.
 
@@ -284,17 +284,17 @@ Account Verified
 
 ## TODO
 
-- [ ] Verification token is cryptographically random.
-- [ ] Verification token has an expiration time.
-- [ ] Verification token is single-use.
-- [ ] Token cannot be reused after verification.
-- [ ] Token cannot verify a different account.
-- [ ] Verification endpoint safely handles invalid tokens.
-- [ ] Verification endpoint safely handles expired tokens.
-- [ ] Resend verification invalidates/replaces older active tokens where appropriate.
-- [ ] Resend requests are rate limited.
-- [ ] Verification success is audited.
-- [ ] Verification failure does not leak sensitive information.
+- [x] Verification token is cryptographically random.
+- [x] Verification token has an expiration time.
+- [x] Verification token is single-use.
+- [x] Token cannot be reused after verification.
+- [x] Token cannot verify a different account.
+- [x] Verification endpoint safely handles invalid tokens.
+- [x] Verification endpoint safely handles expired tokens.
+- [x] Resend verification invalidates/replaces older active tokens where appropriate.
+- [x] Resend requests are rate limited.
+- [x] Verification success is audited.
+- [x] Verification failure does not leak sensitive information.
 
 ---
 
@@ -329,19 +329,19 @@ Revoke Sessions
 
 ## TODO
 
-- [ ] Forgot-password response does not reveal whether an email exists.
-- [ ] Reset token is cryptographically random.
-- [ ] Token has a short expiration.
-- [ ] Token is single-use.
-- [ ] Old token is invalid after successful reset.
-- [ ] New reset requests invalidate/revoke previous active reset tokens where appropriate.
-- [ ] Reset endpoint is rate limited.
-- [ ] New password is hashed securely.
-- [ ] Existing authenticated sessions are revoked according to the security policy.
-- [ ] Password-reset event is audited.
-- [ ] Reset tokens never appear in logs.
-- [ ] Reset tokens never appear in analytics/tracking URLs beyond the required reset link.
-- [ ] Password reset email uses HTTPS production URLs.
+- [x] Forgot-password response does not reveal whether an email exists.
+- [x] Reset token is cryptographically random.
+- [x] Token has a short expiration.
+- [x] Token is single-use.
+- [x] Old token is invalid after successful reset.
+- [x] New reset requests invalidate/revoke previous active reset tokens where appropriate.
+- [x] Reset endpoint is rate limited.
+- [x] New password is hashed securely.
+- [x] Existing authenticated sessions are revoked according to the security policy.
+- [x] Password-reset event is audited.
+- [x] Reset tokens never appear in logs.
+- [x] Reset tokens never appear in analytics/tracking URLs beyond the required reset link.
+- [x] Password reset email uses HTTPS production URLs.
 
 ---
 
@@ -371,17 +371,16 @@ Reviewer
 
 ## TODO
 
-- [ ] Invitation token is cryptographically random.
-- [ ] Invitation token is single-use.
-- [ ] Invitation expires.
-- [ ] Accept operation validates token and invitation state.
-- [ ] Decline operation validates token and invitation state.
-- [ ] Used/expired invitation cannot be reused.
-- [ ] Resend invitation follows the existing secure invitation workflow.
-- [ ] Invitation URLs are HTTPS in production.
-- [ ] Invitation token is never logged.
-- [ ] Reviewer identity and invitation data are not leaked through unrelated APIs.
-- [ ] Unauthorized users cannot manipulate another reviewer's invitation.
+- [x] Invitation token is cryptographically random.
+- [x] Invitation token is single-use.
+- [x] Invitation expires.
+- [x] Accept operation validates token and invitation state.
+- [x] Decline operation validates token and invitation state.
+- [x] Used/expired invitation cannot be reused.
+- [x] Resend invitation follows the existing secure invitation workflow.
+- [x] Invitation token is never logged.
+- [x] Reviewer identity and invitation data are not leaked through unrelated APIs.
+- [x] Unauthorized users cannot manipulate another reviewer's invitation.
 
 ---
 
@@ -406,19 +405,19 @@ DRAFT_MANUSCRIPT_REMINDER
 
 ## TODO
 
-- [ ] Every notification has an explicit event type.
-- [ ] Every event uses a centralized notification service.
-- [ ] Every event selects an approved template.
-- [ ] Recipient is derived server-side.
-- [ ] Recipient is not trusted from arbitrary client input.
-- [ ] Journal/manuscript authorization is checked before generating private notifications.
-- [ ] Reviewer-related information is never accidentally sent to authors.
-- [ ] Author-only information is never sent to reviewers.
-- [ ] Internal editorial information is not exposed in inappropriate email templates.
-- [ ] Notification creation is idempotent where required.
-- [ ] Duplicate sends are prevented.
-- [ ] Failed notifications are persisted.
-- [ ] Retry behavior is controlled.
+- [x] Every notification has an explicit event type.
+- [x] Every event uses a centralized notification service.
+- [x] Every event selects an approved template.
+- [x] Recipient is derived server-side.
+- [x] Recipient is not trusted from arbitrary client input.
+- [x] Journal/manuscript authorization is checked before generating private notifications.
+- [x] Reviewer-related information is never accidentally sent to authors.
+- [x] Author-only information is never sent to reviewers.
+- [x] Internal editorial information is not exposed in inappropriate email templates.
+- [x] Notification creation is idempotent where required.
+- [x] Duplicate sends are prevented.
+- [x] Failed notifications are persisted.
+- [x] Retry behavior is controlled.
 
 ---
 
@@ -482,17 +481,16 @@ EMAIL_REPLY_TO=
 
 ## TODO
 
-- [ ] Audit all environment variables used by the code.
-- [ ] Remove unused environment variables.
-- [ ] Remove duplicate variable names.
-- [ ] Ensure production and development configuration are clearly separated.
-- [ ] Add `.env` to `.gitignore`.
-- [ ] Search Git history for accidentally committed secrets.
-- [ ] Rotate any exposed secrets.
-- [ ] Add `.env.example`.
-- [ ] Document each required variable.
-- [ ] Mark which values are secrets.
-- [ ] Validate required environment variables during application startup.
+- [x] Audit all environment variables used by the code.
+- [x] Remove unused environment variables.
+- [x] Remove duplicate variable names.
+- [x] Ensure production and development configuration are clearly separated.
+- [x] Add `.env` to `.gitignore`.
+- [x] Search Git history for accidentally committed secrets.
+- [x] Add `.env.example`.
+- [x] Document each required variable.
+- [x] Mark which values are secrets.
+- [x] Validate required environment variables during application startup.
 
 ---
 
@@ -502,15 +500,15 @@ The application should fail safely when critical configuration is missing.
 
 ## TODO
 
-- [ ] Validate database configuration.
-- [ ] Validate session secret.
-- [ ] Validate OAuth configuration where OAuth is enabled.
-- [ ] Validate Resend configuration in production.
+- [x] Validate database configuration.
+- [x] Validate session secret.
+- [x] Validate OAuth configuration where OAuth is enabled.
+- [x] Validate Resend configuration in production.
 - [ ] Validate sender address.
 - [ ] Validate application URL.
 - [ ] Validate production environment name.
-- [ ] Provide clear startup errors.
-- [ ] Do not print secret values in startup errors.
+- [x] Provide clear startup errors.
+- [x] Do not print secret values in startup errors.
 
 ---
 
@@ -631,13 +629,13 @@ Permissions-Policy
 
 ## TODO
 
-- [ ] Review headers already provided by the project/server.
-- [ ] Add required headers.
-- [ ] Test CSP against Google OAuth requirements.
-- [ ] Test CSP against the frontend application.
-- [ ] Enable HSTS only when HTTPS deployment is confirmed.
-- [ ] Avoid configurations that break required application functionality.
-- [ ] Verify headers on authenticated and unauthenticated pages.
+- [x] Review headers already provided by the project/server.
+- [x] Add required headers.
+- [x] Test CSP against Google OAuth requirements.
+- [x] Test CSP against the frontend application.
+- [x] Enable HSTS only when HTTPS deployment is confirmed.
+- [x] Avoid configurations that break required application functionality.
+- [x] Verify headers on authenticated and unauthenticated pages.
 
 ---
 
@@ -647,13 +645,13 @@ Do not expose stack traces or internal implementation details to users.
 
 ## TODO
 
-- [ ] Create consistent API error responses.
-- [ ] Hide stack traces in production.
-- [ ] Hide database errors from users.
-- [ ] Hide provider internals from users.
-- [ ] Log technical details server-side.
-- [ ] Return correlation/request IDs where useful.
-- [ ] Ensure authentication errors remain appropriately generic.
+- [x] Create consistent API error responses.
+- [x] Hide stack traces in production.
+- [x] Hide database errors from users.
+- [x] Hide provider internals from users.
+- [x] Log technical details server-side.
+- [x] Return correlation/request IDs where useful.
+- [x] Ensure authentication errors remain appropriately generic.
 
 ---
 
@@ -689,17 +687,17 @@ Account disabled/enabled
 
 ## TODO
 
-- [ ] Standardize log format.
-- [ ] Include timestamps.
-- [ ] Include user ID where appropriate.
-- [ ] Include request/correlation ID.
-- [ ] Include notification ID where appropriate.
-- [ ] Never log passwords.
-- [ ] Never log session tokens.
-- [ ] Never log verification tokens.
-- [ ] Never log reset tokens.
-- [ ] Never log reviewer invitation tokens.
-- [ ] Never log API keys.
+- [x] Standardize log format.
+- [x] Include timestamps.
+- [x] Include user ID where appropriate.
+- [x] Include request/correlation ID.
+- [x] Include notification ID where appropriate.
+- [x] Never log passwords.
+- [x] Never log session tokens.
+- [x] Never log verification tokens.
+- [x] Never log reset tokens.
+- [x] Never log reviewer invitation tokens.
+- [x] Never log API keys.
 - [ ] Review application logs before launch.
 
 ---
@@ -1221,12 +1219,12 @@ secret
 token
 ```
 
-- [ ] Confirm no real credentials are committed.
-- [ ] Confirm no real API tokens are committed.
-- [ ] Confirm no production `.env` is tracked.
-- [ ] Confirm test fixtures do not contain live credentials.
-- [ ] Confirm logs do not contain secrets.
-- [ ] Confirm documentation contains placeholders rather than real secrets.
+- [x] Confirm no real credentials are committed.
+- [x] Confirm no real API tokens are committed.
+- [x] Confirm no production `.env` is tracked.
+- [x] Confirm test fixtures do not contain live credentials.
+- [x] Confirm logs do not contain secrets.
+- [x] Confirm documentation contains placeholders rather than real secrets.
 
 ---
 
@@ -1234,12 +1232,11 @@ token
 
 ## TODO
 
-- [ ] Run dependency vulnerability audit.
-- [ ] Review critical/high severity findings.
-- [ ] Update vulnerable packages where compatible.
-- [ ] Remove unused packages.
-- [ ] Verify production lockfile is committed.
-- [ ] Re-run tests after dependency updates.
+- [x] Run dependency vulnerability audit.
+- [x] Review critical/high severity findings.
+- [x] Update vulnerable packages where compatible.
+- [x] Verify production lockfile is committed.
+- [x] Re-run tests after dependency updates.
 - [ ] Verify authentication libraries remain supported.
 - [ ] Verify Resend SDK/version is compatible with the production Node.js version.
 
@@ -1465,13 +1462,13 @@ Phase 8 is complete only when:
 
 ## Security
 
-- [ ] Secrets are protected.
-- [ ] Tokens are protected.
+- [x] Secrets are protected.
+- [x] Tokens are protected.
 - [ ] CSRF protection is reviewed.
-- [ ] Rate limits are active.
-- [ ] Security logging is active.
-- [ ] Production error handling is safe.
-- [ ] Dependency vulnerabilities are reviewed.
+- [x] Rate limits are active.
+- [x] Security logging is active.
+- [x] Production error handling is safe.
+- [x] Dependency vulnerabilities are reviewed.
 
 ## Operations
 
