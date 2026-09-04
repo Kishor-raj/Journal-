@@ -1,6 +1,8 @@
 import crypto from 'crypto'
 import pool from '../../config/db.js'
 import { AppError } from '../../shared/errors/AppError.js'
+import { sendSubmissionReceived } from '../notification/manuscript-notification.service.js'
+import { generateSubmissionNumber } from './submission-number.service.js'
 
 function generateShortUuid() {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()
@@ -334,13 +336,16 @@ export async function submitManuscript(manuscriptId, userId) {
       [versionId, manuscriptId]
     )
 
+    const submissionNumber = await generateSubmissionNumber(client)
+
     await client.query(
       `UPDATE manuscripts SET
+         submission_number = $1,
          current_status = 'submitted',
          submitted_at = now(),
          updated_at = now()
-       WHERE id = $1`,
-      [manuscriptId]
+       WHERE id = $2`,
+      [submissionNumber, manuscriptId]
     )
 
     await client.query(
@@ -361,6 +366,10 @@ export async function submitManuscript(manuscriptId, userId) {
       'SELECT * FROM manuscripts WHERE id = $1',
       [manuscriptId]
     )
+
+    sendSubmissionReceived(manuscriptId).catch((err) => {
+      console.error('Post-commit submission email failed:', err.message)
+    })
 
     return updatedResult.rows[0]
   } catch (err) {

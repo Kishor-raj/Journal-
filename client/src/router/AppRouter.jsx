@@ -28,6 +28,12 @@ import AdminDashboard from '../features/admin/AdminDashboard'
 import UserManagement from '../features/admin/UserManagement'
 import AuditLogs from '../features/admin/AuditLogs'
 
+import NotificationHistory from '../features/admin/notifications/NotificationHistory'
+import NotificationDetail from '../features/admin/notifications/NotificationDetail'
+import EmailTemplates from '../features/admin/notifications/EmailTemplates'
+import EmailStats from '../features/admin/notifications/EmailStats'
+import ProviderStatus from '../features/admin/notifications/ProviderStatus'
+
 import AuthorDashboard from '../features/author/AuthorDashboard'
 import NewSubmissionRedirect from '../features/author/NewSubmissionRedirect'
 import SubmissionWizard from '../features/author/SubmissionWizard'
@@ -99,6 +105,11 @@ function AppRouter() {
         <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>} />
         <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRoles={['admin']}><AuditLogs /></ProtectedRoute>} />
+        <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['admin']}><NotificationHistory /></ProtectedRoute>} />
+        <Route path="/admin/notifications/:id" element={<ProtectedRoute allowedRoles={['admin']}><NotificationDetail /></ProtectedRoute>} />
+        <Route path="/admin/email-templates" element={<ProtectedRoute allowedRoles={['admin']}><EmailTemplates /></ProtectedRoute>} />
+        <Route path="/admin/email-stats" element={<ProtectedRoute allowedRoles={['admin']}><EmailStats /></ProtectedRoute>} />
+        <Route path="/admin/email-provider" element={<ProtectedRoute allowedRoles={['admin']}><ProviderStatus /></ProtectedRoute>} />
 
         {/* Author Routes */}
         <Route path="/author" element={<Navigate to="/author/dashboard" replace />} />
