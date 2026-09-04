@@ -104,7 +104,7 @@ export async function deleteManuscriptFile(manuscriptId, fileId, userId) {
 
   await pool.query('DELETE FROM manuscript_files WHERE id = $1', [fileId])
 
-  return { success: true, deleted_file_id: fileId }
+  return { success: true, message: 'File removed successfully', deleted_file_id: fileId }
 }
 
 export async function getFileAccess(fileId, user) {
