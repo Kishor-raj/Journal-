@@ -256,7 +256,7 @@ export default function ManuscriptDetail() {
 
       <div style={styles.header}>
         {manuscript.submission_number && (
-          <div style={styles.submissionNumber}>#{manuscript.submission_number}</div>
+          <div style={styles.submissionNumber}>{manuscript.submission_number}</div>
         )}
         <h1 style={styles.title}>{manuscript.title || 'Untitled Manuscript'}</h1>
         <div style={styles.metaRow}>

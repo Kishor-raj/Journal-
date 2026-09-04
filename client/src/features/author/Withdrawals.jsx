@@ -39,7 +39,7 @@ const columns = [
   {
     key: 'submission_number',
     label: 'Submission #',
-    render: (val) => val ? `#${val}` : '—',
+    render: (val) => val || '—',
   },
   {
     key: 'title',
