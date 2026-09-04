@@ -70,6 +70,52 @@ export async function confirmUpload(manuscriptId, versionId, fileData, userId) {
   return result.rows[0]
 }
 
+// Cloudinary's destroy() only accepts image|video|raw as resource_type.
+// Files uploaded through the auto/upload endpoint store resource_type='auto',
+// which is valid for upload but NOT for destroy, so the asset would otherwise
+// be left orphaned in storage. Derive the concrete resource type here.
+export function resolveDestroyResourceType(file) {
+  const mime = (file.mime_type || '').toLowerCase()
+  if (mime.startsWith('image/')) return 'image'
+  if (mime.startsWith('video/')) return 'video'
+
+  const fmt = (file.format || '').toLowerCase()
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'tiff', 'heic', 'avif', 'ico'].includes(fmt)) {
+    return 'image'
+  }
+  if (['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv', 'm4v', '3gp'].includes(fmt)) {
+    return 'video'
+  }
+
+  const stored = (file.resource_type || '').toLowerCase()
+  if (['image', 'video', 'raw'].includes(stored)) return stored
+
+  return 'raw'
+}
+
+async function destroyCloudinaryAsset(file) {
+  const primary = resolveDestroyResourceType(file)
+  const fallbacks = ['raw', 'image', 'video'].filter((rt) => rt !== primary)
+  const attempts = [primary, ...fallbacks]
+
+  for (const resourceType of attempts) {
+    try {
+      const result = await cloudinary.uploader.destroy(file.public_id, {
+        resource_type: resourceType,
+      })
+      // Cloudinary returns { result: 'ok' } on success or { result: 'not found' }
+      // if the asset (under this resource_type) does not exist. 'not found' means
+      // either the type was wrong or the file is already gone — try the next type.
+      if (result && result.result !== 'not found') {
+        return true
+      }
+    } catch {
+      // continue to next resource_type attempt
+    }
+  }
+  return false
+}
+
 export async function deleteManuscriptFile(manuscriptId, fileId, userId) {
   const fileResult = await pool.query(
     `SELECT mf.*, m.current_status, m.submitted_by
@@ -94,13 +140,7 @@ export async function deleteManuscriptFile(manuscriptId, fileId, userId) {
     throw new AppError('You are not authorized to remove this file', 403)
   }
 
-  try {
-    await cloudinary.uploader.destroy(file.public_id, {
-      resource_type: file.resource_type || 'raw',
-    })
-  } catch {
-    // If Cloudinary deletion fails (e.g., file already removed), continue with DB cleanup
-  }
+  await destroyCloudinaryAsset(file)
 
   await pool.query('DELETE FROM manuscript_files WHERE id = $1', [fileId])
 
@@ -136,11 +176,14 @@ export async function getFileAccess(fileId, user) {
 
   if (!allowed) throw new AppError('You are not permitted to access this file', 403)
 
+  const resourceType = resolveDestroyResourceType(file)
   const options = {
-    resource_type: file.resource_type || 'raw',
+    resource_type: resourceType,
     secure: true,
   }
-  if (file.format) options.format = file.format
+  // format transformation is only valid for image/video assets; for raw
+  // resources (pdfs, docs, zips...) the original format is used as-is.
+  if (resourceType !== 'raw' && file.format) options.format = file.format
 
   return {
     id: file.id,
