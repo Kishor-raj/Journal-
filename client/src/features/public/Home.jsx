@@ -37,6 +37,24 @@ const FEATURED = [
     authors: 'Prof. Helena Kowalski, Dr. Marcus Singh',
     meta: 'Vol. 12, No. 1 · pp. 49–72',
   },
+  {
+    tag: 'Digital Governance',
+    title: 'Deliberative Governance and Policy Transparency in Digital Platforms',
+    authors: 'Dr. Arthur Pendelton, Dr. Sofia Al-Mansoor',
+    meta: 'Vol. 12, No. 1 · pp. 73–96',
+  },
+  {
+    tag: 'Environmental sociology',
+    title: 'Socioeconomic Resilience and Climate Adaptation in Coastal Regions',
+    authors: 'Dr. K. S. Raman, Dr. Elena Rostova',
+    meta: 'Vol. 12, No. 1 · pp. 97–120',
+  },
+  {
+    tag: 'Ethics & Epistemology',
+    title: 'Ethical Frameworks and AI Integration in Scholarly Research',
+    authors: 'Prof. David C. Vance, Dr. Fatima Zahra',
+    meta: 'Vol. 12, No. 1 · pp. 121–146',
+  },
 ]
 
 const INDEXES = ['Scopus', 'Web of Science', 'DOAJ', 'ERIC', 'JSTOR']
@@ -79,34 +97,262 @@ function Book3D() {
   )
 }
 
-/* ─── Featured article card ────────────────────────────────────────────── */
-function FeaturedCard({ tag, title, authors, meta }) {
-  const [hovered, setHovered] = useState(false)
+/* ─── Featured articles vertical scroller ──────────────────────────────── */
+function FeaturedVerticalScroller({ articles }) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+  const [hoveredCard, setHoveredCard] = useState(false)
+
+  // Auto-scroll vertically one by one every 4.2 seconds
+  useEffect(() => {
+    if (isPaused || hoveredCard) return
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % articles.length)
+    }, 4200)
+    return () => clearInterval(interval)
+  }, [isPaused, hoveredCard, articles.length])
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + articles.length) % articles.length)
+  }
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % articles.length)
+  }
+
   return (
-    <article
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <div
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
       style={{
-        border: `1px solid ${hovered ? '#C4A24C' : '#E6E1D6'}`,
-        background: '#FDFCF9',
-        padding: '30px 28px 26px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '14px',
-        cursor: 'pointer',
-        transition: 'border-color 0.2s',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
+        gap: '28px',
+        alignItems: 'stretch',
       }}
     >
-      <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23' }}>
-        {tag}
+      {/* Main vertical slider viewport */}
+      <div
+        style={{
+          border: '1px solid #E6E1D6',
+          background: '#FDFCF9',
+          position: 'relative',
+          overflow: 'hidden',
+          minHeight: '280px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '36px 32px 30px',
+          boxShadow: '0 4px 20px rgba(11, 27, 58, 0.04)',
+        }}
+        onMouseEnter={() => setHoveredCard(true)}
+        onMouseLeave={() => setHoveredCard(false)}
+      >
+        {/* Slide viewport */}
+        <div style={{ position: 'relative', minHeight: '170px', overflow: 'hidden' }}>
+          {articles.map((item, idx) => {
+            const isCurrent = idx === currentIndex
+            const offset = (idx - currentIndex) * 100
+            return (
+              <div
+                key={item.title}
+                style={{
+                  position: idx === 0 ? 'relative' : 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  opacity: isCurrent ? 1 : 0,
+                  transform: `translateY(${offset}%)`,
+                  transition: 'transform 0.55s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.45s ease',
+                  pointerEvents: isCurrent ? 'auto' : 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <span style={{
+                    fontFamily: 'Jost, sans-serif',
+                    fontSize: '11px',
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    color: '#9A7B23',
+                    fontWeight: 600,
+                    background: '#F5EFE1',
+                    padding: '3px 9px',
+                    borderRadius: '2px',
+                  }}>
+                    {item.tag}
+                  </span>
+                  <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', color: '#8C94A6', letterSpacing: '0.05em' }}>
+                    Article {idx + 1} of {articles.length}
+                  </span>
+                </div>
+
+                <Link
+                  to="/current-issue"
+                  style={{
+                    textDecoration: 'none',
+                    color: 'inherit',
+                  }}
+                >
+                  <h3 style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontWeight: 600,
+                    fontSize: 'clamp(22px, 2.6vw, 28px)',
+                    lineHeight: 1.25,
+                    margin: 0,
+                    color: '#0B1B3A',
+                    transition: 'color 0.2s',
+                  }}>
+                    {item.title}
+                  </h3>
+                </Link>
+
+                <div style={{ fontSize: '15px', color: '#3A4157', fontStyle: 'italic' }}>
+                  {item.authors}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Card Footer & Meta */}
+        <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #EFEBE1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12.5px', color: '#6B7288', letterSpacing: '0.03em' }}>
+            {articles[currentIndex]?.meta}
+          </div>
+          <Link
+            to="/current-issue"
+            style={{
+              fontFamily: 'Jost, sans-serif',
+              fontSize: '12px',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#9A7B23',
+              textDecoration: 'none',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            Read article <span>→</span>
+          </Link>
+        </div>
       </div>
-      <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(21px, 2.3vw, 25px)', lineHeight: 1.25, margin: 0, color: '#0B1B3A' }}>
-        {title}
-      </h3>
-      <div style={{ fontSize: '15px', color: '#3A4157', fontStyle: 'italic' }}>{authors}</div>
-      <div style={{ height: '1px', background: '#EFEBE1', marginTop: '6px' }} />
-      <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12.5px', color: '#6B7288', letterSpacing: '0.03em' }}>{meta}</div>
-    </article>
+
+      {/* Vertical list / Up-to-Bottom selector */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6B7288' }}>
+            Scroll Articles ({currentIndex + 1}/{articles.length})
+          </span>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button
+              type="button"
+              onClick={handlePrev}
+              title="Previous Article"
+              aria-label="Previous article"
+              style={{
+                width: '32px',
+                height: '32px',
+                border: '1px solid #E6E1D6',
+                background: '#FFFFFF',
+                color: '#0B1B3A',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '13px',
+                transition: 'all 0.15s',
+              }}
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              title="Next Article"
+              aria-label="Next article"
+              style={{
+                width: '32px',
+                height: '32px',
+                border: '1px solid #E6E1D6',
+                background: '#FFFFFF',
+                color: '#0B1B3A',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '13px',
+                transition: 'all 0.15s',
+              }}
+            >
+              ▼
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
+          {articles.map((item, idx) => {
+            const isSelected = idx === currentIndex
+            return (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() => setCurrentIndex(idx)}
+                style={{
+                  textAlign: 'left',
+                  border: `1px solid ${isSelected ? '#C4A24C' : '#E6E1D6'}`,
+                  background: isSelected ? '#FAF7EE' : '#FFFFFF',
+                  padding: '11px 16px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  transition: 'all 0.2s',
+                  boxShadow: isSelected ? '0 2px 8px rgba(196, 162, 76, 0.15)' : 'none',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: '17px',
+                    fontWeight: 600,
+                    color: isSelected ? '#9A7B23' : '#8C94A6',
+                    minWidth: '24px',
+                  }}
+                >
+                  0{idx + 1}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: isSelected ? '#9A7B23' : '#8C94A6', marginBottom: '1px' }}>
+                    {item.tag}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "'Cormorant Garamond', serif",
+                      fontWeight: 600,
+                      fontSize: '14.5px',
+                      color: isSelected ? '#0B1B3A' : '#475569',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {item.title}
+                  </div>
+                </div>
+                {isSelected && (
+                  <div style={{ width: '4px', height: '20px', background: '#C4A24C', borderRadius: '2px' }} />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -227,9 +473,7 @@ export default function Home() {
             </div>
             <TextLink to="/current-issue" style={{ whiteSpace: 'nowrap' }}>View all</TextLink>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '28px' }}>
-            {FEATURED.map(a => <FeaturedCard key={a.title} {...a} />)}
-          </div>
+          <FeaturedVerticalScroller articles={FEATURED} />
         </div>
       </section>
 
