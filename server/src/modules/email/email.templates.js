@@ -1,6 +1,7 @@
 import pool from '../../config/db.js'
 import { sendEmail } from './email.service.js'
 import { renderTemplate, buildAppUrl } from './email.utils.js'
+import { env } from '../../config/env.js'
 
 export async function sendEmailVerificationEmail({ to, firstName, token, expiresAt }) {
   const templateResult = await pool.query(
@@ -24,13 +25,22 @@ export async function sendEmailVerificationEmail({ to, firstName, token, expires
   const html = renderTemplate(template.body_html, vars)
   const text = template.body_text ? renderTemplate(template.body_text, vars, { escape: false }) : undefined
 
-  return sendEmail({
+  const result = await sendEmail({
     to,
     subject,
     html,
     text,
     metadata: { template_key: 'account_verification', recipient_email: to },
   })
+
+  if (!result.success && env.NODE_ENV !== 'production') {
+    console.log(
+      `\n[DEV] Verification email could not be sent to ${to} (${result.error || 'unknown error'}).
+[DEV] Open this link in your browser to verify the account:\n${verificationUrl}\n`
+    )
+  }
+
+  return result
 }
 
 export async function sendPasswordResetEmail({ to, firstName, resetUrl, expiresAt }) {
@@ -54,13 +64,22 @@ export async function sendPasswordResetEmail({ to, firstName, resetUrl, expiresA
   const html = renderTemplate(template.body_html, vars)
   const text = template.body_text ? renderTemplate(template.body_text, vars, { escape: false }) : undefined
 
-  return sendEmail({
+  const result = await sendEmail({
     to,
     subject,
     html,
     text,
     metadata: { template_key: 'password_reset', recipient_email: to },
   })
+
+  if (!result.success && env.NODE_ENV !== 'production') {
+    console.log(
+      `\n[DEV] Password reset email could not be sent to ${to} (${result.error || 'unknown error'}).
+[DEV] Open this link in your browser to reset the password:\n${resetUrl}\n`
+    )
+  }
+
+  return result
 }
 
 export async function sendPasswordChangedEmail({ to, firstName }) {

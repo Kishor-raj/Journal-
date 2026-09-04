@@ -1,10 +1,14 @@
 import pg from 'pg'
 import dotenv from 'dotenv'
 import path from 'path'
+import bcrypt from 'bcryptjs'
 
 dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env') })
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
+
+const ADMIN_EMAIL = 'admin@jar-journal.org'
+const ADMIN_PASSWORD = process.env.ADMIN_SEED_PASSWORD || 'Admin@123'
 
 async function seed() {
   const client = await pool.connect()
@@ -152,22 +156,34 @@ async function seed() {
     }
     console.log('✓ Email templates seeded')
 
-    // Seed admin user
+    // Seed admin user (with a password credential so password login works)
     const adminRoleId = (await client.query(`SELECT id FROM roles WHERE name = 'admin'`)).rows[0]?.id
     if (adminRoleId) {
       await client.query(
         `INSERT INTO users (role_id, email, first_name, last_name, display_name, is_email_verified, account_status)
-         VALUES ($1, 'admin@jar-journal.org', 'System', 'Admin', 'System Admin', true, 'active')
+         VALUES ($1, $2, 'System', 'Admin', 'System Admin', true, 'active')
          ON CONFLICT (email) DO NOTHING`,
-        [adminRoleId]
+        [adminRoleId, ADMIN_EMAIL]
+      )
+      await client.query(
+        `UPDATE users SET is_email_verified = true, account_status = 'active' WHERE email = $1`,
+        [ADMIN_EMAIL]
       )
       await client.query(
         `INSERT INTO user_roles (user_id, role_id)
          SELECT u.id, r.id FROM users u CROSS JOIN roles r
-         WHERE u.email = 'admin@jar-journal.org'
-         ON CONFLICT (user_id, role_id) DO NOTHING`
+         WHERE u.email = $1
+         ON CONFLICT (user_id, role_id) DO NOTHING`,
+        [ADMIN_EMAIL]
       )
-      console.log('✓ Admin user seeded')
+      const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 12)
+      await client.query(
+        `INSERT INTO user_password_credentials (user_id, password_hash, failed_login_attempts)
+         SELECT id, $1, 0 FROM users WHERE email = $2
+         ON CONFLICT (user_id) DO UPDATE SET password_hash = EXCLUDED.password_hash, failed_login_attempts = 0, updated_at = now()`,
+        [adminPasswordHash, ADMIN_EMAIL]
+      )
+      console.log('✓ Admin user seeded with password credential')
     }
 
     await client.query('COMMIT')
