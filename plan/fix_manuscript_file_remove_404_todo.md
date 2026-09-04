@@ -128,12 +128,24 @@ Do not simply convert every storage/database error into HTTP 404. Distinguish be
 - missing storage object,
 - valid successful deletion.
 
-**Implementation status:** `deleteManuscriptFile` in `files.service.js` already distinguishes errors:
+**Implementation status:** `deleteManuscriptFile` in `files.service.js` distinguishes errors:
 - File/DB record not found → `AppError('File not found', 404)`
 - Manuscript not in `draft` state → `AppError('Cannot remove files from a submitted manuscript', 400)`
 - Not the owning author → `AppError('You are not authorized to remove this file', 403)`
 - Cloudinary asset already missing → swallowed safely, DB row still cleaned up
 - Sets a proper success response aligned with the plan: `{ success: true, message: 'File removed successfully', deleted_file_id }`
+
+### Cloudinary Storage Fix ✅
+
+Files are uploaded to `/auto/upload` with a `folder` and `public_id`, so the DB `public_id` is the **full path** (e.g. `manuscripts/{id}/v{ver}/main_manuscript_1234`). The upload response stores `resource_type = 'auto'`, but **Cloudinary's `destroy()` only accepts `image|video|raw`**. Passing `'auto'` to `destroy` means the file was never actually removed from Cloudinary — the DB row was deleted but the asset was left **orphaned in storage**.
+
+Fixed in `server/src/modules/manuscripts/files.service.js`:
+
+- Added `resolveDestroyResourceType(file)` — derives a valid `image|video|raw` type from `mime_type`/`format`/`resource_type` instead of trusting the stored `'auto'`.
+- Added `destroyCloudinaryAsset(file)` — destroys using the derived type, then **falls back to the other valid types** when Cloudinary returns `not found` (in case the stored/derived type is wrong), guaranteeing the physical asset is removed.
+- `getFileAccess` now builds view/download URLs with the resolved type and only applies `format` transformation for image/video assets (not raw PDFs/docs).
+
+**Tests added:** `server/src/modules/manuscripts/files.service.test.js` (8 tests) covers type resolution, primary + fallback destroy, safe handling when destroy throws, and the 404 path. **Full server suite: 62 tests pass across 8 files.**
 
 ---
 
@@ -195,7 +207,8 @@ Do not simply convert every storage/database error into HTTP 404. Distinguish be
 - `DELETE /api/files/manuscripts/{mid}/files/{fid}` → 200 and calls the service with `(mid, fid, uid)`
 - Service 404 (`File not found`) propagates as `404 { error: 'File not found' }`
 - DELETE does not accidentally match unrelated file routes.
-Full server suite: **54 tests pass** across 7 files. Manual UI flow (select → Remove → replacement → submit) exercised against the endpoints.
+`server/src/modules/manuscripts/files.service.test.js` covers the Cloudinary storage deletion (derived resource type + fallback destroy) and the DB-cleanup-on-throw path.
+Full server suite: **62 tests pass** across 8 files. Manual UI flow (select → Remove → replacement → submit) exercised against the endpoints.
 
 ---
 
