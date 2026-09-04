@@ -12,6 +12,7 @@ import {
   submitManuscript,
   requestSignature,
   confirmUpload,
+  deleteManuscriptFile,
 } from './services/manuscriptService'
 
 const STEPS = [
@@ -771,6 +772,21 @@ function StepAuthors({ manuscript, onChange }) {
 // Step 3: Files
 function StepFiles({ manuscript, onChange, errors }) {
   const [uploading, setUploading] = useState(null)
+  const [removing, setRemoving] = useState(null)
+
+  const handleFileRemove = async (fileId) => {
+    if (!manuscript.id || !fileId) return
+    setRemoving(fileId)
+    try {
+      await deleteManuscriptFile(manuscript.id, fileId)
+      const updated = await getManuscript(manuscript.id)
+      onChange(updated)
+    } catch (err) {
+      console.error('Failed to remove file:', err)
+    } finally {
+      setRemoving(null)
+    }
+  }
 
   const handleFileSelect = async (file, fileType) => {
     if (!file || !manuscript.id) return
@@ -844,9 +860,36 @@ function StepFiles({ manuscript, onChange, errors }) {
                 {(mainFile.file_size_bytes / 1024 / 1024).toFixed(1)} MB — Uploaded
               </div>
             </div>
-            <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px' }}>
+            <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px', marginRight: '8px' }}>
               <i className="fas fa-check-circle"></i>
             </span>
+            <button
+              type="button"
+              onClick={() => handleFileRemove(mainFile.id)}
+              disabled={removing === mainFile.id}
+              style={{
+                background: 'rgba(184, 51, 51, 0.08)',
+                border: '1px solid rgba(184, 51, 51, 0.3)',
+                color: 'var(--color-danger)',
+                cursor: removing === mainFile.id ? 'not-allowed' : 'pointer',
+                borderRadius: '6px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                opacity: removing === mainFile.id ? 0.6 : 1,
+                flexShrink: 0,
+              }}
+            >
+              {removing === mainFile.id ? (
+                <i className="fas fa-spinner fa-spin"></i>
+              ) : (
+                <i className="fas fa-trash-can"></i>
+              )}
+              Remove
+            </button>
           </div>
         ) : (
           <FileUpload
@@ -889,9 +932,36 @@ function StepFiles({ manuscript, onChange, errors }) {
                     {(f.file_size_bytes / 1024 / 1024).toFixed(1)} MB — Uploaded
                   </div>
                 </div>
-                <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px' }}>
+                <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px', marginRight: '8px' }}>
                   <i className="fas fa-check-circle"></i>
                 </span>
+                <button
+                  type="button"
+                  onClick={() => handleFileRemove(f.id)}
+                  disabled={removing === f.id}
+                  style={{
+                    background: 'rgba(184, 51, 51, 0.08)',
+                    border: '1px solid rgba(184, 51, 51, 0.3)',
+                    color: 'var(--color-danger)',
+                    cursor: removing === f.id ? 'not-allowed' : 'pointer',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    opacity: removing === f.id ? 0.6 : 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  {removing === f.id ? (
+                    <i className="fas fa-spinner fa-spin"></i>
+                  ) : (
+                    <i className="fas fa-trash-can"></i>
+                  )}
+                  Remove
+                </button>
               </div>
             ))}
           </div>

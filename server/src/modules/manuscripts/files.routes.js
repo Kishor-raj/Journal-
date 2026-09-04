@@ -15,6 +15,15 @@ router.post('/manuscripts/:id/files', authenticate, async (req, res) => {
   res.status(201).json(file)
 })
 
+router.delete('/manuscripts/:manuscriptId/files/:fileId', authenticate, async (req, res) => {
+  const result = await filesService.deleteManuscriptFile(
+    req.params.manuscriptId,
+    req.params.fileId,
+    req.user.uid
+  )
+  res.json(result)
+})
+
 router.get('/:id/access', authenticate, async (req, res) => {
   const file = await filesService.getFileAccess(req.params.id, req.user)
   res.json(file)

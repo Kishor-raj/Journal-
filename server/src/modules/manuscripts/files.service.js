@@ -70,6 +70,43 @@ export async function confirmUpload(manuscriptId, versionId, fileData, userId) {
   return result.rows[0]
 }
 
+export async function deleteManuscriptFile(manuscriptId, fileId, userId) {
+  const fileResult = await pool.query(
+    `SELECT mf.*, m.current_status, m.submitted_by
+     FROM manuscript_files mf
+     JOIN manuscripts m ON m.id = mf.manuscript_id
+     WHERE mf.id = $1 AND mf.manuscript_id = $2`,
+    [fileId, manuscriptId]
+  )
+
+  if (fileResult.rows.length === 0) {
+    throw new AppError('File not found', 404)
+  }
+
+  const file = fileResult.rows[0]
+
+  if (file.current_status !== 'draft') {
+    throw new AppError('Cannot remove files from a submitted manuscript', 400)
+  }
+
+  const isOwner = file.submitted_by === userId
+  if (!isOwner) {
+    throw new AppError('You are not authorized to remove this file', 403)
+  }
+
+  try {
+    await cloudinary.uploader.destroy(file.public_id, {
+      resource_type: file.resource_type || 'raw',
+    })
+  } catch {
+    // If Cloudinary deletion fails (e.g., file already removed), continue with DB cleanup
+  }
+
+  await pool.query('DELETE FROM manuscript_files WHERE id = $1', [fileId])
+
+  return { success: true, deleted_file_id: fileId }
+}
+
 export async function getFileAccess(fileId, user) {
   const result = await pool.query(
     `SELECT mf.*, m.submitted_by, m.current_status,
