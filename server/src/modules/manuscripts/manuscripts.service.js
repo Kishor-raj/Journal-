@@ -117,7 +117,9 @@ export async function updateManuscript(id, data, userId) {
 
   const { title, abstract, keywords, category_id, category } = data
   
-  let cId = category_id ?? category ?? null;
+  let rawCat = category_id ?? category ?? null
+  let cId = (typeof rawCat === 'string' && rawCat.trim() !== '') ? rawCat.trim() : null
+
   if (cId && !cId.includes('-')) {
     const catResult = await pool.query('SELECT id FROM categories WHERE name = $1', [cId])
     if (catResult.rows.length > 0) {
