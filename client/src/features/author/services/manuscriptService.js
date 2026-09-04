@@ -44,6 +44,10 @@ export function confirmUpload(manuscriptId, versionId, fileData) {
   return apiClient.post(`/files/manuscripts/${manuscriptId}/files`, { version_id: versionId, ...fileData })
 }
 
+export function deleteManuscriptFile(manuscriptId, fileId) {
+  return apiClient.delete(`/files/manuscripts/${manuscriptId}/files/${fileId}`)
+}
+
 export function getStatusHistory(manuscriptId) {
   return apiClient.get(`/manuscripts/${manuscriptId}/status-history`)
 }
