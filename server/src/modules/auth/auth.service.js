@@ -1,6 +1,7 @@
 import { OAuth2Client } from 'google-auth-library'
 import crypto from 'crypto'
 import pool from '../../config/db.js'
+import { env } from '../../config/env.js'
 import { hashPassword, verifyPassword } from './password.js'
 import { hashToken, generateTokenWithExpiry, buildAppUrl } from '../../modules/email/email.utils.js'
 import { sendEmailVerificationEmail, sendPasswordResetEmail, sendPasswordChangedEmail } from '../../modules/email/email.templates.js'
