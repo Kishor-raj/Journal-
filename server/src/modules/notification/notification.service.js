@@ -43,6 +43,9 @@ function buildEventKey(templateKey, variables) {
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     return EventKeys.draftReminder(manuscriptId, dateStr)
   }
+  if (templateKey === NotificationEvents.PUBLICATION_CERTIFICATE && manuscriptId) {
+    return EventKeys.publicationCertificate(manuscriptId, variables?.author_id)
+  }
   return null
 }
 

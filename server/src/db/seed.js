@@ -144,6 +144,12 @@ async function seed() {
         body_html: `<p>Hello {{first_name}},</p><p>Your password was changed successfully.</p><p>If you did not make this change, please contact the journal administrator immediately.</p>`,
         body_text: `Hello {{first_name}},\n\nYour password was changed successfully.\n\nIf you did not make this change, please contact the journal administrator immediately.`,
       },
+      {
+        key: 'publication_certificate',
+        subject: 'Certificate of Publication — {{submission_number}}',
+        body_html: `<p>Dear {{author_name}},</p><p>Congratulations! Your manuscript has been officially published in {{journal_name}} and your <strong>Certificate of Publication</strong> is now available.</p><p><strong>Certificate Number:</strong> {{certificate_number}}<br/><strong>Article Number:</strong> {{submission_number}}<br/><strong>Title:</strong> {{manuscript_title}}<br/><strong>Volume:</strong> {{volume}} &nbsp;|&nbsp; <strong>Issue:</strong> {{issue}} &nbsp;|&nbsp; <strong>Year:</strong> {{publication_year}}<br/><strong>Publication Date:</strong> {{publication_date}}</p>{{#if certificate_download_url}}<p><a href="{{certificate_download_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Download Certificate</a></p>{{/if}}<p>You can also verify your certificate any time using this link:<br/>{{verification_url}}</p><p><a href="{{manuscript_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">View Manuscript</a></p><p>Congratulations on your publication!<br/>{{journal_name}}</p>`,
+        body_text: `Dear {{author_name}},\n\nCongratulations! Your manuscript has been officially published in {{journal_name}} and your Certificate of Publication is now available.\n\nCertificate Number: {{certificate_number}}\nArticle Number: {{submission_number}}\nTitle: {{manuscript_title}}\nVolume: {{volume}}\nIssue: {{issue}}\nYear: {{publication_year}}\nPublication Date: {{publication_date}}\n\nDownload your certificate: {{certificate_download_url}}\nVerify your certificate: {{verification_url}}\nView your manuscript: {{manuscript_url}}\n\nCongratulations on your publication!\n{{journal_name}}`,
+      },
     ]
     for (const t of templates) {
       await client.query(

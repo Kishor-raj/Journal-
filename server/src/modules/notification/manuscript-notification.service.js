@@ -302,6 +302,79 @@ export async function sendDraftReminder(manuscriptId) {
   }
 }
 
+export async function sendPublicationCertificate(manuscriptId, authorId) {
+  try {
+    const ctx = await loadManuscriptContext(manuscriptId)
+    if (!ctx) {
+      console.error(`[MANUSCRIPT_NOTIFY] Cannot send publication_certificate: missing context for ${manuscriptId}`)
+      return { success: false, skipped: true, reason: 'missing_context' }
+    }
+
+    const certificate = await pool.query(
+      `SELECT pc.id, pc.certificate_number, pc.pdf_file_url, pc.verification_token,
+              pc.status, pc.generated_at,
+              ma.id AS author_id, ma.user_id, ma.first_name, ma.last_name, ma.email,
+              p.volume, p.issue, p.publication_year, p.publication_date, p.doi
+       FROM publication_certificates pc
+       JOIN manuscript_authors ma ON ma.id = pc.author_id
+       JOIN publications p ON p.manuscript_id = pc.manuscript_id
+       WHERE pc.manuscript_id = $1 AND pc.author_id = $2`,
+      [manuscriptId, authorId]
+    )
+
+    if (certificate.rows.length === 0) {
+      console.error(`[MANUSCRIPT_NOTIFY] Cannot send publication_certificate: certificate not found for ${manuscriptId}/${authorId}`)
+      return { success: false, skipped: true, reason: 'certificate_not_found' }
+    }
+
+    const cert = certificate.rows[0]
+
+    if (cert.status !== 'active') {
+      return { success: false, skipped: true, reason: 'certificate_not_active' }
+    }
+
+    const recipientUserId = cert.user_id || ctx.recipientUserId
+    const recipientEmail = cert.email || ctx.recipientEmail
+    if (!recipientUserId || !recipientEmail) {
+      return { success: false, skipped: true, reason: 'missing_recipient' }
+    }
+
+    const authorName =
+      [cert.first_name, cert.last_name].filter(Boolean).join(' ').trim() ||
+      recipientEmail.split('@')[0] ||
+      ctx.authorName
+
+    const verificationUrl = buildAppUrl(`/verify/${cert.verification_token}`)
+
+    const result = await enqueueNotification('publication_certificate', recipientUserId, {
+      recipient_email: recipientEmail,
+      author_name: authorName,
+      manuscript_title: ctx.title,
+      submission_number: ctx.submission_number,
+      journal_name: ctx.journalName,
+      certificate_number: cert.certificate_number,
+      volume: cert.volume,
+      issue: cert.issue,
+      publication_year: cert.publication_year,
+      publication_date: formatDate(cert.publication_date),
+      certificate_download_url: cert.pdf_file_url || '',
+      verification_url: verificationUrl,
+      manuscript_url: buildManuscriptUrl(manuscriptId),
+      manuscript_id: manuscriptId,
+      author_id: contentId(cert.author_id),
+    })
+
+    return result
+  } catch (err) {
+    console.error(`[MANUSCRIPT_NOTIFY] Failed to send publication_certificate for ${manuscriptId}/${authorId}:`, err.message)
+    return { success: false, error: err.message }
+  }
+}
+
+function contentId(value) {
+  return typeof value === 'bigint' ? Number(value) : value
+}
+
 export async function findDraftsEligibleForReminder(options = {}) {
   const reminderAfterDays = options.reminderAfterDays || 3
   const cooldownDays = options.cooldownDays || 7

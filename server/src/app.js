@@ -20,6 +20,7 @@ import withdrawalRoutes from './modules/withdrawal/withdrawal.routes.js'
 import notificationRoutes from './modules/notification/notification.routes.js'
 import auditRoutes from './modules/audit/audit.routes.js'
 import publicRoutes from './modules/public/public.routes.js'
+import publicationRoutes from './modules/publications/publication.routes.js'
 
 const app = express()
 const NODE_ENV = process.env.NODE_ENV || 'development'
@@ -95,6 +96,7 @@ app.use('/api/withdrawals', withdrawalRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/audit', auditRoutes)
 app.use('/api/public', publicRoutes)
+app.use('/api/publications', publicationRoutes)
 
 app.use(errorHandler)
 

@@ -64,7 +64,19 @@ export function getAcceptedManuscripts() {
   return apiClient.get('/editorial/accepted')
 }
 
-export function publishManuscript(manuscriptId) {
-  return apiClient.post(`/editorial/manuscripts/${manuscriptId}/publish`)
+export function publishManuscript(manuscriptId, publicationData = {}) {
+  return apiClient.post(`/editorial/manuscripts/${manuscriptId}/publish`, publicationData)
+}
+
+export function getManuscriptCertificates(manuscriptId) {
+  return apiClient.get(`/publications/manuscripts/${manuscriptId}/certificates`)
+}
+
+export function regenerateCertificates(manuscriptId) {
+  return apiClient.post(`/publications/manuscripts/${manuscriptId}/generate-certificates`, {})
+}
+
+export function revokeCertificate(certificateId, reason) {
+  return apiClient.post(`/publications/certificates/${certificateId}/revoke`, { reason })
 }
 

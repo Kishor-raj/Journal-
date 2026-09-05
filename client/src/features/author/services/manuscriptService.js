@@ -51,3 +51,7 @@ export function deleteManuscriptFile(manuscriptId, fileId) {
 export function getStatusHistory(manuscriptId) {
   return apiClient.get(`/manuscripts/${manuscriptId}/status-history`)
 }
+
+export function getMyCertificate(manuscriptId) {
+  return apiClient.get(`/publications/manuscripts/${manuscriptId}/certificate`)
+}

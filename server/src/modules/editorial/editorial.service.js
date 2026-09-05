@@ -5,6 +5,12 @@ import { isConflicted } from '../../shared/utils/conflictCheck.js'
 import { enqueueNotification } from '../notification/notification.service.js'
 import { buildAppUrl } from '../email/email.utils.js'
 import {
+  validatePublicationMetadata,
+  createPublicationRow,
+  createCertificateRows,
+  generateCertificatesForManuscript,
+} from '../publications/publication.service.js'
+import {
   sendEditorialAccepted,
   sendEditorialRejected,
   sendMinorRevisionRequested,
@@ -1257,13 +1263,13 @@ export async function handleExtension(extensionId, editorId, approved) {
   }
 }
 
-export async function publishManuscript(manuscriptId, editorId) {
+export async function publishManuscript(manuscriptId, editorId, publicationData = {}) {
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
 
     const manuscriptResult = await client.query(
-      'SELECT id, current_status FROM manuscripts WHERE id = $1 FOR UPDATE',
+      'SELECT id, title, submission_number, current_status FROM manuscripts WHERE id = $1 FOR UPDATE',
       [manuscriptId]
     )
 
@@ -1279,6 +1285,7 @@ export async function publishManuscript(manuscriptId, editorId) {
 
     const previousStatus = manuscript.current_status
     const newStatus = 'published'
+    const metadata = validatePublicationMetadata(publicationData)
 
     await client.query(
       `UPDATE manuscripts SET current_status = $1, updated_at = now() WHERE id = $2`,
@@ -1291,9 +1298,83 @@ export async function publishManuscript(manuscriptId, editorId) {
       [manuscriptId, previousStatus, newStatus, editorId]
     )
 
+    const publication = await createPublicationRow(client, {
+      manuscriptId,
+      editorId,
+      volume: metadata.volume,
+      issue: metadata.issue,
+      publicationYear: metadata.publicationYear,
+      doi: metadata.doi,
+      articleUrl: metadata.articleUrl,
+    })
+
+    const { certificates } = await createCertificateRows(client, {
+      manuscriptId,
+      submissionNumber: manuscript.submission_number,
+      publicationYear: publication.publication_year,
+    })
+
+    await client.query(
+      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_values)
+       VALUES ($1, 'manuscript_published', 'manuscripts', $2, $3)`,
+      [
+        editorId,
+        manuscriptId,
+        JSON.stringify({
+          from_status: previousStatus,
+          to_status: newStatus,
+          publication_id: publication.id,
+          certificates_created: certificates.length,
+        }),
+      ]
+    )
+
+    await client.query(
+      `INSERT INTO user_activity (user_id, activity_type, entity_type, entity_id, metadata)
+       VALUES ($1, 'manuscript_published', 'manuscripts', $2, $3)`,
+      [
+        editorId,
+        manuscriptId,
+        JSON.stringify({ publication_id: publication.id, certificates_created: certificates.length }),
+      ]
+    )
+
+    await client.query(
+      `INSERT INTO workflow_logs (workflow_name, manuscript_id, event_name, source, status, payload)
+       VALUES ('publication', $1, 'manuscript_published', 'publish', 'success', $2)`,
+      [
+        manuscriptId,
+        JSON.stringify({
+          publication_id: publication.id,
+          certificates_created: certificates.length,
+          volume: metadata.volume,
+          issue: metadata.issue,
+          publication_year: metadata.publicationYear,
+        }),
+      ]
+    )
+
     await client.query('COMMIT')
 
-    return { success: true, manuscript_id: manuscriptId, status: newStatus }
+    let certificates_generated = 0
+    try {
+      const generation = await generateCertificatesForManuscript(manuscriptId)
+      certificates_generated = generation.results.filter((r) => r.status === 'active').length
+    } catch (err) {
+      console.error(`[EDITORIAL] Certificate generation post-publish failed for manuscript ${manuscriptId}:`, err.message)
+    }
+
+    return {
+      success: true,
+      manuscript_id: manuscriptId,
+      paper_id: manuscript.id,
+      publication_id: publication.id,
+      submission_number: manuscript.submission_number,
+      publication_year: publication.publication_year,
+      status: newStatus,
+      certificates_created: certificates.length,
+      certificates_generated,
+    }
   } catch (err) {
     await client.query('ROLLBACK')
     throw err
