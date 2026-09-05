@@ -11,11 +11,30 @@ const styles = {
     maxWidth: '1100px',
     margin: '0 auto',
   },
+  tabsContainer: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '20px',
+    borderBottom: '1px solid var(--color-rule-grey)',
+    paddingBottom: '12px',
+  },
+  tabBtn: (active) => ({
+    background: active ? 'var(--color-ink-navy)' : 'transparent',
+    color: active ? '#FFFFFF' : 'var(--color-ink-black)',
+    border: active ? '1px solid var(--color-ink-navy)' : '1px solid var(--color-rule-grey)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '6px 14px',
+    fontSize: 'var(--text-sm)',
+    fontFamily: 'var(--font-body)',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
+  }),
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
     gap: '20px',
-    marginTop: '24px',
+    marginTop: '20px',
   },
   card: {
     background: 'var(--color-surface)',
@@ -53,6 +72,22 @@ const styles = {
     letterSpacing: '0.05em',
     background: '#EAF7F0',
     color: 'var(--color-success)',
+    border: '1px solid var(--color-success)',
+    flexShrink: 0,
+  },
+  publishedBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '3px 10px',
+    borderRadius: '9999px',
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    background: '#0B1B3A',
+    color: '#D9A94A',
+    border: '1px solid #C4A24C',
     flexShrink: 0,
   },
   meta: {
@@ -109,6 +144,7 @@ const styles = {
 
 function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
   const [hovered, setHovered] = useState(false)
+  const isPublished = manuscript.current_status === 'published'
 
   return (
     <div
@@ -124,10 +160,17 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
     >
       <div style={styles.cardHeader}>
         <div style={styles.cardTitle}>{manuscript.title || 'Untitled Manuscript'}</div>
-        <div style={styles.acceptedBadge}>
-          <i className="fas fa-circle-check" style={{ fontSize: '10px' }} />
-          Accepted
-        </div>
+        {isPublished ? (
+          <div style={styles.publishedBadge}>
+            <i className="fas fa-globe" style={{ fontSize: '10px' }} />
+            Published
+          </div>
+        ) : (
+          <div style={styles.acceptedBadge}>
+            <i className="fas fa-circle-check" style={{ fontSize: '10px' }} />
+            Accepted
+          </div>
+        )}
       </div>
 
       <div style={styles.meta}>
@@ -146,7 +189,7 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
           <span style={styles.metaValue}>{manuscript.submission_date ? formatDate(manuscript.submission_date) : '—'}</span>
         </div>
         <div style={styles.metaItem}>
-          <span style={styles.metaLabel}>Accepted</span>
+          <span style={styles.metaLabel}>{isPublished ? 'Published' : 'Accepted'}</span>
           <span style={styles.metaValue}>{manuscript.acceptance_date ? formatDate(manuscript.acceptance_date) : '—'}</span>
         </div>
       </div>
@@ -168,29 +211,42 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
           View Details
         </button>
 
-        <button
-          style={{
-            background: '#0B1B3A',
-            border: '1px solid #C4A24C',
-            borderRadius: 'var(--radius-sm)',
-            padding: '6px 14px',
-            fontSize: 'var(--text-sm)',
-            fontFamily: 'var(--font-body)',
+        {isPublished ? (
+          <span style={{
+            fontSize: 'var(--text-xs)',
             fontWeight: 600,
-            color: '#FFFFFF',
-            cursor: isPublishing ? 'not-allowed' : 'pointer',
-            transition: 'background 150ms ease',
-            opacity: isPublishing ? 0.7 : 1,
-          }}
-          type="button"
-          disabled={isPublishing}
-          onClick={(e) => {
-            e.stopPropagation()
-            onPublish(manuscript.id)
-          }}
-        >
-          {isPublishing ? 'Publishing...' : 'Publish to Issue 🚀'}
-        </button>
+            color: '#1A7F4B',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}>
+            <i className="fas fa-check-circle" /> Live on Site
+          </span>
+        ) : (
+          <button
+            style={{
+              background: '#0B1B3A',
+              border: '1px solid #C4A24C',
+              borderRadius: 'var(--radius-sm)',
+              padding: '6px 14px',
+              fontSize: 'var(--text-sm)',
+              fontFamily: 'var(--font-body)',
+              fontWeight: 600,
+              color: '#FFFFFF',
+              cursor: isPublishing ? 'not-allowed' : 'pointer',
+              transition: 'background 150ms ease',
+              opacity: isPublishing ? 0.7 : 1,
+            }}
+            type="button"
+            disabled={isPublishing}
+            onClick={(e) => {
+              e.stopPropagation()
+              onPublish(manuscript.id)
+            }}
+          >
+            {isPublishing ? 'Publishing...' : 'Publish to Issue 🚀'}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -202,6 +258,7 @@ export default function AcceptedManuscripts() {
   const [loading, setLoading] = useState(true)
   const [publishingId, setPublishingId] = useState(null)
   const [successMessage, setSuccessMessage] = useState('')
+  const [filter, setFilter] = useState('all') // 'all' | 'accepted' | 'published'
 
   const loadManuscripts = () => {
     getAcceptedManuscripts()
@@ -221,7 +278,7 @@ export default function AcceptedManuscripts() {
     setPublishingId(id)
     try {
       await publishManuscript(id)
-      setSuccessMessage('Manuscript successfully published! It is now visible on the Home and Current Issue pages.')
+      setSuccessMessage('Manuscript successfully published! It remains listed here with Published status and is live on the site.')
       loadManuscripts()
       setTimeout(() => setSuccessMessage(''), 5000)
     } catch (err) {
@@ -231,13 +288,46 @@ export default function AcceptedManuscripts() {
     }
   }
 
+  const filteredManuscripts = manuscripts.filter((m) => {
+    if (filter === 'accepted') return m.current_status === 'accepted'
+    if (filter === 'published') return m.current_status === 'published'
+    return true
+  })
+
+  const acceptedCount = manuscripts.filter(m => m.current_status === 'accepted').length
+  const publishedCount = manuscripts.filter(m => m.current_status === 'published').length
 
   return (
     <div style={styles.page}>
       <PageHeader
-        title="Accepted Manuscripts"
-        subtitle="Manuscripts that have been accepted by the editorial team"
+        title="Accepted & Published Manuscripts"
+        subtitle="Manage accepted manuscripts and track published articles"
       />
+
+      {/* Filter Tabs */}
+      <div style={styles.tabsContainer}>
+        <button
+          style={styles.tabBtn(filter === 'all')}
+          onClick={() => setFilter('all')}
+          type="button"
+        >
+          All ({manuscripts.length})
+        </button>
+        <button
+          style={styles.tabBtn(filter === 'accepted')}
+          onClick={() => setFilter('accepted')}
+          type="button"
+        >
+          Pending Publication ({acceptedCount})
+        </button>
+        <button
+          style={styles.tabBtn(filter === 'published')}
+          onClick={() => setFilter('published')}
+          type="button"
+        >
+          Published ({publishedCount})
+        </button>
+      </div>
 
       {successMessage && (
         <div style={{
@@ -256,23 +346,27 @@ export default function AcceptedManuscripts() {
 
       {loading ? (
         <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '60px 0' }}>
-          Loading accepted manuscripts...
+          Loading manuscripts...
         </div>
-      ) : manuscripts.length === 0 ? (
+      ) : filteredManuscripts.length === 0 ? (
         <div style={styles.emptyState}>
-          <div style={styles.emptyIcon}>✅</div>
-          <div style={styles.emptyTitle}>No Accepted Manuscripts</div>
+          <div style={styles.emptyIcon}>📂</div>
+          <div style={styles.emptyTitle}>No Manuscripts in this View</div>
           <div style={styles.emptyMsg}>
-            Accepted manuscripts will appear here once editorial decisions have been made.
+            {filter === 'accepted'
+              ? 'No manuscripts are currently waiting to be published.'
+              : filter === 'published'
+              ? 'No published manuscripts found.'
+              : 'Manuscripts will appear here once accepted or published.'}
           </div>
         </div>
       ) : (
         <>
-          <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: '8px' }}>
-            {manuscripts.length} manuscript{manuscripts.length !== 1 ? 's' : ''} ready to publish
+          <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: '12px' }}>
+            Showing {filteredManuscripts.length} of {manuscripts.length} manuscript{manuscripts.length !== 1 ? 's' : ''}
           </div>
           <div style={styles.grid}>
-            {manuscripts.map((m) => (
+            {filteredManuscripts.map((m) => (
               <ManuscriptCard
                 key={m.id}
                 manuscript={m}
@@ -287,4 +381,5 @@ export default function AcceptedManuscripts() {
     </div>
   )
 }
+
 

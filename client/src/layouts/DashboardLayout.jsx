@@ -93,7 +93,7 @@ const NAV = {
           { to: '/editor/queue',       label: 'Manuscripts',         icon: 'fa-file-lines', match: ['/editor/queue', '/editor/manuscripts'] },
           { to: '/editor/reviewers',   label: 'Reviewer Management', icon: 'fa-user-check' },
           { to: '/editor/decisions',   label: 'Decisions',           icon: 'fa-gavel' },
-          { to: '/editor/accepted',    label: 'Accepted',            icon: 'fa-circle-check' },
+          { to: '/editor/accepted',    label: 'Accepted & Published', icon: 'fa-circle-check' },
         ],
       },
       {
