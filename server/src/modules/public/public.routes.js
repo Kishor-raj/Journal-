@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import * as publicService from './public.service.js'
+import { getCertificateVerification } from '../publications/publication.service.js'
 
 const router = Router()
 
@@ -20,6 +21,12 @@ router.get('/featured', async (req, res) => {
 router.get('/current-issue', async (req, res) => {
   const articles = await publicService.getPublishedArticles()
   res.json(articles)
+})
+
+// GET /api/public/verify/:token  — public certificate verification (no auth)
+router.get('/verify/:token', async (req, res) => {
+  const verification = await getCertificateVerification(req.params.token)
+  res.json(verification)
 })
 
 export default router

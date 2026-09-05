@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Button from '../../shared/components/Button'
 import StatusBadge from '../../shared/components/StatusBadge'
@@ -11,6 +11,9 @@ import {
   getExtensionRequests,
   handleExtension,
   publishManuscript,
+  getManuscriptCertificates,
+  regenerateCertificates,
+  revokeCertificate,
 } from '../../services/editorialService'
 import { getFileAccess } from '../../services/fileService'
 import { formatDate } from '../../shared/utils/formatDate'
@@ -126,6 +129,19 @@ const styles = {
   },
 }
 
+const publishInputStyle = {
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-rule-grey)',
+  borderRadius: 'var(--radius-sm)',
+  padding: '8px 10px',
+  fontSize: 'var(--text-sm)',
+  fontFamily: 'var(--font-body)',
+  color: 'var(--color-ink-black)',
+  marginTop: '4px',
+  width: '100%',
+  boxSizing: 'border-box',
+}
+
 export default function ManuscriptDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -137,6 +153,12 @@ export default function ManuscriptDetail() {
   const [fileError, setFileError] = useState('')
   const [publishSuccess, setPublishSuccess] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [publishModal, setPublishModal] = useState(false)
+  const [publishForm, setPublishForm] = useState({ volume: '', issue: '', doi: '' })
+  const [certificates, setCertificates] = useState([])
+  const [certLoading, setCertLoading] = useState(false)
+  const [certNote, setCertNote] = useState('')
+  const [revokingId, setRevokingId] = useState(null)
 
   const openFile = async (fileId, accessType) => {
     try {
@@ -166,6 +188,21 @@ export default function ManuscriptDetail() {
       .then(setExtensions)
       .catch(() => {})
   }, [id])
+
+  const loadCertificates = useCallback(() => {
+    getManuscriptCertificates(id)
+      .then((rows) => setCertificates(Array.isArray(rows) ? rows : []))
+      .catch(() => setCertificates([]))
+      .finally(() => setCertLoading(false))
+  }, [id])
+
+  useEffect(() => {
+    if (manuscript?.current_status === 'published') {
+      setCertLoading(true)
+      loadCertificates()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manuscript?.current_status])
 
   const toDateInputValue = (value) => {
     if (!value) return ''
@@ -209,20 +246,64 @@ export default function ManuscriptDetail() {
     }
   }
 
-  const handlePublish = async () => {
-    if (!window.confirm('Are you sure you want to publish this manuscript to the current issue and home page?')) {
-      return
-    }
+  const handlePublish = () => {
+    setPublishForm({ volume: '', issue: '', doi: '' })
+    setPublishModal(true)
+  }
+
+  const handleConfirmPublish = async () => {
     setPublishing(true)
     try {
-      await publishManuscript(id)
+      const result = await publishManuscript(id, {
+        volume: publishForm.volume,
+        issue: publishForm.issue,
+        doi: publishForm.doi,
+      })
       setManuscript((prev) => prev ? { ...prev, current_status: 'published' } : prev)
+      const certNote =
+        result?.certificates_created > 0
+          ? ` Certificate(s) prepared: ${result.certificates_created} (${result.certificates_generated ?? 0} generated).`
+          : ''
       setPublishSuccess(true)
-      setTimeout(() => setPublishSuccess(false), 5000)
+      setPublishModal(false)
+      setTimeout(() => setPublishSuccess(false), 6000)
+      setTimeout(() => setCertNote(certNote), 400)
+      loadCertificates()
     } catch (err) {
       alert(err.message || 'Failed to publish manuscript')
     } finally {
       setPublishing(false)
+    }
+  }
+
+  const handleRegenerateCertificates = async () => {
+    setCertLoading(true)
+    try {
+      const result = await regenerateCertificates(id)
+      const generated = result?.results?.filter((r) => r.status === 'active').length ?? 0
+      setCertNote(`Certificate regeneration finished. ${generated} active, ${(result?.results?.length ?? 0) - generated} pending/failed.`)
+      setTimeout(() => setCertNote(''), 6000)
+    } catch (err) {
+      alert(err.message || 'Failed to regenerate certificates')
+    } finally {
+      setCertLoading(false)
+      loadCertificates()
+    }
+  }
+
+  const handleRevokeCertificate = async (certificate) => {
+    const reason = window.prompt(`Revoke certificate ${certificate.certificate_number}? Enter a reason (optional):`, '')
+    if (reason === null) return
+    setRevokingId(certificate.id)
+    try {
+      await revokeCertificate(certificate.id, reason)
+      setCertNote(`Certificate ${certificate.certificate_number} revoked.`)
+      setTimeout(() => setCertNote(''), 6000)
+      loadCertificates()
+    } catch (err) {
+      alert(err.message || 'Failed to revoke certificate')
+    } finally {
+      setRevokingId(null)
     }
   }
 
@@ -503,6 +584,182 @@ export default function ManuscriptDetail() {
           })
         )}
       </div>
+
+      {certNote && (
+        <div style={{
+          background: '#FBF6EA',
+          border: '1px solid #C4A24C',
+          color: '#0B1B3A',
+          padding: '12px 16px',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '20px',
+          fontSize: 'var(--text-sm)',
+          fontWeight: 500,
+        }}>
+          {certNote}
+        </div>
+      )}
+
+      {manuscript.current_status === 'published' && (
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Certificates of Publication</h2>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={certLoading}
+              onClick={handleRegenerateCertificates}
+            >
+              Regenerate Certificates
+            </Button>
+          </div>
+          {certLoading && certificates.length === 0 ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>Loading certificates...</p>
+          ) : certificates.length === 0 ? (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
+              No certificates found. Regenerate to create Certificate of Publication PDFs for each author.
+            </p>
+          ) : (
+            certificates.map((c) => (
+              <div
+                key={c.id}
+                style={{
+                  border: '1px solid var(--color-rule-grey)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '14px 16px',
+                  marginBottom: '10px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '16px',
+                  background: c.status === 'active' ? '#F4FAF6' : c.status === 'revoked' ? '#FDF3F0' : 'transparent',
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--color-ink-navy)' }}>
+                    {[c.first_name, c.last_name].filter(Boolean).join(' ') || c.email}
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                    {c.certificate_number}
+                  </div>
+                  {c.status === 'revoked' && c.revocation_reason && (
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-danger)', marginTop: '4px' }}>
+                      Reason: {c.revocation_reason}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                  <StatusBadge status={c.status === 'active' ? 'published' : c.status === 'revoked' ? 'revoked' : c.status} />
+                  {c.status === 'active' && c.pdf_file_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => window.open(c.pdf_file_url, '_blank', 'noopener,noreferrer')}
+                    >
+                      View
+                    </Button>
+                  )}
+                  {c.status === 'active' && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      loading={revokingId === c.id}
+                      onClick={() => handleRevokeCertificate(c)}
+                    >
+                      Revoke
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {publishModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(6, 14, 27, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+          onClick={() => { if (!publishing) setPublishModal(false) }}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              borderRadius: 'var(--radius-md)',
+              padding: '28px',
+              width: '100%',
+              maxWidth: '460px',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--color-ink-navy)', margin: '0 0 6px' }}>
+              Publish Manuscript
+            </h3>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: '0 0 18px' }}>
+              {manuscript.title || 'This manuscript'}
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={styles.metaLabel}>Volume (optional)</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={publishForm.volume}
+                  onChange={(e) => setPublishForm({ ...publishForm, volume: e.target.value })}
+                  placeholder="Defaults to 1"
+                  style={publishInputStyle}
+                />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={styles.metaLabel}>Issue (optional)</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={publishForm.issue}
+                  onChange={(e) => setPublishForm({ ...publishForm, issue: e.target.value })}
+                  placeholder="Defaults to 1"
+                  style={publishInputStyle}
+                />
+              </label>
+            </div>
+
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '18px' }}>
+              <span style={styles.metaLabel}>DOI (optional)</span>
+              <input
+                type="text"
+                value={publishForm.doi}
+                onChange={(e) => setPublishForm({ ...publishForm, doi: e.target.value })}
+                placeholder="10.xxxx/journal.xxxxxxxx"
+                style={publishInputStyle}
+              />
+            </label>
+
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', margin: '0 0 18px', lineHeight: 1.5 }}>
+              Publishing creates the official record of publication and a Certificate of Publication
+              for each author (Article No. is reused from the manuscript).
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <Button variant="secondary" size="sm" disabled={publishing} onClick={() => setPublishModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" loading={publishing} onClick={handleConfirmPublish}>
+                Publish
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

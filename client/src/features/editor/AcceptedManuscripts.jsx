@@ -140,6 +140,18 @@ const styles = {
     fontSize: 'var(--text-base)',
     lineHeight: 1.6,
   },
+  modalInput: {
+    background: 'var(--color-surface)',
+    border: '1px solid var(--color-rule-grey)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '8px 10px',
+    fontSize: 'var(--text-sm)',
+    fontFamily: 'var(--font-body)',
+    color: 'var(--color-ink-black)',
+    marginTop: '4px',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
 }
 
 function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
@@ -257,6 +269,8 @@ export default function AcceptedManuscripts() {
   const [manuscripts, setManuscripts] = useState([])
   const [loading, setLoading] = useState(true)
   const [publishingId, setPublishingId] = useState(null)
+  const [publishTarget, setPublishTarget] = useState(null)
+  const [publishForm, setPublishForm] = useState({ volume: '', issue: '', doi: '' })
   const [successMessage, setSuccessMessage] = useState('')
   const [filter, setFilter] = useState('all') // 'all' | 'accepted' | 'published'
 
@@ -271,20 +285,32 @@ export default function AcceptedManuscripts() {
     loadManuscripts()
   }, [])
 
-  const handlePublish = async (id) => {
-    if (!window.confirm('Are you sure you want to publish this manuscript to the current issue and home page?')) {
-      return
-    }
-    setPublishingId(id)
+  const handlePublish = (id) => {
+    setPublishForm({ volume: '', issue: '', doi: '' })
+    setPublishTarget(id)
+  }
+
+  const handleConfirmPublish = async () => {
+    if (!publishTarget) return
+    setPublishingId(publishTarget)
     try {
-      await publishManuscript(id)
-      setSuccessMessage('Manuscript successfully published! It remains listed here with Published status and is live on the site.')
+      const result = await publishManuscript(publishTarget, {
+        volume: publishForm.volume,
+        issue: publishForm.issue,
+        doi: publishForm.doi,
+      })
+      const certNote =
+        result?.certificates_created > 0
+          ? ` Certificate(s) prepared: ${result.certificates_created} (${result.certificates_generated ?? 0} generated).`
+          : ''
+      setSuccessMessage(`Manuscript successfully published! It remains listed here with Published status and is live on the site.${certNote}`)
       loadManuscripts()
-      setTimeout(() => setSuccessMessage(''), 5000)
+      setTimeout(() => setSuccessMessage(''), 6000)
     } catch (err) {
       alert(err.message || 'Failed to publish manuscript')
     } finally {
       setPublishingId(null)
+      setPublishTarget(null)
     }
   }
 
@@ -377,6 +403,122 @@ export default function AcceptedManuscripts() {
             ))}
           </div>
         </>
+      )}
+
+      {publishTarget && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(6, 14, 27, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+          onClick={() => { if (!publishingId) setPublishTarget(null) }}
+        >
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              borderRadius: 'var(--radius-md)',
+              padding: '28px',
+              width: '100%',
+              maxWidth: '460px',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--color-ink-navy)', margin: '0 0 6px' }}>
+              Publish Manuscript
+            </h3>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: '0 0 18px' }}>
+              {manuscripts.find((m) => m.id === publishTarget)?.title || 'This manuscript'}
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <label style={styles.metaItem}>
+                <span style={styles.metaLabel}>Volume (optional)</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={publishForm.volume}
+                  onChange={(e) => setPublishForm({ ...publishForm, volume: e.target.value })}
+                  placeholder="Defaults to 1"
+                  style={styles.modalInput}
+                />
+              </label>
+              <label style={styles.metaItem}>
+                <span style={styles.metaLabel}>Issue (optional)</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={publishForm.issue}
+                  onChange={(e) => setPublishForm({ ...publishForm, issue: e.target.value })}
+                  placeholder="Defaults to 1"
+                  style={styles.modalInput}
+                />
+              </label>
+            </div>
+
+            <label style={{ ...styles.metaItem, marginBottom: '18px' }}>
+              <span style={styles.metaLabel}>DOI (optional)</span>
+              <input
+                type="text"
+                value={publishForm.doi}
+                onChange={(e) => setPublishForm({ ...publishForm, doi: e.target.value })}
+                placeholder="10.xxxx/journal.xxxxxxxx"
+                style={styles.modalInput}
+              />
+            </label>
+
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', margin: '0 0 18px', lineHeight: 1.5 }}>
+              Publishing creates the official record of publication and a Certificate of Publication
+              for each author (Article No. is reused from the manuscript).
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                disabled={publishingId}
+                onClick={() => { if (!publishingId) setPublishTarget(null) }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--color-rule-grey)',
+                  color: 'var(--color-ink-black)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 16px',
+                  fontSize: 'var(--text-sm)',
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 600,
+                  cursor: publishingId ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={publishingId}
+                onClick={handleConfirmPublish}
+                style={{
+                  background: '#0B1B3A',
+                  border: '1px solid #C4A24C',
+                  color: '#FFFFFF',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '8px 18px',
+                  fontSize: 'var(--text-sm)',
+                  fontFamily: 'var(--font-body)',
+                  fontWeight: 600,
+                  cursor: publishingId ? 'not-allowed' : 'pointer',
+                  opacity: publishingId ? 0.7 : 1,
+                }}
+              >
+                {publishingId ? 'Publishing...' : 'Publish ✓'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
