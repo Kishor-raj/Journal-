@@ -1264,15 +1264,94 @@ export async function getAcceptedManuscripts() {
             m.title,
             m.submission_number,
             m.created_at AS submission_date,
-            ms.status    AS current_status,
-            ms.created_at AS acceptance_date,
+            m.current_status,
+            m.published_at,
+            msh.created_at AS acceptance_date,
             u.display_name AS primary_author,
             u.email        AS author_email
      FROM manuscripts m
-     JOIN manuscript_status_history ms ON ms.manuscript_id = m.id
-     JOIN users u ON u.id = m.submitting_user_id
-     WHERE ms.status = 'accepted'
-     ORDER BY m.id, ms.created_at DESC`
+     LEFT JOIN manuscript_status_history msh ON msh.manuscript_id = m.id
+       AND msh.to_status = 'accepted'
+     JOIN users u ON u.id = m.submitted_by
+     WHERE m.current_status IN ('accepted', 'published')
+     ORDER BY m.id, msh.created_at DESC`
   )
   return result.rows
+}
+
+export async function publishManuscript(manuscriptId, editorId) {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    const manuscriptResult = await client.query(
+      'SELECT * FROM manuscripts WHERE id = $1 FOR UPDATE',
+      [manuscriptId]
+    )
+
+    if (manuscriptResult.rows.length === 0) {
+      throw new AppError('Manuscript not found', 404)
+    }
+
+    const manuscript = manuscriptResult.rows[0]
+
+    if (manuscript.current_status === 'published') {
+      throw new AppError('Manuscript is already published', 409)
+    }
+
+    if (manuscript.current_status !== 'accepted') {
+      throw new AppError('Only accepted manuscripts can be published', 400)
+    }
+
+    const assignmentResult = await client.query(
+      'SELECT 1 FROM editorial_assignments WHERE manuscript_id = $1 AND editor_id = $2',
+      [manuscriptId, editorId]
+    )
+
+    if (assignmentResult.rowCount === 0) {
+      throw new AppError('Not assigned to this manuscript', 403)
+    }
+
+    await client.query(
+      `UPDATE manuscripts SET current_status = 'published', published_at = now(), updated_at = now()
+       WHERE id = $1`,
+      [manuscriptId]
+    )
+
+    await client.query(
+      `INSERT INTO manuscript_status_history (manuscript_id, from_status, to_status, changed_by)
+       VALUES ($1, $2, 'published', $3)`,
+      [manuscriptId, manuscript.current_status, editorId]
+    )
+
+    await client.query(
+      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_values)
+       VALUES ($1, 'manuscript_published', 'manuscripts', $2, $3)`,
+      [editorId, manuscriptId, JSON.stringify({ from_status: manuscript.current_status, to_status: 'published' })]
+    )
+
+    await client.query(
+      `INSERT INTO user_activity (user_id, activity_type, entity_type, entity_id)
+       VALUES ($1, 'manuscript_published', 'manuscripts', $2)`,
+      [editorId, manuscriptId]
+    )
+
+    await client.query('COMMIT')
+
+    const updatedResult = await client.query(
+      'SELECT id, current_status, published_at FROM manuscripts WHERE id = $1',
+      [manuscriptId]
+    )
+
+    return {
+      success: true,
+      message: 'Manuscript published successfully.',
+      manuscript: updatedResult.rows[0],
+    }
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
 }
