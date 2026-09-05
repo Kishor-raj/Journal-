@@ -1,12 +1,7 @@
 import AppRouter from './router/AppRouter'
-import { ToastProvider } from './shared/components/Toast'
 
 function App() {
-  return (
-    <ToastProvider>
-      <AppRouter />
-    </ToastProvider>
-  )
+  return <AppRouter />
 }
 
 export default App

@@ -98,9 +98,4 @@ router.get('/accepted', authenticate, requireRole('editor'), async (req, res) =>
   res.json(manuscripts)
 })
 
-router.post('/manuscripts/:id/publish', authenticate, requireRole('editor'), async (req, res) => {
-  const result = await editorialService.publishManuscript(req.params.id, req.user.uid)
-  res.json(result)
-})
-
 export default router
