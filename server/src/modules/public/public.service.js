@@ -13,6 +13,7 @@ export async function getPublishedArticles() {
       m.submission_number,
       m.submitted_at,
       m.updated_at,
+      COALESCE(p.published_at, m.updated_at) AS published_at,
       COALESCE(c.name, 'Research Article') AS category,
       COALESCE(
         json_agg(
@@ -27,9 +28,10 @@ export async function getPublishedArticles() {
     FROM manuscripts m
     LEFT JOIN categories c ON c.id = m.category_id
     LEFT JOIN manuscript_authors ma ON ma.manuscript_id = m.id
+    LEFT JOIN publications p ON p.manuscript_id = m.id
     WHERE m.current_status = 'published'
-    GROUP BY m.id, c.name
-    ORDER BY m.updated_at DESC
+    GROUP BY m.id, c.name, p.published_at
+    ORDER BY COALESCE(p.published_at, m.updated_at) DESC
   `)
   return rows
 }
@@ -47,6 +49,7 @@ export async function getFeaturedArticles(limit = 6) {
       m.keywords,
       m.submission_number,
       m.updated_at,
+      COALESCE(p.published_at, m.updated_at) AS published_at,
       COALESCE(c.name, 'Research Article') AS category,
       COALESCE(
         json_agg(
@@ -61,9 +64,10 @@ export async function getFeaturedArticles(limit = 6) {
     FROM manuscripts m
     LEFT JOIN categories c ON c.id = m.category_id
     LEFT JOIN manuscript_authors ma ON ma.manuscript_id = m.id
+    LEFT JOIN publications p ON p.manuscript_id = m.id
     WHERE m.current_status = 'published'
-    GROUP BY m.id, c.name
-    ORDER BY m.updated_at DESC
+    GROUP BY m.id, c.name, p.published_at
+    ORDER BY COALESCE(p.published_at, m.updated_at) DESC
     LIMIT $1
   `, [limit])
   return rows
