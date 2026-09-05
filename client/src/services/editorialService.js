@@ -63,3 +63,8 @@ export function handleExtension(extensionId, approved) {
 export function getAcceptedManuscripts() {
   return apiClient.get('/editorial/accepted')
 }
+
+export function publishManuscript(manuscriptId) {
+  return apiClient.post(`/editorial/manuscripts/${manuscriptId}/publish`)
+}
+
