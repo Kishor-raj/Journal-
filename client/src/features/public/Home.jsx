@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { publicService } from '../../services/publicService.js'
 
 /* ─── Static data ──────────────────────────────────────────────────────── */
 const METRICS = [
@@ -18,46 +19,23 @@ const FACTS = [
   { k: 'Founded', v: '2015' },
 ]
 
-const FEATURED = [
-  {
-    tag: 'Political theory',
-    title: 'Democratic Institutions and Public Trust in the Digital Age',
-    authors: 'Dr. Eleanor Whitfield, Prof. James Nakamura',
-    meta: 'Vol. 12, No. 1 · pp. 1–24',
-  },
-  {
-    tag: 'Sociology',
-    title: 'Urban Migration Patterns in Sub-Saharan Africa',
-    authors: 'Dr. Amara Osei',
-    meta: 'Vol. 12, No. 1 · pp. 25–48',
-  },
-  {
-    tag: 'Philosophy of education',
-    title: 'Philosophical Foundations of Contemporary Education Reform',
-    authors: 'Prof. Helena Kowalski, Dr. Marcus Singh',
-    meta: 'Vol. 12, No. 1 · pp. 49–72',
-  },
-  {
-    tag: 'Digital Governance',
-    title: 'Deliberative Governance and Policy Transparency in Digital Platforms',
-    authors: 'Dr. Arthur Pendelton, Dr. Sofia Al-Mansoor',
-    meta: 'Vol. 12, No. 1 · pp. 73–96',
-  },
-  {
-    tag: 'Environmental sociology',
-    title: 'Socioeconomic Resilience and Climate Adaptation in Coastal Regions',
-    authors: 'Dr. K. S. Raman, Dr. Elena Rostova',
-    meta: 'Vol. 12, No. 1 · pp. 97–120',
-  },
-  {
-    tag: 'Ethics & Epistemology',
-    title: 'Ethical Frameworks and AI Integration in Scholarly Research',
-    authors: 'Prof. David C. Vance, Dr. Fatima Zahra',
-    meta: 'Vol. 12, No. 1 · pp. 121–146',
-  },
-]
-
 const INDEXES = ['Scopus', 'Web of Science', 'DOAJ', 'ERIC', 'JSTOR']
+
+/** Shape an API manuscript into the card format the scroller expects */
+function toCard(m) {
+  const authorsStr = (m.authors || [])
+    .map(a => `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim())
+    .filter(Boolean)
+    .join(', ')
+  return {
+    id: m.id,
+    tag: m.category || 'Research',
+    title: m.title || '(Untitled)',
+    abstract: m.abstract || '',
+    authors: authorsStr || 'Unknown author',
+    meta: m.submission_number || '',
+  }
+}
 
 /* ─── Book3D custom element wrapper ───────────────────────────────────── */
 function Book3D() {
@@ -120,6 +98,8 @@ function FeaturedVerticalScroller({ articles }) {
     setCurrentIndex((prev) => (prev + 1) % articles.length)
   }
 
+  const currentItem = articles[currentIndex]
+
   return (
     <div
       onMouseEnter={() => setIsPaused(true)}
@@ -138,7 +118,7 @@ function FeaturedVerticalScroller({ articles }) {
           background: '#FDFCF9',
           position: 'relative',
           overflow: 'hidden',
-          minHeight: '280px',
+          minHeight: '300px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -149,38 +129,30 @@ function FeaturedVerticalScroller({ articles }) {
         onMouseLeave={() => setHoveredCard(false)}
       >
         {/* Slide viewport */}
-        <div style={{ position: 'relative', minHeight: '170px', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', minHeight: '200px', overflow: 'hidden' }}>
           {articles.map((item, idx) => {
             const isCurrent = idx === currentIndex
             const offset = (idx - currentIndex) * 100
             return (
               <div
-                key={item.title}
+                key={item.id}
                 style={{
                   position: idx === 0 ? 'relative' : 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
+                  top: 0, left: 0, width: '100%',
                   opacity: isCurrent ? 1 : 0,
                   transform: `translateY(${offset}%)`,
                   transition: 'transform 0.55s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.45s ease',
                   pointerEvents: isCurrent ? 'auto' : 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px',
+                  display: 'flex', flexDirection: 'column', gap: '12px',
                 }}
               >
+                {/* Tag + counter */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                   <span style={{
-                    fontFamily: 'Jost, sans-serif',
-                    fontSize: '11px',
-                    letterSpacing: '0.16em',
-                    textTransform: 'uppercase',
-                    color: '#9A7B23',
-                    fontWeight: 600,
-                    background: '#F5EFE1',
-                    padding: '3px 9px',
-                    borderRadius: '2px',
+                    fontFamily: 'Jost, sans-serif', fontSize: '11px',
+                    letterSpacing: '0.16em', textTransform: 'uppercase',
+                    color: '#9A7B23', fontWeight: 600,
+                    background: '#F5EFE1', padding: '3px 9px', borderRadius: '2px',
                   }}>
                     {item.tag}
                   </span>
@@ -189,29 +161,39 @@ function FeaturedVerticalScroller({ articles }) {
                   </span>
                 </div>
 
+                {/* Title — links to exact article on current-issue page */}
                 <Link
-                  to="/current-issue"
-                  style={{
-                    textDecoration: 'none',
-                    color: 'inherit',
-                  }}
+                  to={`/current-issue#article-${item.id}`}
+                  style={{ textDecoration: 'none', color: 'inherit' }}
                 >
                   <h3 style={{
                     fontFamily: "'Cormorant Garamond', serif",
                     fontWeight: 600,
-                    fontSize: 'clamp(22px, 2.6vw, 28px)',
-                    lineHeight: 1.25,
-                    margin: 0,
-                    color: '#0B1B3A',
-                    transition: 'color 0.2s',
+                    fontSize: 'clamp(20px, 2.4vw, 27px)',
+                    lineHeight: 1.25, margin: 0,
+                    color: '#0B1B3A', transition: 'color 0.2s',
                   }}>
                     {item.title}
                   </h3>
                 </Link>
 
+                {/* Authors */}
                 <div style={{ fontSize: '15px', color: '#3A4157', fontStyle: 'italic' }}>
                   {item.authors}
                 </div>
+
+                {/* 2-line abstract preview */}
+                {item.abstract && (
+                  <p style={{
+                    fontSize: '13.5px', lineHeight: 1.65, color: '#6B7288', margin: 0,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}>
+                    {item.abstract}
+                  </p>
+                )}
               </div>
             )
           })}
@@ -220,75 +202,35 @@ function FeaturedVerticalScroller({ articles }) {
         {/* Card Footer & Meta */}
         <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #EFEBE1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12.5px', color: '#6B7288', letterSpacing: '0.03em' }}>
-            {articles[currentIndex]?.meta}
+            {currentItem?.meta}
           </div>
           <Link
-            to="/current-issue"
+            to={`/current-issue#article-${currentItem?.id}`}
             style={{
-              fontFamily: 'Jost, sans-serif',
-              fontSize: '12px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: '#9A7B23',
-              textDecoration: 'none',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
+              fontFamily: 'Jost, sans-serif', fontSize: '12px',
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              color: '#9A7B23', textDecoration: 'none', fontWeight: 600,
+              display: 'flex', alignItems: 'center', gap: '6px',
             }}
           >
-            Read article <span>→</span>
+            Read full article <span>→</span>
           </Link>
         </div>
       </div>
 
-      {/* Vertical list / Up-to-Bottom selector */}
+      {/* Vertical list / selector */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
           <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6B7288' }}>
             Scroll Articles ({currentIndex + 1}/{articles.length})
           </span>
           <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              type="button"
-              onClick={handlePrev}
-              title="Previous Article"
-              aria-label="Previous article"
-              style={{
-                width: '32px',
-                height: '32px',
-                border: '1px solid #E6E1D6',
-                background: '#FFFFFF',
-                color: '#0B1B3A',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '13px',
-                transition: 'all 0.15s',
-              }}
-            >
+            <button type="button" onClick={handlePrev} title="Previous Article" aria-label="Previous article"
+              style={{ width: '32px', height: '32px', border: '1px solid #E6E1D6', background: '#FFFFFF', color: '#0B1B3A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', transition: 'all 0.15s' }}>
               ▲
             </button>
-            <button
-              type="button"
-              onClick={handleNext}
-              title="Next Article"
-              aria-label="Next article"
-              style={{
-                width: '32px',
-                height: '32px',
-                border: '1px solid #E6E1D6',
-                background: '#FFFFFF',
-                color: '#0B1B3A',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '13px',
-                transition: 'all 0.15s',
-              }}
-            >
+            <button type="button" onClick={handleNext} title="Next Article" aria-label="Next article"
+              style={{ width: '32px', height: '32px', border: '1px solid #E6E1D6', background: '#FFFFFF', color: '#0B1B3A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', transition: 'all 0.15s' }}>
               ▼
             </button>
           </div>
@@ -299,48 +241,37 @@ function FeaturedVerticalScroller({ articles }) {
             const isSelected = idx === currentIndex
             return (
               <button
-                key={item.title}
+                key={item.id}
                 type="button"
                 onClick={() => setCurrentIndex(idx)}
                 style={{
                   textAlign: 'left',
                   border: `1px solid ${isSelected ? '#C4A24C' : '#E6E1D6'}`,
                   background: isSelected ? '#FAF7EE' : '#FFFFFF',
-                  padding: '11px 16px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
+                  padding: '11px 16px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '12px',
                   transition: 'all 0.2s',
                   boxShadow: isSelected ? '0 2px 8px rgba(196, 162, 76, 0.15)' : 'none',
                 }}
               >
-                <span
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: '17px',
-                    fontWeight: 600,
-                    color: isSelected ? '#9A7B23' : '#8C94A6',
-                    minWidth: '24px',
-                  }}
-                >
-                  0{idx + 1}
+                <span style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: '17px', fontWeight: 600,
+                  color: isSelected ? '#9A7B23' : '#8C94A6',
+                  minWidth: '24px',
+                }}>
+                  {String(idx + 1).padStart(2, '0')}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: isSelected ? '#9A7B23' : '#8C94A6', marginBottom: '1px' }}>
                     {item.tag}
                   </div>
-                  <div
-                    style={{
-                      fontFamily: "'Cormorant Garamond', serif",
-                      fontWeight: 600,
-                      fontSize: '14.5px',
-                      color: isSelected ? '#0B1B3A' : '#475569',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
+                  <div style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontWeight: 600, fontSize: '14.5px',
+                    color: isSelected ? '#0B1B3A' : '#475569',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
                     {item.title}
                   </div>
                 </div>
@@ -358,6 +289,16 @@ function FeaturedVerticalScroller({ articles }) {
 
 /* ─── Page ─────────────────────────────────────────────────────────────── */
 export default function Home() {
+  const [featured, setFeatured] = useState([])
+  const [loadingFeatured, setLoadingFeatured] = useState(true)
+
+  useEffect(() => {
+    publicService.getFeaturedArticles(6)
+      .then(data => setFeatured((data || []).map(toCard)))
+      .catch(() => setFeatured([]))
+      .finally(() => setLoadingFeatured(false))
+  }, [])
+
   return (
     <>
       {/* ── Hero ────────────────────────────────────────────────────────── */}
@@ -473,7 +414,18 @@ export default function Home() {
             </div>
             <TextLink to="/current-issue" style={{ whiteSpace: 'nowrap' }}>View all</TextLink>
           </div>
-          <FeaturedVerticalScroller articles={FEATURED} />
+
+          {loadingFeatured ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', fontFamily: 'Jost, sans-serif', color: '#8C94A6', fontSize: '14px', letterSpacing: '0.08em' }}>
+              Loading articles…
+            </div>
+          ) : featured.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', fontFamily: 'Jost, sans-serif', color: '#8C94A6', fontSize: '14px', letterSpacing: '0.06em' }}>
+              No published articles yet. Check back soon.
+            </div>
+          ) : (
+            <FeaturedVerticalScroller articles={featured} />
+          )}
         </div>
       </section>
 
@@ -483,11 +435,8 @@ export default function Home() {
           maxWidth: 'var(--layout-max)',
           margin: '0 auto',
           padding: 'clamp(44px, 6vw, 66px) var(--layout-pad)',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '28px 48px',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          display: 'flex', flexWrap: 'wrap', gap: '28px 48px',
+          alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div>
             <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '14px' }}>
@@ -514,17 +463,11 @@ export default function Home() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '20px' }}>
           {INDEXES.map(ix => (
             <div key={ix} style={{
-              height: '74px',
-              border: '1px solid #E6E1D6',
+              height: '74px', border: '1px solid #E6E1D6',
               backgroundImage: 'repeating-linear-gradient(135deg, rgba(11,27,58,0.05) 0 2px, transparent 2px 9px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: 'ui-monospace, Menlo, monospace',
-              fontSize: '11px',
-              letterSpacing: '0.1em',
-              color: '#6B7288',
-              textTransform: 'uppercase',
+              fontSize: '11px', letterSpacing: '0.1em', color: '#6B7288', textTransform: 'uppercase',
             }}>
               {ix}
             </div>
@@ -544,16 +487,11 @@ function HoverLink({ to, bg, hoverBg, textColor, children, style = {} }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        fontFamily: 'Jost, sans-serif',
-        fontSize: '14px',
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
-        background: h ? hoverBg : bg,
-        color: textColor,
-        cursor: 'pointer',
-        textDecoration: 'none',
-        transition: 'background 0.15s',
-        display: 'inline-block',
+        fontFamily: 'Jost, sans-serif', fontSize: '14px',
+        letterSpacing: '0.06em', textTransform: 'uppercase',
+        background: h ? hoverBg : bg, color: textColor,
+        cursor: 'pointer', textDecoration: 'none',
+        transition: 'background 0.15s', display: 'inline-block',
         ...style,
       }}
     >
@@ -570,17 +508,12 @@ function OutlineLink({ to, children, style = {} }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        fontFamily: 'Jost, sans-serif',
-        fontSize: '14px',
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
+        fontFamily: 'Jost, sans-serif', fontSize: '14px',
+        letterSpacing: '0.06em', textTransform: 'uppercase',
         border: `1px solid ${h ? '#C4A24C' : 'rgba(255,255,255,0.35)'}`,
-        color: h ? '#E3CB86' : '#FFFFFF',
-        cursor: 'pointer',
-        textDecoration: 'none',
-        transition: 'border-color 0.15s, color 0.15s',
-        display: 'inline-block',
-        ...style,
+        color: h ? '#E3CB86' : '#FFFFFF', cursor: 'pointer',
+        textDecoration: 'none', transition: 'border-color 0.15s, color 0.15s',
+        display: 'inline-block', ...style,
       }}
     >
       {children}
@@ -596,18 +529,13 @@ function TextLink({ to, children, style = {} }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        fontFamily: 'Jost, sans-serif',
-        fontSize: '13.5px',
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
+        fontFamily: 'Jost, sans-serif', fontSize: '13.5px',
+        letterSpacing: '0.08em', textTransform: 'uppercase',
         color: h ? '#9A7B23' : '#0B1B3A',
         borderBottom: '1px solid #C4A24C',
-        display: 'inline-block',
-        paddingBottom: '4px',
-        cursor: 'pointer',
-        textDecoration: 'none',
-        transition: 'color 0.15s',
-        ...style,
+        display: 'inline-block', paddingBottom: '4px',
+        cursor: 'pointer', textDecoration: 'none',
+        transition: 'color 0.15s', ...style,
       }}
     >
       {children}

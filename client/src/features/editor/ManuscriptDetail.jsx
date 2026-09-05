@@ -10,6 +10,7 @@ import {
   setReviewerDeadline,
   getExtensionRequests,
   handleExtension,
+  publishManuscript,
 } from '../../services/editorialService'
 import { getFileAccess } from '../../services/fileService'
 import { formatDate } from '../../shared/utils/formatDate'
@@ -134,6 +135,8 @@ export default function ManuscriptDetail() {
   const [deadlineEdits, setDeadlineEdits] = useState({})
   const [loading, setLoading] = useState(true)
   const [fileError, setFileError] = useState('')
+  const [publishSuccess, setPublishSuccess] = useState(false)
+  const [publishing, setPublishing] = useState(false)
 
   const openFile = async (fileId, accessType) => {
     try {
@@ -203,6 +206,23 @@ export default function ManuscriptDetail() {
       )
     } catch {
       // silent
+    }
+  }
+
+  const handlePublish = async () => {
+    if (!window.confirm('Are you sure you want to publish this manuscript to the current issue and home page?')) {
+      return
+    }
+    setPublishing(true)
+    try {
+      await publishManuscript(id)
+      setManuscript((prev) => prev ? { ...prev, current_status: 'published' } : prev)
+      setPublishSuccess(true)
+      setTimeout(() => setPublishSuccess(false), 5000)
+    } catch (err) {
+      alert(err.message || 'Failed to publish manuscript')
+    } finally {
+      setPublishing(false)
     }
   }
 
@@ -282,12 +302,33 @@ export default function ManuscriptDetail() {
             <Button variant="ghost" onClick={() => navigate('/editor/queue')}>
               Back to Queue
             </Button>
-            <Button variant="primary" onClick={() => navigate(`/editor/manuscripts/${id}/decision`)}>
-              Make Decision
-            </Button>
+            {manuscript.current_status === 'accepted' ? (
+              <Button variant="primary" onClick={handlePublish} disabled={publishing}>
+                {publishing ? 'Publishing...' : 'Publish Article 🚀'}
+              </Button>
+            ) : manuscript.current_status !== 'published' ? (
+              <Button variant="primary" onClick={() => navigate(`/editor/manuscripts/${id}/decision`)}>
+                Make Decision
+              </Button>
+            ) : null}
           </div>
         }
       />
+
+      {publishSuccess && (
+        <div style={{
+          background: '#EAF7F0',
+          border: '1px solid var(--color-success)',
+          color: 'var(--color-success)',
+          padding: '12px 16px',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '20px',
+          fontSize: 'var(--text-sm)',
+          fontWeight: 500,
+        }}>
+          ✅ Manuscript published successfully! The status has been updated to <strong>Published</strong> and is now live on the website.
+        </div>
+      )}
 
       <div style={styles.section}>
         <h2 style={styles.sectionTitle}>Manuscript Details</h2>

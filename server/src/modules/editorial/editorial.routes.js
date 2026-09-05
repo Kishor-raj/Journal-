@@ -93,9 +93,15 @@ router.patch('/extensions/:id', authenticate, requireRole('editor'), async (req,
   res.json(result)
 })
 
+router.post('/manuscripts/:id/publish', authenticate, requireRole('editor'), async (req, res) => {
+  const result = await editorialService.publishManuscript(req.params.id, req.user.uid)
+  res.json(result)
+})
+
 router.get('/accepted', authenticate, requireRole('editor'), async (req, res) => {
   const manuscripts = await editorialService.getAcceptedManuscripts(req.user.uid)
   res.json(manuscripts)
 })
 
 export default router
+

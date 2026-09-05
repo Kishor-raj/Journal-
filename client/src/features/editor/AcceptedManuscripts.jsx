@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../../shared/components/PageHeader'
-import { getAcceptedManuscripts } from '../../services/editorialService'
+import { getAcceptedManuscripts, publishManuscript } from '../../services/editorialService'
 import { formatDate } from '../../shared/utils/formatDate'
 
 const styles = {
@@ -82,7 +82,9 @@ const styles = {
     borderTop: '1px solid var(--color-rule-grey)',
     paddingTop: '12px',
     display: 'flex',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '8px',
   },
   emptyState: {
     textAlign: 'center',
@@ -105,7 +107,7 @@ const styles = {
   },
 }
 
-function ManuscriptCard({ manuscript, onClick }) {
+function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -152,21 +154,42 @@ function ManuscriptCard({ manuscript, onClick }) {
       <div style={styles.cardDivider}>
         <button
           style={{
-            background: hovered ? 'var(--color-vellum)' : 'none',
-            border: `1px solid ${hovered ? 'var(--color-citation-gold)' : 'var(--color-rule-grey)'}`,
-            borderRadius: 'var(--radius-sm)',
-            padding: '6px 14px',
+            background: 'none',
+            border: 'none',
+            color: 'var(--color-text-muted)',
             fontSize: 'var(--text-sm)',
-            fontFamily: 'var(--font-body)',
-            fontWeight: 500,
-            color: 'var(--color-ink-navy)',
             cursor: 'pointer',
-            transition: 'background 150ms ease, border-color 150ms ease',
+            padding: 0,
+            textDecoration: 'underline',
           }}
           type="button"
           onClick={(e) => { e.stopPropagation(); onClick() }}
         >
-          View Details →
+          View Details
+        </button>
+
+        <button
+          style={{
+            background: '#0B1B3A',
+            border: '1px solid #C4A24C',
+            borderRadius: 'var(--radius-sm)',
+            padding: '6px 14px',
+            fontSize: 'var(--text-sm)',
+            fontFamily: 'var(--font-body)',
+            fontWeight: 600,
+            color: '#FFFFFF',
+            cursor: isPublishing ? 'not-allowed' : 'pointer',
+            transition: 'background 150ms ease',
+            opacity: isPublishing ? 0.7 : 1,
+          }}
+          type="button"
+          disabled={isPublishing}
+          onClick={(e) => {
+            e.stopPropagation()
+            onPublish(manuscript.id)
+          }}
+        >
+          {isPublishing ? 'Publishing...' : 'Publish to Issue 🚀'}
         </button>
       </div>
     </div>
@@ -177,13 +200,37 @@ export default function AcceptedManuscripts() {
   const navigate = useNavigate()
   const [manuscripts, setManuscripts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [publishingId, setPublishingId] = useState(null)
+  const [successMessage, setSuccessMessage] = useState('')
 
-  useEffect(() => {
+  const loadManuscripts = () => {
     getAcceptedManuscripts()
       .then((data) => setManuscripts(Array.isArray(data) ? data : []))
       .catch(() => setManuscripts([]))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadManuscripts()
   }, [])
+
+  const handlePublish = async (id) => {
+    if (!window.confirm('Are you sure you want to publish this manuscript to the current issue and home page?')) {
+      return
+    }
+    setPublishingId(id)
+    try {
+      await publishManuscript(id)
+      setSuccessMessage('Manuscript successfully published! It is now visible on the Home and Current Issue pages.')
+      loadManuscripts()
+      setTimeout(() => setSuccessMessage(''), 5000)
+    } catch (err) {
+      alert(err.message || 'Failed to publish manuscript')
+    } finally {
+      setPublishingId(null)
+    }
+  }
+
 
   return (
     <div style={styles.page}>
@@ -191,6 +238,21 @@ export default function AcceptedManuscripts() {
         title="Accepted Manuscripts"
         subtitle="Manuscripts that have been accepted by the editorial team"
       />
+
+      {successMessage && (
+        <div style={{
+          background: '#EAF7F0',
+          border: '1px solid var(--color-success)',
+          color: 'var(--color-success)',
+          padding: '12px 16px',
+          borderRadius: 'var(--radius-md)',
+          marginTop: '16px',
+          fontSize: 'var(--text-sm)',
+          fontWeight: 500,
+        }}>
+          {successMessage}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '60px 0' }}>
@@ -207,7 +269,7 @@ export default function AcceptedManuscripts() {
       ) : (
         <>
           <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: '8px' }}>
-            {manuscripts.length} manuscript{manuscripts.length !== 1 ? 's' : ''} accepted
+            {manuscripts.length} manuscript{manuscripts.length !== 1 ? 's' : ''} ready to publish
           </div>
           <div style={styles.grid}>
             {manuscripts.map((m) => (
@@ -215,6 +277,8 @@ export default function AcceptedManuscripts() {
                 key={m.id}
                 manuscript={m}
                 onClick={() => navigate(`/editor/manuscripts/${m.id}`)}
+                onPublish={handlePublish}
+                isPublishing={publishingId === m.id}
               />
             ))}
           </div>
@@ -223,3 +287,4 @@ export default function AcceptedManuscripts() {
     </div>
   )
 }
+

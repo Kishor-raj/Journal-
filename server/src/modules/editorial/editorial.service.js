@@ -1257,22 +1257,66 @@ export async function handleExtension(extensionId, editorId, approved) {
   }
 }
 
+export async function publishManuscript(manuscriptId, editorId) {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    const manuscriptResult = await client.query(
+      'SELECT id, current_status FROM manuscripts WHERE id = $1 FOR UPDATE',
+      [manuscriptId]
+    )
+
+    if (manuscriptResult.rowCount === 0) {
+      throw new AppError('Manuscript not found', 404)
+    }
+
+    const manuscript = manuscriptResult.rows[0]
+
+    if (manuscript.current_status !== 'accepted') {
+      throw new AppError(`Cannot publish manuscript with status '${manuscript.current_status}'. Must be 'accepted'.`, 400)
+    }
+
+    const previousStatus = manuscript.current_status
+    const newStatus = 'published'
+
+    await client.query(
+      `UPDATE manuscripts SET current_status = $1, updated_at = now() WHERE id = $2`,
+      [newStatus, manuscriptId]
+    )
+
+    await client.query(
+      `INSERT INTO manuscript_status_history (manuscript_id, from_status, to_status, changed_by)
+       VALUES ($1, $2, $3, $4)`,
+      [manuscriptId, previousStatus, newStatus, editorId]
+    )
+
+    await client.query('COMMIT')
+
+    return { success: true, manuscript_id: manuscriptId, status: newStatus }
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+}
+
 export async function getAcceptedManuscripts() {
   const result = await pool.query(
-    `SELECT DISTINCT ON (m.id)
-            m.id,
+    `SELECT m.id,
             m.title,
             m.submission_number,
             m.created_at AS submission_date,
-            ms.status    AS current_status,
-            ms.created_at AS acceptance_date,
-            u.display_name AS primary_author,
-            u.email        AS author_email
+            m.current_status,
+            m.updated_at AS acceptance_date,
+            COALESCE(u.display_name, TRIM(CONCAT(u.first_name, ' ', u.last_name)), u.email) AS primary_author,
+            u.email AS author_email
      FROM manuscripts m
-     JOIN manuscript_status_history ms ON ms.manuscript_id = m.id
-     JOIN users u ON u.id = m.submitting_user_id
-     WHERE ms.status = 'accepted'
-     ORDER BY m.id, ms.created_at DESC`
+     LEFT JOIN users u ON u.id = m.submitted_by
+     WHERE m.current_status = 'accepted'
+     ORDER BY m.updated_at DESC`
   )
   return result.rows
 }
+

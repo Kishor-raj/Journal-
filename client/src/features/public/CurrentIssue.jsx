@@ -1,6 +1,8 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { publicService } from '../../services/publicService.js'
 
+/* ─── Static journal info (keep as-is, only articles come from DB) ─── */
 const JOURNAL_INFO = {
   name: 'International Journal of Intelligent Digital Computing Research (IJIDCR)',
   shortName: 'IJIDCR',
@@ -12,48 +14,7 @@ const JOURNAL_INFO = {
   issnPrint: 'To be Assigned',
   doiPrefix: '10.xxxx/ijidcr.2026',
   status: 'Published · Open Access',
-  pageRange: 'Pages 1–38',
-  publishedDate: '15 March 2026',
 }
-
-const ARTICLES = [
-  {
-    id: 1,
-    tag: 'Original Research Article',
-    title: 'Deep Learning Frameworks for Real-Time Threat Detection in Cloud Computing Infrastructures',
-    authors: 'Dr. Eleanor Whitfield, Prof. James Nakamura, Dr. S. Selvam',
-    affiliation: 'Department of Computer Science & Cybersecurity Research Group',
-    abstract: 'This research paper proposes an adaptive deep learning architecture for real-time anomaly detection and mitigation across multi-tenant cloud environments. By integrating recurrent neural networks with temporal graph embeddings, the proposed model demonstrates significant throughput gains and reduced false-positive rates under high network congestion.',
-    pages: 'pp. 1–12',
-    doi: '10.xxxx/ijidcr.2026.0101',
-    status: 'Published',
-    citation: 'Whitfield, E., Nakamura, J., & Selvam, S. (2026). Deep Learning Frameworks for Real-Time Threat Detection in Cloud Computing Infrastructures. International Journal of Intelligent Digital Computing Research (IJIDCR), 1(1), 1–12.',
-  },
-  {
-    id: 2,
-    tag: 'Review Article',
-    title: 'Advances in Blockchain-Enabled Decentralized Identity Management: A Systematic Review',
-    authors: 'Dr. Amara Osei, Dr. V. Isakkirajan, Prof. Dr. Dinesh Senduraja',
-    affiliation: 'Centre for Distributed Ledger Technologies & Information Systems',
-    abstract: 'A comprehensive review of cryptographic schemes, self-sovereign identity (SSI) primitives, and consensus protocols in decentralized identity architectures. This paper systematically evaluates scalability challenges, zero-knowledge proofs, interoperability standards, and privacy-preserving mechanisms across contemporary enterprise deployments.',
-    pages: 'pp. 13–24',
-    doi: '10.xxxx/ijidcr.2026.0102',
-    status: 'Published',
-    citation: 'Osei, A., Isakkirajan, V., & Senduraja, D. (2026). Advances in Blockchain-Enabled Decentralized Identity Management: A Systematic Review. International Journal of Intelligent Digital Computing Research (IJIDCR), 1(1), 13–24.',
-  },
-  {
-    id: 3,
-    tag: 'Original Research Article',
-    title: 'Optimized Convolutional Neural Networks for Edge Computing and IoT Sensor Networks',
-    authors: 'Dr. M. Ilayaraja, Prof. Helena Kowalski, Dr. Arul Kumar Natarajan',
-    affiliation: 'Intelligent Systems & Ubiquitous Computing Laboratory',
-    abstract: 'This study introduces a lightweight quantized Convolutional Neural Network (CNN) pipeline tailored for resource-constrained microcontrollers in Internet of Things (IoT) sensor arrays. Empirical benchmarks illustrate 94.8% classification accuracy alongside a 62% reduction in memory footprint and latency compared to standard baselines.',
-    pages: 'pp. 25–38',
-    doi: '10.xxxx/ijidcr.2026.0103',
-    status: 'Published',
-    citation: 'Ilayaraja, M., Kowalski, H., & Natarajan, A. K. (2026). Optimized Convolutional Neural Networks for Edge Computing and IoT Sensor Networks. International Journal of Intelligent Digital Computing Research (IJIDCR), 1(1), 25–38.',
-  },
-]
 
 const HIGHLIGHTS = [
   'Rigorous Double-Blind Peer Review',
@@ -63,6 +24,33 @@ const HIGHLIGHTS = [
   'Immediate Open Access Distribution',
 ]
 
+/** Shape raw API manuscript into the format ArticleItem expects */
+function toArticle(m, idx) {
+  const authorsStr = (m.authors || [])
+    .map(a => `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim())
+    .filter(Boolean)
+    .join(', ')
+
+  // Build APA-style citation
+  const yearStr = m.updated_at ? new Date(m.updated_at).getFullYear() : JOURNAL_INFO.year
+  const citation = `${authorsStr} (${yearStr}). ${m.title}. ${JOURNAL_INFO.shortName}, ${JOURNAL_INFO.volume.replace('Volume ', '')}(${JOURNAL_INFO.issue.replace('Issue ', '')}). ${m.submission_number || ''}`
+
+  return {
+    id: m.id,
+    tag: m.category || 'Research Article',
+    title: m.title || '(Untitled)',
+    authors: authorsStr || 'Unknown author',
+    affiliation: '',
+    abstract: m.abstract || '',
+    keywords: (m.keywords || []).join(', '),
+    pages: m.submission_number || `Article ${idx + 1}`,
+    doi: '',
+    status: 'Published',
+    citation,
+  }
+}
+
+/* ─── ActionButton ─────────────────────────────────────────────────────── */
 function ActionButton({ children, onClick, active }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -91,10 +79,20 @@ function ActionButton({ children, onClick, active }) {
   )
 }
 
-function ArticleItem({ article }) {
+/* ─── ArticleItem ──────────────────────────────────────────────────────── */
+function ArticleItem({ article, highlight }) {
   const [showAbstract, setShowAbstract] = useState(false)
   const [showCite, setShowCite] = useState(false)
   const [copied, setCopied] = useState(false)
+  const ref = useRef(null)
+
+  // Auto-open abstract when navigated to via hash
+  useEffect(() => {
+    if (highlight && ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setShowAbstract(true)
+    }
+  }, [highlight])
 
   const handleCopyCite = () => {
     navigator.clipboard?.writeText(article.citation)
@@ -103,7 +101,19 @@ function ArticleItem({ article }) {
   }
 
   return (
-    <article style={{ padding: '30px 0', borderBottom: '1px solid #E6E1D6' }}>
+    <article
+      id={`article-${article.id}`}
+      ref={ref}
+      style={{
+        padding: '30px 0',
+        borderBottom: '1px solid #E6E1D6',
+        scrollMarginTop: '130px',
+        transition: 'background 0.3s',
+        background: highlight ? '#FFFDF5' : 'transparent',
+        borderLeft: highlight ? '3px solid #C4A24C' : '3px solid transparent',
+        paddingLeft: highlight ? '20px' : '0',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
         <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23' }}>
           {article.tag}
@@ -113,31 +123,39 @@ function ArticleItem({ article }) {
         </div>
       </div>
 
-      <h3
-        style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontWeight: 600,
-          fontSize: 'clamp(21px, 2.4vw, 26px)',
-          lineHeight: 1.25,
-          color: '#0B1B3A',
-          margin: '0 0 8px',
-        }}
-      >
+      <h3 style={{
+        fontFamily: "'Cormorant Garamond', serif",
+        fontWeight: 600,
+        fontSize: 'clamp(21px, 2.4vw, 26px)',
+        lineHeight: 1.25, color: '#0B1B3A', margin: '0 0 8px',
+      }}>
         {article.title}
       </h3>
 
       <div style={{ fontSize: '15px', color: '#3A4157', fontStyle: 'italic', marginBottom: '4px' }}>
         {article.authors}
       </div>
-      <div style={{ fontSize: '13.5px', color: '#6B7288', marginBottom: '14px' }}>
-        {article.affiliation}
-      </div>
+      {article.affiliation && (
+        <div style={{ fontSize: '13.5px', color: '#6B7288', marginBottom: '14px' }}>
+          {article.affiliation}
+        </div>
+      )}
 
-      <p style={{ fontSize: '15.5px', lineHeight: 1.75, color: '#3A4157', margin: '0 0 16px', maxWidth: '780px' }}>
-        {article.abstract}
-      </p>
+      {/* Abstract always shown */}
+      {article.abstract && (
+        <p style={{ fontSize: '15.5px', lineHeight: 1.75, color: '#3A4157', margin: '0 0 16px', maxWidth: '780px' }}>
+          {article.abstract}
+        </p>
+      )}
 
-      {/* Interactive Expandable Panels */}
+      {/* Keywords */}
+      {article.keywords && (
+        <div style={{ fontSize: '13px', color: '#6B7288', marginBottom: '14px' }}>
+          <strong style={{ color: '#0B1B3A' }}>Keywords:</strong> {article.keywords}
+        </div>
+      )}
+
+      {/* Expandable Abstract Panel (structured) */}
       {showAbstract && (
         <div style={{ background: '#F8F9FB', border: '1px solid #EAECEF', borderLeft: '3px solid #C4A24C', padding: '16px 20px', marginBottom: '16px', fontSize: '14.5px', lineHeight: 1.7, color: '#3A4157' }}>
           <strong style={{ display: 'block', color: '#0B1B3A', marginBottom: '6px' }}>Structured Abstract:</strong>
@@ -145,6 +163,7 @@ function ArticleItem({ article }) {
         </div>
       )}
 
+      {/* Citation panel */}
       {showCite && (
         <div style={{ background: '#F8F9FB', border: '1px solid #EAECEF', padding: '16px 20px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -154,16 +173,7 @@ function ArticleItem({ article }) {
             <button
               type="button"
               onClick={handleCopyCite}
-              style={{
-                fontFamily: 'Jost, sans-serif',
-                fontSize: '11.5px',
-                background: '#0B1B3A',
-                color: '#FFFFFF',
-                border: 'none',
-                padding: '5px 11px',
-                borderRadius: '2px',
-                cursor: 'pointer',
-              }}
+              style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', background: '#0B1B3A', color: '#FFFFFF', border: 'none', padding: '5px 11px', borderRadius: '2px', cursor: 'pointer' }}
             >
               {copied ? '✓ Copied' : 'Copy'}
             </button>
@@ -174,38 +184,44 @@ function ArticleItem({ article }) {
         </div>
       )}
 
-      {/* Action Footer */}
+      {/* Action footer */}
       <div style={{ display: 'flex', gap: '18px', alignItems: 'center', fontFamily: 'Jost, sans-serif', fontSize: '12.5px', color: '#6B7288', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
-        <span>DOI: {article.doi}</span>
-        <span style={{ color: '#E6E1D6' }}>|</span>
+        {article.doi && <span>DOI: {article.doi}</span>}
+        {article.doi && <span style={{ color: '#E6E1D6' }}>|</span>}
         <ActionButton onClick={() => setShowAbstract(!showAbstract)} active={showAbstract}>
           {showAbstract ? 'Hide Abstract' : 'Abstract'}
         </ActionButton>
         <ActionButton onClick={() => setShowCite(!showCite)} active={showCite}>
           {showCite ? 'Close Cite' : 'Cite'}
         </ActionButton>
-        <a
-          href={`#download-pdf-${article.id}`}
-          onClick={e => { e.preventDefault(); alert(`Downloading PDF: ${article.title}`) }}
-          style={{
-            color: '#0B1B3A',
-            borderBottom: '1px solid #C4A24C',
-            textDecoration: 'none',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            fontSize: '12.5px',
-            padding: '3px 5px',
-          }}
-        >
-          Full Text (PDF) ↗
-        </a>
       </div>
     </article>
   )
 }
 
+/* ─── Page ──────────────────────────────────────────────────────────────── */
 export default function CurrentIssue() {
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
   const [downloadHovered, setDownloadHovered] = useState(false)
+  const location = useLocation()
+
+  // Fetch real published articles
+  useEffect(() => {
+    publicService.getCurrentIssueArticles()
+      .then(data => setArticles((data || []).map((m, i) => toArticle(m, i))))
+      .catch(() => setArticles([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Determine which article to highlight from URL hash
+  const highlightId = location.hash.startsWith('#article-')
+    ? location.hash.replace('#article-', '')
+    : null
+
+  const pageRange = articles.length > 0
+    ? `${articles.length} article${articles.length !== 1 ? 's' : ''}`
+    : ''
 
   return (
     <>
@@ -256,28 +272,22 @@ export default function CurrentIssue() {
             type="button"
             onMouseEnter={() => setDownloadHovered(true)}
             onMouseLeave={() => setDownloadHovered(false)}
-            onClick={() => alert('Downloading complete issue PDF (Volume 1, Issue 1)...')}
+            onClick={() => alert('Downloading complete issue PDF...')}
             style={{
-              fontFamily: 'Jost, sans-serif',
-              fontSize: '13px',
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
+              fontFamily: 'Jost, sans-serif', fontSize: '13px',
+              letterSpacing: '0.06em', textTransform: 'uppercase',
               border: '1px solid #0B1B3A',
               color: downloadHovered ? '#FFFFFF' : '#0B1B3A',
               background: downloadHovered ? '#0B1B3A' : 'transparent',
-              padding: '14px',
-              textAlign: 'center',
-              marginTop: '16px',
-              cursor: 'pointer',
-              width: '100%',
-              fontWeight: 600,
-              transition: 'background 0.15s, color 0.15s',
+              padding: '14px', textAlign: 'center',
+              marginTop: '16px', cursor: 'pointer', width: '100%',
+              fontWeight: 600, transition: 'background 0.15s, color 0.15s',
             }}
           >
             Download Full Issue (PDF)
           </button>
 
-          {/* Journal Metadata Block */}
+          {/* Journal Metadata */}
           <div style={{ marginTop: '24px', background: '#FFFFFF', border: '1px solid #E6E1D6', padding: '20px 22px' }}>
             <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23', marginBottom: '12px', borderBottom: '1px solid #E6E1D6', paddingBottom: '8px' }}>
               Journal Information
@@ -311,7 +321,7 @@ export default function CurrentIssue() {
 
         {/* Table of Contents / Article listing */}
         <div>
-          {/* Welcome Message */}
+          {/* Welcome message */}
           <div style={{ marginBottom: '32px' }}>
             <p style={{ fontSize: 'clamp(15.5px, 1.5vw, 17px)', lineHeight: 1.8, color: '#3A4157', margin: 0 }}>
               Welcome to the <strong>Current Issue</strong> section of Asgard Research Publication. This page provides full access to the latest published articles from our peer-reviewed journals. The current issue features original research articles, comprehensive review papers, and scholarly contributions from leading researchers worldwide.
@@ -324,14 +334,28 @@ export default function CurrentIssue() {
               Table of Contents
             </div>
             <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12px', letterSpacing: '0.1em', color: '#6B7288' }}>
-              {JOURNAL_INFO.pageRange}
+              {pageRange}
             </div>
           </div>
 
           {/* Articles */}
-          {ARTICLES.map(article => (
-            <ArticleItem key={article.id} article={article} />
-          ))}
+          {loading ? (
+            <div style={{ padding: '48px 0', textAlign: 'center', fontFamily: 'Jost, sans-serif', color: '#8C94A6', fontSize: '14px', letterSpacing: '0.08em' }}>
+              Loading articles…
+            </div>
+          ) : articles.length === 0 ? (
+            <div style={{ padding: '48px 0', textAlign: 'center', fontFamily: 'Jost, sans-serif', color: '#8C94A6', fontSize: '14px', letterSpacing: '0.06em' }}>
+              No published articles yet. Check back soon.
+            </div>
+          ) : (
+            articles.map(article => (
+              <ArticleItem
+                key={article.id}
+                article={article}
+                highlight={article.id === highlightId}
+              />
+            ))
+          )}
 
           {/* Citation Info */}
           <div style={{ marginTop: '44px', background: '#F8F9FB', border: '1px solid #EAECEF', borderLeft: '4px solid #C4A24C', padding: '22px 24px' }}>
@@ -339,22 +363,16 @@ export default function CurrentIssue() {
               Citation Information
             </h4>
             <p style={{ fontSize: '14.5px', lineHeight: 1.7, color: '#3A4157', margin: 0 }}>
-              When citing articles published in this issue, authors should include: <em>Author(s), Article Title, Journal Name (IJIDCR), Volume, Issue, Year, Page Numbers, and DOI (where available).</em>
+              When citing articles published in this issue, authors should include: <em>Author(s), Article Title, Journal Name ({JOURNAL_INFO.shortName}), Volume, Issue, Year, Page Numbers, and DOI (where available).</em>
             </p>
           </div>
 
           {/* Submit & Archive CTA */}
           <div style={{
-            marginTop: '36px',
-            background: '#0B1B3A',
-            color: '#FFFFFF',
-            padding: '28px 30px',
-            borderRadius: '4px',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '20px 32px',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            marginTop: '36px', background: '#0B1B3A', color: '#FFFFFF',
+            padding: '28px 30px', borderRadius: '4px',
+            display: 'flex', flexWrap: 'wrap', gap: '20px 32px',
+            alignItems: 'center', justifyContent: 'space-between',
           }}>
             <div>
               <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '6px' }}>
@@ -371,16 +389,10 @@ export default function CurrentIssue() {
               <Link
                 to="/guidelines"
                 style={{
-                  fontFamily: 'Jost, sans-serif',
-                  fontSize: '13px',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  background: '#C4A24C',
-                  color: '#071228',
-                  fontWeight: 600,
-                  padding: '13px 23px',
-                  borderRadius: '2px',
-                  textDecoration: 'none',
+                  fontFamily: 'Jost, sans-serif', fontSize: '13px',
+                  letterSpacing: '0.06em', textTransform: 'uppercase',
+                  background: '#C4A24C', color: '#071228', fontWeight: 600,
+                  padding: '13px 23px', borderRadius: '2px', textDecoration: 'none',
                   transition: 'background 0.15s',
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = '#E3CB86'}
@@ -391,15 +403,10 @@ export default function CurrentIssue() {
               <Link
                 to="/archives"
                 style={{
-                  fontFamily: 'Jost, sans-serif',
-                  fontSize: '13px',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  border: '1px solid rgba(255,255,255,0.35)',
-                  color: '#FFFFFF',
-                  padding: '13px 23px',
-                  borderRadius: '2px',
-                  textDecoration: 'none',
+                  fontFamily: 'Jost, sans-serif', fontSize: '13px',
+                  letterSpacing: '0.06em', textTransform: 'uppercase',
+                  border: '1px solid rgba(255,255,255,0.35)', color: '#FFFFFF',
+                  padding: '13px 23px', borderRadius: '2px', textDecoration: 'none',
                   transition: 'border-color 0.15s, color 0.15s',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#C4A24C'; e.currentTarget.style.color = '#E3CB86' }}
@@ -414,7 +421,6 @@ export default function CurrentIssue() {
           <div style={{ marginTop: '28px', fontSize: '13.5px', color: '#6B7288', lineHeight: 1.6, borderTop: '1px solid #E6E1D6', paddingTop: '16px' }}>
             <strong>Disclaimer:</strong> The opinions and findings expressed in published articles are those of the respective authors and do not necessarily reflect the official views or policies of the Editorial Board or Asgard Research Publication.
           </div>
-
         </div>
       </div>
     </>
