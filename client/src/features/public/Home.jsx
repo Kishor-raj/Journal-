@@ -55,12 +55,13 @@ function Book3D() {
   }, [])
 
   return (
-    <div style={{ width: '96%', margin: '0 auto', padding: '12px', transform: 'translateX(3%)' }}>
+    <div style={{ width: '100%', maxWidth: '520px', margin: '0 auto', padding: '0px', boxSizing: 'border-box' }}>
       <div style={{
         aspectRatio: '3 / 4',
         background: 'transparent',
         position: 'relative',
         overflow: 'hidden',
+        width: '100%',
       }}>
         {/* book-3d is a custom element registered by book-3d.js */}
         {/* eslint-disable-next-line react/no-unknown-property */}
@@ -302,39 +303,213 @@ export default function Home() {
   return (
     <>
       {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section style={{ background: '#0B1B3A', color: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
+      <section style={{
+        background: 'radial-gradient(ellipse at 75% 50%, #112852 0%, #0B1B3A 55%, #061024 100%)',
+        color: '#FFFFFF',
+        position: 'relative',
+        overflow: 'hidden',
+        borderBottom: '1px solid rgba(196, 162, 76, 0.15)',
+      }}>
+        {/* Subtle background glow / vignette */}
+        <div style={{
+          position: 'absolute',
+          top: '-20%',
+          right: '-10%',
+          width: '60vw',
+          height: '60vw',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(29, 62, 122, 0.35) 0%, rgba(11, 27, 58, 0) 70%)',
+          pointerEvents: 'none',
+        }} />
+
         <div style={{
           maxWidth: 'var(--layout-max)',
           margin: '0 auto',
           padding: '0 var(--layout-pad)',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
           minHeight: 'calc(100vh - 148px)',
           alignItems: 'center',
           gap: 'clamp(32px, 4vw, 64px)',
+          position: 'relative',
+          zIndex: 1,
         }}>
-          <div style={{ padding: 'clamp(44px, 7vw, 76px) 0' }}>
-            <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12.5px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '26px' }}>
-              Asgard Publications · Volume 12, Number 1
+          {/* Left Column: Hero Content */}
+          <div style={{ padding: 'clamp(44px, 6vw, 76px) 0' }}>
+            {/* Journal Badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 18px',
+              borderRadius: '9999px',
+              border: '1px solid rgba(196, 162, 76, 0.45)',
+              background: 'rgba(7, 18, 40, 0.45)',
+              backdropFilter: 'blur(8px)',
+              marginBottom: '28px',
+            }}>
+              <span style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: '#C4A24C',
+                display: 'inline-block',
+                boxShadow: '0 0 8px #C4A24C',
+              }} />
+              <span style={{
+                fontFamily: 'Jost, sans-serif',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: '#E3CB86',
+              }}>
+                ASGARD PUBLICATIONS · VOLUME 12, NUMBER 1
+              </span>
             </div>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(34px, 6.4vw, 66px)', lineHeight: 1.04, margin: '0 0 26px', letterSpacing: '-0.01em' }}>
-              Journal of Contemporary Research
+
+            {/* Hero Heading */}
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontWeight: 600,
+              fontSize: 'clamp(40px, 5.2vw, 68px)',
+              lineHeight: 1.08,
+              margin: '0 0 24px',
+              letterSpacing: '-0.01em',
+              color: '#FFFFFF',
+            }}>
+              Journal of<br />
+              Contemporary<br />
+              Research
             </h1>
-            <div style={{ width: '92px', height: '2px', background: '#C4A24C', marginBottom: '26px' }} />
-            <p style={{ fontSize: 'clamp(16.5px, 1.6vw, 19px)', lineHeight: 1.65, color: '#C3CBDC', maxWidth: '560px', margin: '0 0 38px' }}>
+
+            {/* Gold Divider */}
+            <div style={{
+              width: '76px',
+              height: '2px',
+              background: 'linear-gradient(90deg, #C4A24C 0%, rgba(196, 162, 76, 0.3) 100%)',
+              marginBottom: '26px',
+            }} />
+
+            {/* Description */}
+            <p style={{
+              fontFamily: "'Spectral', Georgia, serif",
+              fontSize: 'clamp(15.5px, 1.45vw, 18px)',
+              lineHeight: 1.68,
+              color: '#C3CBDC',
+              maxWidth: '520px',
+              margin: '0 0 36px',
+              fontWeight: 400,
+            }}>
               Advancing scholarly discourse through rigorous double-blind peer review in the humanities, social sciences, and interdisciplinary studies.
             </p>
-            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-              <HoverLink to="/guidelines" bg="#C4A24C" hoverBg="#E3CB86" textColor="#071228" style={{ padding: '16px 32px' }}>
-                Submit a manuscript
+
+            {/* Hero Buttons */}
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '44px' }}>
+              <HoverLink
+                to="/guidelines"
+                bg="linear-gradient(135deg, #D4AF37 0%, #C4A24C 50%, #B38E2F 100%)"
+                hoverBg="linear-gradient(135deg, #E3CB86 0%, #D4AF37 100%)"
+                textColor="#071228"
+                style={{
+                  padding: '14px 28px',
+                  borderRadius: '4px',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  letterSpacing: '0.08em',
+                  boxShadow: '0 4px 16px rgba(196, 162, 76, 0.28)',
+                }}
+              >
+                SUBMIT A MANUSCRIPT →
               </HoverLink>
-              <OutlineLink to="/current-issue" style={{ padding: '16px 32px' }}>
-                Read current issue
+              <OutlineLink
+                to="/current-issue"
+                style={{
+                  padding: '14px 28px',
+                  borderRadius: '4px',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  letterSpacing: '0.08em',
+                  background: 'rgba(11, 27, 58, 0.4)',
+                  borderColor: 'rgba(255, 255, 255, 0.25)',
+                }}
+              >
+                READ CURRENT ISSUE
               </OutlineLink>
+            </div>
+
+            {/* Trust / Journal Features */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'clamp(14px, 2vw, 24px)',
+              flexWrap: 'wrap',
+              paddingTop: '20px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  background: '#C4A24C',
+                  color: '#0B1B3A',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                }}>✓</span>
+                <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '13px', color: '#C3CBDC', letterSpacing: '0.01em' }}>
+                  Double-Blind Peer Review
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  background: '#C4A24C',
+                  color: '#0B1B3A',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                }}>✓</span>
+                <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '13px', color: '#C3CBDC', letterSpacing: '0.01em' }}>
+                  Open Access (CC BY 4.0)
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  background: '#C4A24C',
+                  color: '#0B1B3A',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                }}>✓</span>
+                <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '13px', color: '#C3CBDC', letterSpacing: '0.01em' }}>
+                  No APC Charges
+                </span>
+              </div>
             </div>
           </div>
 
-          <div style={{ padding: 'clamp(0px, 3vw, 60px) 0 clamp(44px, 6vw, 60px)' }}>
+          {/* Right Column: 3D Journal Cover */}
+          <div style={{
+            padding: 'clamp(10px, 3vw, 40px) 0 clamp(30px, 4vw, 50px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
             <Book3D />
           </div>
         </div>
@@ -487,11 +662,14 @@ function HoverLink({ to, bg, hoverBg, textColor, children, style = {} }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        fontFamily: 'Jost, sans-serif', fontSize: '14px',
+        fontFamily: 'Jost, sans-serif', fontSize: '13px',
         letterSpacing: '0.06em', textTransform: 'uppercase',
         background: h ? hoverBg : bg, color: textColor,
         cursor: 'pointer', textDecoration: 'none',
-        transition: 'background 0.15s', display: 'inline-block',
+        transition: 'all 0.25s ease', display: 'inline-flex',
+        alignItems: 'center', justifyContent: 'center',
+        filter: h ? 'brightness(1.08)' : 'none',
+        transform: h ? 'translateY(-1px)' : 'translateY(0)',
         ...style,
       }}
     >
@@ -508,12 +686,15 @@ function OutlineLink({ to, children, style = {} }) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        fontFamily: 'Jost, sans-serif', fontSize: '14px',
+        fontFamily: 'Jost, sans-serif', fontSize: '13px',
         letterSpacing: '0.06em', textTransform: 'uppercase',
         border: `1px solid ${h ? '#C4A24C' : 'rgba(255,255,255,0.35)'}`,
-        color: h ? '#E3CB86' : '#FFFFFF', cursor: 'pointer',
-        textDecoration: 'none', transition: 'border-color 0.15s, color 0.15s',
-        display: 'inline-block', ...style,
+        background: h ? 'rgba(196, 162, 76, 0.12)' : 'transparent',
+        color: h ? '#FFFFFF' : '#FFFFFF', cursor: 'pointer',
+        textDecoration: 'none', transition: 'all 0.25s ease',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        transform: h ? 'translateY(-1px)' : 'translateY(0)',
+        ...style,
       }}
     >
       {children}

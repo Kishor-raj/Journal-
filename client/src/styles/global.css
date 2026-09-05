@@ -11,6 +11,9 @@
 html {
   -webkit-font-smoothing: antialiased;
   scroll-behavior: smooth;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -18,6 +21,10 @@ body {
   color: var(--color-ink-body);
   background-color: var(--color-vellum);
   line-height: 1.6;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
 }
 
 a {
@@ -44,6 +51,9 @@ img {
   display: flex;
   flex-direction: column;
   background: var(--color-vellum);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* The header/footer/nav styles are now fully inline in PublicLayout.jsx  */
