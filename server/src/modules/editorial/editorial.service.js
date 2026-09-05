@@ -1314,9 +1314,10 @@ export async function getAcceptedManuscripts() {
             u.email AS author_email
      FROM manuscripts m
      LEFT JOIN users u ON u.id = m.submitted_by
-     WHERE m.current_status = 'accepted'
+     WHERE m.current_status IN ('accepted', 'published')
      ORDER BY m.updated_at DESC`
   )
   return result.rows
 }
+
 
