@@ -48,7 +48,9 @@ export default function PublicLayout() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 940)
+    // Keep the full navigation on one row; use the compact menu before the
+    // journal title and navigation would need to wrap.
+    const handleResize = () => setIsMobile(window.innerWidth < 1920)
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -69,7 +71,7 @@ export default function PublicLayout() {
         letterSpacing: '0.04em',
       }}>
         <div style={{
-          maxWidth: 'var(--layout-max)',
+          maxWidth: '1920px',
           margin: '0 auto',
           padding: '9px var(--layout-pad)',
           display: 'flex',
@@ -100,54 +102,47 @@ export default function PublicLayout() {
         boxShadow: '0 1px 0 rgba(11,27,58,0.03)',
       }}>
         <div style={{
-          maxWidth: 'var(--layout-max)',
+          maxWidth: '1720px',
           margin: '0 auto',
-          padding: '14px var(--layout-pad)',
+          padding: '10px var(--layout-pad)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px 32px',
-          flexWrap: 'wrap',
-          minHeight: '92px',
+          justifyContent: 'flex-start',
+          gap: isMobile ? '12px' : '16px',
+          flexWrap: 'nowrap',
+          minHeight: '116px',
         }}>
           {/* Logo */}
           <div
             onClick={() => { navigate('/'); handleNavClick() }}
-            style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', minWidth: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', minWidth: 0, flex: isMobile ? '1 1 auto' : '0 0 auto' }}
           >
             <img
               src="/asgard-logo.jpg"
               alt="Asgard Publications"
-              style={{ height: 'clamp(42px, 8.8vw, 64px)', width: 'auto', mixBlendMode: 'multiply' }}
+              style={{ height: 'clamp(62.35px, 6.954vw, 93.52px)', width: 'auto', mixBlendMode: 'multiply', flexShrink: 0, transform: 'translateX(-72px)' }}
             />
-            <div style={{ display: 'grid', gap: '2px', lineHeight: 1.05 }}>
-              <span style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: 'clamp(23px, 3.2vw, 34px)',
-                fontWeight: 700,
-                color: '#0B1B3A',
-                letterSpacing: '0.04em',
-                whiteSpace: 'nowrap',
-              }}>
-                ASGARD
-              </span>
+            <div style={{ minWidth: 0, transform: 'translateX(-72px)' }}>
               <span style={{
                 fontFamily: 'Jost, sans-serif',
-                fontSize: 'clamp(10px, 1.25vw, 13px)',
-                fontWeight: 600,
-                color: '#C4A24C',
-                letterSpacing: '0.15em',
+                fontSize: 'clamp(16.79px, 1.199vw, 19.18px)',
+                fontWeight: 700,
+                color: '#0B1B3A',
+                letterSpacing: '0.045em',
+                whiteSpace: isMobile ? 'normal' : 'nowrap',
                 textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
+                lineHeight: 1.2,
+                display: 'block',
               }}>
-                Research Foundation
+                International Journal of Intelligent Digital Computing Research{' '}
+                <span style={{ color: '#C4A24C' }}>(IJIDCR)</span>
               </span>
             </div>
           </div>
 
           {/* Desktop nav */}
           {!isMobile && (
-            <nav style={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <nav style={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'nowrap', justifyContent: 'flex-end', minWidth: 0, flexShrink: 0 }}>
               {NAV_ITEMS.map(({ label, to }) => (
                 <NavLink
                   key={to}
@@ -155,11 +150,11 @@ export default function PublicLayout() {
                   end={to === '/'}
                   style={({ isActive }) => ({
                     fontFamily: 'Jost, sans-serif',
-                    fontSize: '13.5px',
+                    fontSize: '19.18px',
                     letterSpacing: '0.01em',
                     whiteSpace: 'nowrap',
                     color: isActive ? '#0B1B3A' : '#4B5468',
-                    padding: '10px 10px',
+                    padding: '8px 5px',
                     cursor: 'pointer',
                     borderBottom: isActive ? '2px solid #C4A24C' : '2px solid transparent',
                     fontWeight: isActive ? 500 : 400,
@@ -170,24 +165,37 @@ export default function PublicLayout() {
                   {label}
                 </NavLink>
               ))}
-              <div style={{ width: '1px', height: '26px', background: '#E6E1D6', margin: '0 12px' }} />
+              <div style={{ width: '1px', height: '22px', background: '#E6E1D6', margin: '0 7px' }} />
               <Link
                 to="/login"
                 style={{
                   fontFamily: 'Jost, sans-serif',
-                  fontSize: '13px',
+                  fontSize: '17.99px',
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
-                  color: '#0B1B3A',
-                  padding: '11px 17px',
-                  border: '1px solid #0B1B3A',
+                  color: '#FFFFFF',
+                  padding: '12px 18px',
+                  border: '1px solid #D7B967',
+                  borderRadius: '999px',
+                  background: 'linear-gradient(135deg, #D7B967 0%, #B88B28 100%)',
+                  boxShadow: '0 4px 12px rgba(184,139,40,0.32)',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   textDecoration: 'none',
-                  transition: 'background 0.15s, color 0.15s',
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  transition: 'transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#0B1B3A'; e.currentTarget.style.color = '#FFFFFF' }}
-                onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = '#0B1B3A' }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #E5CD83 0%, #C49635 100%)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 7px 16px rgba(184,139,40,0.42)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #D7B967 0%, #B88B28 100%)'
+                  e.currentTarget.style.transform = ''
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(184,139,40,0.32)'
+                }}
               >
                 Login
               </Link>
@@ -215,7 +223,7 @@ export default function PublicLayout() {
                 <div style={{ width: '20px', height: '2px', background: '#0B1B3A' }} />
                 <div style={{ width: '20px', height: '2px', background: '#C4A24C' }} />
               </div>
-              <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '12px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#0B1B3A' }}>
+              <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '14.39px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#0B1B3A' }}>
                 {menuOpen ? 'Close' : 'Menu'}
               </span>
             </button>
@@ -234,7 +242,7 @@ export default function PublicLayout() {
                 style={({ isActive }) => ({
                   display: 'block',
                   fontFamily: 'Jost, sans-serif',
-                  fontSize: '16px',
+                  fontSize: '21.58px',
                   letterSpacing: '0.04em',
                   color: isActive ? '#0B1B3A' : '#4B5468',
                   padding: '15px 4px 15px 14px',
@@ -254,7 +262,7 @@ export default function PublicLayout() {
                 onClick={handleNavClick}
                 style={{
                 fontFamily: 'Jost, sans-serif',
-                fontSize: '13.5px',
+                fontSize: '16.19px',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: '#0B1B3A',
