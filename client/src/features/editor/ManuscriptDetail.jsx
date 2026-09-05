@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Button from '../../shared/components/Button'
 import StatusBadge from '../../shared/components/StatusBadge'
+import Modal from '../../shared/components/Modal'
 import Table from '../../shared/components/Table'
 import PageHeader from '../../shared/components/PageHeader'
 import {
@@ -10,7 +11,9 @@ import {
   setReviewerDeadline,
   getExtensionRequests,
   handleExtension,
+  publishManuscript,
 } from '../../services/editorialService'
+import { useToast } from '../../shared/components/Toast'
 import { getFileAccess } from '../../services/fileService'
 import { formatDate } from '../../shared/utils/formatDate'
 
@@ -128,12 +131,15 @@ const styles = {
 export default function ManuscriptDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const toast = useToast()
   const [manuscript, setManuscript] = useState(null)
   const [assignments, setAssignments] = useState([])
   const [extensions, setExtensions] = useState([])
   const [deadlineEdits, setDeadlineEdits] = useState({})
   const [loading, setLoading] = useState(true)
   const [fileError, setFileError] = useState('')
+  const [confirmPublishOpen, setConfirmPublishOpen] = useState(false)
+  const [publishing, setPublishing] = useState(false)
 
   const openFile = async (fileId, accessType) => {
     try {
@@ -203,6 +209,24 @@ export default function ManuscriptDetail() {
       )
     } catch {
       // silent
+    }
+  }
+
+  const handlePublish = async () => {
+    setPublishing(true)
+    try {
+      const result = await publishManuscript(id)
+      setManuscript((prev) => ({
+        ...prev,
+        current_status: 'published',
+        published_at: result?.manuscript?.published_at || new Date().toISOString(),
+      }))
+      toast(result?.message || 'Manuscript published successfully.', 'success')
+      setConfirmPublishOpen(false)
+    } catch (err) {
+      toast(err?.message || 'Failed to publish manuscript.', 'error')
+    } finally {
+      setPublishing(false)
     }
   }
 
@@ -282,9 +306,16 @@ export default function ManuscriptDetail() {
             <Button variant="ghost" onClick={() => navigate('/editor/queue')}>
               Back to Queue
             </Button>
-            <Button variant="primary" onClick={() => navigate(`/editor/manuscripts/${id}/decision`)}>
-              Make Decision
-            </Button>
+            {manuscript.current_status === 'accepted' && (
+              <Button variant="primary" onClick={() => setConfirmPublishOpen(true)}>
+                Publish
+              </Button>
+            )}
+            {manuscript.current_status !== 'accepted' && manuscript.current_status !== 'published' && (
+              <Button variant="primary" onClick={() => navigate(`/editor/manuscripts/${id}/decision`)}>
+                Make Decision
+              </Button>
+            )}
           </div>
         }
       />
@@ -308,6 +339,12 @@ export default function ManuscriptDetail() {
             <div style={styles.metaLabel}>Status</div>
             <div style={styles.metaValue}>{manuscript.current_status}</div>
           </div>
+          {manuscript.current_status === 'published' && (
+            <div style={styles.metaItem}>
+              <div style={styles.metaLabel}>Published</div>
+              <div style={styles.metaValue}>{formatDate(manuscript.published_at) || '—'}</div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -462,6 +499,29 @@ export default function ManuscriptDetail() {
           })
         )}
       </div>
+
+      <Modal
+        isOpen={confirmPublishOpen}
+        onClose={() => setConfirmPublishOpen(false)}
+        title="Publish Manuscript?"
+        variant="confirmation"
+      >
+        <p style={{ margin: '0 0 12px', color: 'var(--color-ink-black)', fontSize: 'var(--text-sm)' }}>
+          This will mark <strong>{manuscript.title || 'the manuscript'}</strong> as Published and
+          make it eligible for public publication areas.
+        </p>
+        <p style={{ margin: '0 0 20px', color: 'var(--color-ink-black)', fontSize: 'var(--text-sm)' }}>
+          This action should only be performed after the final publication requirements have been completed.
+        </p>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <Button variant="secondary" size="sm" onClick={() => setConfirmPublishOpen(false)} disabled={publishing}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" loading={publishing} onClick={handlePublish}>
+            Publish
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }
