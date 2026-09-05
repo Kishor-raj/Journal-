@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import StatusBadge from '../../shared/components/StatusBadge'
 import Button from '../../shared/components/Button'
 import Tabs from '../../shared/components/Tabs'
-import { getManuscript } from './services/manuscriptService'
+import { getManuscript, getMyCertificate } from './services/manuscriptService'
 import { formatDate, formatDateTime } from '../../shared/utils/formatDate'
 
 const TABS = [
@@ -337,6 +337,10 @@ export default function ManuscriptDetail() {
               </div>
             </div>
           )}
+
+          {manuscript.current_status === 'published' && (
+            <PublicationCertificateSection manuscriptId={manuscript.id} />
+          )}
         </>
       )}
 
@@ -400,6 +404,68 @@ export default function ManuscriptDetail() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function PublicationCertificateSection({ manuscriptId }) {
+  const [cert, setCert] = useState(null)
+  const [state, setState] = useState({ loading: true, error: '' })
+
+  useEffect(() => {
+    let active = true
+    getMyCertificate(manuscriptId)
+      .then((data) => { if (active) { setCert(data); setState({ loading: false, error: '' }) } })
+      .catch(() => { if (active) setState({ loading: false, error: 'Certificate is not available yet.' }) })
+    return () => { active = false }
+  }, [manuscriptId])
+
+  return (
+    <div style={styles.section}>
+      <h2 style={styles.sectionTitle}>Certificate of Publication</h2>
+      <div style={styles.declarationsBox}>
+        {state.loading ? (
+          <div style={styles.emptyText}>Loading certificate...</div>
+        ) : state.error ? (
+          <div style={styles.emptyText}>{state.error}</div>
+        ) : cert ? (
+          <>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: '#0B1B3A', marginBottom: '4px' }}>
+              {cert.certificate_number}
+            </div>
+            <div style={styles.authorMeta}>
+              {cert.journal_name} · Vol. {cert.volume}, Issue {cert.issue}, {cert.publication_year}
+              {cert.doi ? ` · ${cert.doi}` : ''}
+            </div>
+            {cert.status === 'active' ? (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
+                {cert.download_url && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => window.open(cert.download_url, '_blank', 'noopener,noreferrer')}
+                  >
+                    ⬇ Download Certificate PDF
+                  </Button>
+                )}
+                {cert.verification_url && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => window.open(cert.verification_url, '_blank', 'noopener,noreferrer')}
+                  >
+                    🔍 Verify Certificate
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div style={{ ...styles.emptyText, marginTop: '8px' }}>
+                {cert.status === 'revoked' ? 'This certificate has been revoked.' : 'Your certificate is being prepared. Please check back shortly.'}
+              </div>
+            )}
+          </>
+        ) : null}
+      </div>
     </div>
   )
 }

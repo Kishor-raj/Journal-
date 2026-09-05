@@ -14,6 +14,7 @@ export const NotificationEvents = Object.freeze({
   REVIEW_SUBMITTED_CONFIRMATION: 'review_submitted_confirmation',
   MANUSCRIPT_WITHDRAWAL_CONFIRMATION: 'manuscript_withdrawal_confirmation',
   REVISION_SUBMITTED: 'revision_submitted',
+  PUBLICATION_CERTIFICATE: 'publication_certificate',
 })
 
 export const NotificationStatus = Object.freeze({
@@ -48,6 +49,7 @@ export const EventKeys = Object.freeze({
   reviewSubmitted: (manuscriptId, reviewId) => `review-submitted:${manuscriptId}:${reviewId}`,
   manuscriptWithdrawn: (manuscriptId) => `manuscript:${manuscriptId}:withdrawn`,
   revisionSubmitted: (manuscriptId, revisionId) => `revision:${manuscriptId}:${revisionId}`,
+  publicationCertificate: (manuscriptId, authorId) => `manuscript:${manuscriptId}:certificate:${authorId}`,
 })
 
 export function isPermanentEmailError(errorMessage) {

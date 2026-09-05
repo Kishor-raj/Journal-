@@ -14,6 +14,7 @@ import Archives from '../features/public/Archives'
 import PublicationEthics from '../features/public/PublicationEthics'
 import Contact from '../features/public/Contact'
 import Search from '../features/public/Search'
+import CertificateVerify from '../features/public/CertificateVerify'
 import Login from '../features/public/Login'
 import AuthCallback from '../features/public/AuthCallback'
 
@@ -84,6 +85,7 @@ function AppRouter() {
         <Route path="/ethics" element={<PublicationEthics />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/verify/:token" element={<CertificateVerify />} />
       </Route>
 
       <Route element={<AuthLayout />}>
