@@ -55,7 +55,7 @@ function Book3D() {
   }, [])
 
   return (
-    <div style={{ width: '124.8%', margin: '0 auto', padding: '12px', transform: 'translateX(18%)' }}>
+    <div style={{ width: '96%', margin: '0 auto', padding: '12px', transform: 'translateX(3%)' }}>
       <div style={{
         aspectRatio: '3 / 4',
         background: 'transparent',
@@ -138,7 +138,7 @@ function FeaturedVerticalScroller({ articles }) {
                 key={item.id}
                 style={{
                   position: idx === 0 ? 'relative' : 'absolute',
-                  top: 0, left: 0,  h: '100%',
+                  top: 0, left: 0, width: '100%',
                   opacity: isCurrent ? 1 : 0,
                   transform: `translateY(${offset}%)`,
                   transition: 'transform 0.55s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.45s ease',
@@ -178,7 +178,7 @@ function FeaturedVerticalScroller({ articles }) {
                 </Link>
 
                 {/* Authors */}
-                <div style={{ fontSize:'15px', color: '#3A4157', fontStyle: 'italic' }}>
+                <div style={{ fontSize: '15px', color: '#3A4157', fontStyle: 'italic' }}>
                   {item.authors}
                 </div>
 
@@ -302,144 +302,40 @@ export default function Home() {
   return (
     <>
       {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section style={{
-        background: 'radial-gradient(ellipse at 80% 30%, #152E63 0%, #0B1B3A 45%, #050D1C 100%)',
-        color: '#FFFFFF',
-        position: 'relative',
-        overflow: 'hidden',
-        borderBottom: '2px solid rgba(196,162,76,0.35)',
-        minHeight: 'calc(100vh - 120px)',
-        display: 'flex',
-        alignItems: 'center',
-      }}>
-        {/* Subtle decorative background texture & ambient lighting */}
+      <section style={{ background: '#0B1B3A', color: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
         <div style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: 'radial-gradient(circle at 12% 20%, rgba(196,162,76,0.12) 0%, transparent 40%), radial-gradient(circle at 90% 75%, rgba(42,90,180,0.22) 0%, transparent 48%)',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={{
-          width: '100%',
-          maxWidth: '1440px',
+          maxWidth: 'var(--layout-max)',
           margin: '0 auto',
-          padding: 'clamp(40px, 5vw, 70px) clamp(24px, 5vw, 64px)',
+          padding: '0 var(--layout-pad)',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 480px), 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
+          minHeight: 'calc(100vh - 148px)',
           alignItems: 'center',
-          gap: 'clamp(40px, 6vw, 80px)',
-          position: 'relative',
-          zIndex: 2,
+          gap: 'clamp(32px, 4vw, 64px)',
         }}>
-          {/* Left Column: Text & CTAs */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '22px',
-            transform: 'translateX(-10%) scale(1.1)',
-            transformOrigin: 'left center',
-          }}>
-            {/* Volume Pill Tag */}
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              width: 'fit-content',
-              background: 'rgba(196,162,76,0.14)',
-              border: '1px solid rgba(196,162,76,0.45)',
-              padding: '7px 18px',
-              borderRadius: '24px',
-              fontFamily: 'Jost, sans-serif',
-              fontSize: '13.5px',
-              letterSpacing: '0.16em',
-              textTransform: 'uppercase',
-              color: '#F3DE9C',
-              fontWeight: 600,
-              boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-            }}>
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#C4A24C', boxShadow: '0 0 8px #C4A24C' }} />
+          <div style={{ padding: 'clamp(44px, 7vw, 76px) 0' }}>
+            <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12.5px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '26px' }}>
               Asgard Publications · Volume 12, Number 1
             </div>
-
-            {/* Main Heading */}
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontWeight: 700,
-              fontSize: 'clamp(44px, 5.6vw, 74px)',
-              lineHeight: 1.05,
-              margin: '4px 0 0',
-              letterSpacing: '-0.015em',
-              color: '#FFFFFF',
-              textShadow: '0 2px 20px rgba(0,0,0,0.4)',
-            }}>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(34px, 6.4vw, 66px)', lineHeight: 1.04, margin: '0 0 26px', letterSpacing: '-0.01em' }}>
               Journal of Contemporary Research
             </h1>
-
-            {/* Golden divider accent */}
-            <div style={{ width: '110px', height: '3px', background: 'linear-gradient(90deg, #C4A24C 0%, rgba(196,162,76,0.2) 100%)', borderRadius: '2px' }} />
-
-            {/* Description */}
-            <p style={{
-              fontSize: 'clamp(17.5px, 1.7vw, 21px)',
-              lineHeight: 1.7,
-              color: '#CBD5E1',
-              maxWidth: '640px',
-              margin: 0,
-            }}>
+            <div style={{ width: '92px', height: '2px', background: '#C4A24C', marginBottom: '26px' }} />
+            <p style={{ fontSize: 'clamp(16.5px, 1.6vw, 19px)', lineHeight: 1.65, color: '#C3CBDC', maxWidth: '560px', margin: '0 0 38px' }}>
               Advancing scholarly discourse through rigorous double-blind peer review in the humanities, social sciences, and interdisciplinary studies.
             </p>
-
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '12px' }}>
-              <HoverLink to="/guidelines" bg="#C4A24C" hoverBg="#E3CB86" textColor="#071228" style={{ padding: '18px 38px', fontSize: '15.5px', fontWeight: 700, borderRadius: '4px', letterSpacing: '0.08em', boxShadow: '0 4px 18px rgba(196,162,76,0.25)' }}>
-                Submit a manuscript →
+            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+              <HoverLink to="/guidelines" bg="#C4A24C" hoverBg="#E3CB86" textColor="#071228" style={{ padding: '16px 32px' }}>
+                Submit a manuscript
               </HoverLink>
-              <OutlineLink to="/current-issue" style={{ padding: '18px 36px', fontSize: '15.5px', borderRadius: '4px', letterSpacing: '0.08em', fontWeight: 600 }}>
+              <OutlineLink to="/current-issue" style={{ padding: '16px 32px' }}>
                 Read current issue
               </OutlineLink>
             </div>
-
-            {/* Trust / Metadata micro-pills */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '20px',
-              flexWrap: 'wrap',
-              marginTop: '16px',
-              paddingTop: '20px',
-              borderTop: '1px solid rgba(255,255,255,0.14)',
-              fontFamily: 'Jost, sans-serif',
-              fontSize: '13.5px',
-              color: '#AAB8C8',
-            }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <i className="fas fa-circle-check" style={{ color: '#C4A24C', fontSize: '14px' }} /> Double-Blind Peer Review
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <i className="fas fa-circle-check" style={{ color: '#C4A24C', fontSize: '14px' }} /> Open Access (CC BY 4.0)
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <i className="fas fa-circle-check" style={{ color: '#C4A24C', fontSize: '14px' }} /> No APC Charges
-              </span>
-            </div>
           </div>
 
-          {/* Right Column: 3D Journal Cover - Enriched & Expanded */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            position: 'relative',
-            width: '100%',
-          }}>
-            <div style={{
-              width: '100%',
-              maxWidth: '480px',
-              filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.5))',
-            }}>
-              <Book3D />
-            </div>
+          <div style={{ padding: 'clamp(0px, 3vw, 60px) 0 clamp(44px, 6vw, 60px)' }}>
+            <Book3D />
           </div>
         </div>
       </section>
