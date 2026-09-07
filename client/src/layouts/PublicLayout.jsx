@@ -100,19 +100,19 @@ export default function PublicLayout() {
         top: 0,
         zIndex: 50,
         background: '#FFFFFF',
-        borderBottom: '1px solid rgba(196, 162, 76, 0.35)',
         boxShadow: '0 2px 10px rgba(196, 162, 76, 0.08), 0 1px 3px rgba(11, 27, 58, 0.04)',
         width: '100%',
         boxSizing: 'border-box',
+        paddingBottom: 'clamp(10px, 1.5vw, 20px)', // 1/4 inch extended below
       }}>
         <div style={{
           width: '100%',
           maxWidth: '100%',
           margin: '0 auto',
-          padding: '12px clamp(18px, 2.8vw, 44px)',
+          padding: '16px clamp(18px, 2.8vw, 44px) 8px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-start',
+          justifyContent: 'space-between',
           gap: 'clamp(14px, 1.8vw, 30px)',
           flexWrap: 'nowrap',
           minHeight: '88px',
@@ -124,7 +124,7 @@ export default function PublicLayout() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'clamp(10px, 1vw, 14px)',
+              gap: 'clamp(10px, 1.2vw, 16px)',
               cursor: 'pointer',
               flexShrink: 0,
               minWidth: 0,
@@ -133,192 +133,105 @@ export default function PublicLayout() {
             <img
               src="/asgard-logo.jpg"
               alt="Asgard Publications"
-              style={{ height: 'clamp(46px, 4.4vw, 60px)', width: 'auto', mixBlendMode: 'multiply', flexShrink: 0 }}
+              style={{ height: 'clamp(75px, 7vw, 95px)', width: 'auto', mixBlendMode: 'multiply', flexShrink: 0 }}
             />
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', gap: '5px', minWidth: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
               <span style={{
                 fontFamily: 'Jost, sans-serif',
-                fontSize: 'clamp(12px, 0.98vw, 14.5px)',
+                fontSize: 'clamp(13px, 1vw, 16px)',
                 fontWeight: 700,
                 color: '#0B1B3A',
-                letterSpacing: '0.03em',
+                letterSpacing: '0.04em',
                 textTransform: 'uppercase',
                 whiteSpace: 'nowrap',
               }}>
-                INTERNATIONAL JOURNAL OF INTELLIGENT DIGITAL COMPUTING RESEARCH
+                INTERNATIONAL JOURNAL OF
               </span>
               <span style={{
                 fontFamily: 'Jost, sans-serif',
-                fontSize: 'clamp(12px, 0.98vw, 14.5px)',
+                fontSize: 'clamp(13px, 1vw, 16px)',
                 fontWeight: 700,
                 color: '#C4A24C',
-                letterSpacing: '0.03em',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
                 whiteSpace: 'nowrap',
               }}>
-                (IJIDCR)
+                INTELLIGENT DIGITAL COMPUTING RESEARCH (IJIDCR)
               </span>
             </div>
           </div>
 
-          {/* Right section: Desktop nav links + Gold Rounded Login button */}
-          {!isMobile && (
-            <nav style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'clamp(2px, 0.4vw, 8px)',
-              flexWrap: 'nowrap',
-              justifyContent: 'flex-end',
-              marginLeft: 'auto',
-              flexShrink: 0,
-            }}>
-              {NAV_ITEMS.map(({ label, to }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={to === '/'}
-                  style={({ isActive }) => ({
-                    fontFamily: 'Jost, sans-serif',
-                    fontSize: 'clamp(12px, 0.92vw, 14px)',
-                    letterSpacing: '0.01em',
-                    whiteSpace: 'nowrap',
-                    color: isActive ? '#0B1B3A' : '#4B5468',
-                    padding: '8px clamp(2px, 0.3vw, 5px)',
-                    cursor: 'pointer',
-                    borderBottom: isActive ? '2.5px solid #C4A24C' : '2.5px solid transparent',
-                    fontWeight: isActive ? 600 : 500,
-                    textDecoration: 'none',
-                    transition: 'color 0.15s, border-bottom 0.15s',
-                  })}
-                >
-                  {label}
-                </NavLink>
-              ))}
-              <Link
-                to="/login"
-                style={{
-                  fontFamily: 'Jost, sans-serif',
-                  fontSize: 'clamp(12px, 0.9vw, 13.5px)',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#FFFFFF',
-                  background: 'linear-gradient(180deg, #D4AF37 0%, #C4A24C 60%, #B38E2F 100%)',
-                  padding: 'clamp(7px, 0.7vw, 9px) clamp(16px, 1.4vw, 24px)',
-                  borderRadius: '9999px',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  textDecoration: 'none',
-                  flexShrink: 0,
-                  marginLeft: 'clamp(4px, 0.5vw, 8px)',
-                  border: 'none',
-                  boxShadow: '0 2px 6px rgba(196, 162, 76, 0.35)',
-                  transition: 'all 0.2s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                  e.currentTarget.style.boxShadow = '0 4px 10px rgba(196, 162, 76, 0.45)'
-                  e.currentTarget.style.filter = 'brightness(1.05)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(196, 162, 76, 0.35)'
-                  e.currentTarget.style.filter = 'none'
-                }}
-              >
-                LOGIN
-              </Link>
-            </nav>
-          )}
-
-          {/* Mobile hamburger */}
-          {isMobile && (
-            <button
-              onClick={() => setMenuOpen(o => !o)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                border: '1px solid rgba(196, 162, 76, 0.4)',
-                padding: '9px 13px',
-                cursor: 'pointer',
-                background: '#FDFCF9',
-                borderRadius: '6px',
-                flexShrink: 0,
-                marginLeft: 'auto',
-              }}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={menuOpen}
-            >
-              <div style={{ display: 'grid', gap: '3px' }}>
-                <div style={{ width: '18px', height: '2px', background: '#0B1B3A' }} />
-                <div style={{ width: '18px', height: '2px', background: '#0B1B3A' }} />
-                <div style={{ width: '18px', height: '2px', background: '#C4A24C' }} />
-              </div>
-              <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#0B1B3A', fontWeight: 600 }}>
-                {menuOpen ? 'Close' : 'Menu'}
-              </span>
-            </button>
-          )}
-        </div>
-
-        {/* Mobile drawer */}
-        {isMobile && menuOpen && (
-          <div style={{ borderTop: '1px solid #E6E1D6', background: '#FFFFFF', padding: '10px clamp(16px, 3vw, 24px) 22px', boxSizing: 'border-box', width: '100%' }}>
+          {/* Right section: Navigation */}
+          <nav style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'clamp(3px, 0.4vw, 10px)',
+            flexWrap: 'nowrap',
+            justifyContent: 'flex-end',
+            marginLeft: 'auto',
+            flexShrink: 0,
+          }}>
             {NAV_ITEMS.map(({ label, to }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={to === '/'}
-                onClick={handleNavClick}
                 style={({ isActive }) => ({
-                  display: 'block',
                   fontFamily: 'Jost, sans-serif',
-                  fontSize: '15px',
-                  letterSpacing: '0.04em',
+                  fontSize: 'clamp(14px, 1.1vw, 16px)',
+                  letterSpacing: '0.01em',
+                  whiteSpace: 'nowrap',
                   color: isActive ? '#0B1B3A' : '#4B5468',
-                  padding: '13px 4px 13px 14px',
+                  padding: '6px clamp(3px, 0.4vw, 6px)',
                   cursor: 'pointer',
-                  borderBottom: '1px solid #EFEBE1',
-                  borderLeft: isActive ? '3px solid #C4A24C' : '2px solid transparent',
-                  fontWeight: isActive ? 600 : 400,
+                  borderBottom: isActive ? '2.5px solid #C4A24C' : '2.5px solid transparent',
+                  fontWeight: isActive ? 700 : 600,
                   textDecoration: 'none',
+                  transition: 'color 0.15s, border-bottom 0.15s',
                 })}
               >
                 {label}
               </NavLink>
             ))}
-            <div style={{ display: 'grid', gap: '10px', marginTop: '16px' }}>
-              <Link
-                to="/login"
-                onClick={handleNavClick}
-                style={{
-                  fontFamily: 'Jost, sans-serif',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: '#FFFFFF',
-                  background: 'linear-gradient(180deg, #D4AF37 0%, #C4A24C 60%, #B38E2F 100%)',
-                  padding: '11px 24px',
-                  borderRadius: '9999px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  border: 'none',
-                  boxShadow: '0 2px 6px rgba(196, 162, 76, 0.35)',
-                }}
-              >
-                LOGIN
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* Gradient rule */}
-        <div style={{ height: '2px', background: 'var(--gradient-rule)' }} />
+            <Link
+              to="/login"
+              style={{
+                fontFamily: 'Jost, sans-serif',
+                fontSize: 'clamp(14px, 1.1vw, 16px)',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#FFFFFF',
+                background: 'linear-gradient(180deg, #D4AF37 0%, #C4A24C 60%, #B38E2F 100%)',
+                padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.2vw, 20px)',
+                borderRadius: '9999px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                flexShrink: 0,
+                marginLeft: 'clamp(4px, 0.5vw, 10px)',
+                border: 'none',
+                boxShadow: '0 2px 6px rgba(196, 162, 76, 0.35)',
+                transition: 'all 0.2s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-1px)'
+                e.currentTarget.style.boxShadow = '0 4px 10px rgba(196, 162, 76, 0.45)'
+                e.currentTarget.style.filter = 'brightness(1.05)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 2px 6px rgba(196, 162, 76, 0.35)'
+                e.currentTarget.style.filter = 'none'
+              }}
+            >
+              LOGIN
+            </Link>
+          </nav>
+        </div>
       </header>
 
       {/* ── Page content ──────────────────────────────────────────────────── */}
