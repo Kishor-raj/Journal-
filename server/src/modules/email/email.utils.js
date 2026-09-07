@@ -39,7 +39,7 @@ export function renderTemplate(body, variables = {}, options = {}) {
 }
 
 export function buildAppUrl(pathname, query = {}) {
-  const base = (env.PUBLIC_APP_ORIGIN || 'http://localhost:5173').replace(/\/+$/, '')
+  const base = (env.PUBLIC_APP_ORIGIN || 'https://ijidcr-asgard.vercel.app').replace(/\/+$/, '')
   const cleanPath = String(pathname || '').startsWith('/') ? pathname : `/${pathname || ''}`
   const url = new URL(base + cleanPath)
   if (query && typeof query === 'object') {
