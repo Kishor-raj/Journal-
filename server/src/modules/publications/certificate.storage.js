@@ -43,6 +43,7 @@ export function uploadCertificatePdf({ pdfBuffer, year, submissionNumber, author
         format: 'pdf',
         folder: '',
         overwrite: true,
+        invalidate: true,
       },
       (error, result) => {
         if (error) return reject(error)
