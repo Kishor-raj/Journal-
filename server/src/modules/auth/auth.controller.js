@@ -16,6 +16,7 @@ import {
   resetPassword as resetUserPassword,
 } from './auth.service.js'
 import crypto from 'crypto'
+import { env } from '../../config/env.js'
 
 function sha256(str) {
   return crypto.createHash('sha256').update(str).digest('hex')
@@ -48,7 +49,7 @@ function getSessionCookieOptions(expires) {
 }
 
 export async function googleAuth(req, res) {
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173'
+  const clientOrigin = env.CLIENT_ORIGIN
   try {
     const { url } = getGoogleAuthUrl()
     res.redirect(url)
@@ -60,7 +61,7 @@ export async function googleAuth(req, res) {
 
 export async function googleCallback(req, res) {
   const { code, error } = req.query
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173'
+  const clientOrigin = env.CLIENT_ORIGIN
 
   if (error) {
     console.error('Google OAuth error:', error)

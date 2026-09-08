@@ -10,16 +10,54 @@ if (fs.existsSync(envPath)) {
 }
 dotenv.config()
 
+const DEFAULT_ORIGIN = 'http://localhost:5173'
+
+function toHttpsOrigin(value) {
+  if (!value) return null
+  const trimmed = String(value).trim().replace(/\/+$/, '')
+  if (!trimmed) return null
+  return trimmed.replace(/^http:/, 'https:')
+}
+
+// Derive the production app origin from the platform-provided public URL when
+// the app is not explicitly configured. Explicitly setting
+// PUBLIC_APP_ORIGIN / CLIENT_ORIGIN always wins — use this in a split
+// deployment (API on Render + frontend elsewhere) or on Hostinger.
+//
+// When no explicit origin is set, prefer the frontend host (VERCEL_URL), then
+// fall back to the platform URL (RENDER_EXTERNAL_URL) for single-host deploys.
+function resolveAppOrigin() {
+  const explicit = process.env.PUBLIC_APP_ORIGIN || process.env.CLIENT_ORIGIN
+  if (explicit) return explicit.trim().replace(/\/+$/, '')
+
+  const isProd =
+    process.env.NODE_ENV === 'production' ||
+    process.env.RENDER === 'true' ||
+    process.env.VERCEL === '1' ||
+    Boolean(process.env.RENDER_EXTERNAL_URL || process.env.VERCEL_URL)
+
+  if (!isProd) return DEFAULT_ORIGIN
+
+  const platformUrl =
+    toHttpsOrigin(process.env.VERCEL_URL) ||
+    toHttpsOrigin(process.env.RENDER_EXTERNAL_URL) ||
+    DEFAULT_ORIGIN
+
+  return platformUrl
+}
+
+const publicAppOrigin = resolveAppOrigin()
+
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: process.env.PORT || '3001',
   DATABASE_URL: process.env.DATABASE_URL,
   DATABASE_SSL: process.env.DATABASE_SSL,
   SESSION_SECRET: process.env.SESSION_SECRET,
-  CLIENT_ORIGIN: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  CLIENT_ORIGIN: publicAppOrigin,
   SERVER_ORIGIN: process.env.SERVER_ORIGIN || 'http://localhost:3001',
   AUTH_CALLBACK_ORIGIN: process.env.AUTH_CALLBACK_ORIGIN,
-  PUBLIC_APP_ORIGIN: process.env.PUBLIC_APP_ORIGIN || 'http://localhost:5173',
+  PUBLIC_APP_ORIGIN: publicAppOrigin,
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
