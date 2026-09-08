@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { publicService } from '../../services/publicService.js'
+import Button from '../../shared/components/Button'
 
 const JOURNAL_INFO = {
   name: 'International Journal of Intelligent Digital Computing Research (IJIDCR)',
@@ -40,23 +41,19 @@ function StatusCard({ status, data }) {
           </div>
           {data?.download_url && (
             <div style={{ marginTop: '18px' }}>
-              <a
-                href={data.download_url}
-                target="_blank"
-                rel="noreferrer"
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => {
+                  window.location.href = data.download_url
+                }}
                 style={{
-                  display: 'inline-block',
-                  padding: '12px 18px',
                   borderRadius: '10px',
-                  background: '#0B1B3A',
-                  color: '#FFFFFF',
-                  textDecoration: 'none',
-                  fontSize: '14px',
-                  fontWeight: 700,
+                  boxShadow: '0 8px 18px rgba(11, 27, 58, 0.14)',
                 }}
               >
                 Download PDF
-              </a>
+              </Button>
             </div>
           )}
         </>

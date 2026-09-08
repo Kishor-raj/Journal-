@@ -82,6 +82,7 @@ export default function Button({
 }) {
   const [isHovered, setIsHovered] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
+  const [isPressed, setIsPressed] = React.useState(false);
 
   const isDisabled = disabled || loading;
   const base = sizes[size] || sizes.md;
@@ -103,6 +104,11 @@ export default function Button({
   const computedColor = isDisabled ? 'var(--color-ink-muted)' : isHovered ? (hv.color || v.color) : v.color;
 
   const computedShadow = isHovered ? (hv.hoverShadow || v.hoverShadow) : v.shadow;
+  const computedTransform = isPressed
+    ? 'translateY(1px) scale(0.98)'
+    : isHovered
+    ? 'translateY(-1px)'
+    : 'translateY(0)';
 
   const focusRing = isFocused
     ? { outline: '3px solid rgba(27, 42, 74, 0.15)', outlineOffset: '2px' }
@@ -116,8 +122,18 @@ export default function Button({
         onClick={onClick}
         disabled={isDisabled}
         className={className}
+        onMouseDown={() => !isDisabled && setIsPressed(true)}
+        onMouseUp={() => setIsPressed(false)}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          setIsPressed(false);
+        }}
+        onTouchStart={() => !isDisabled && setIsPressed(true)}
+        onTouchEnd={() => setIsPressed(false)}
+        onTouchCancel={() => setIsPressed(false)}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerCancel={() => setIsPressed(false)}
         onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         style={{
@@ -128,12 +144,16 @@ export default function Button({
           fontWeight: 600,
           lineHeight: 1.3,
           cursor: isDisabled ? 'not-allowed' : 'pointer',
-          transition: 'all 0.15s ease, box-shadow 0.2s ease',
+          transition: 'transform 120ms ease, box-shadow 0.2s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+          transform: computedTransform,
+          transformOrigin: 'center',
+          willChange: 'transform',
           opacity: isDisabled ? 0.6 : 1,
           background: computedBg,
           color: computedColor,
           border: computedBorder,
           boxShadow: computedShadow,
+          touchAction: 'manipulation',
           ...base,
           ...focusRing,
           ...styleProp,
