@@ -16,6 +16,7 @@ router.get('/manuscripts/:manuscriptId/certificate/download', authenticate, asyn
   const { pdfBuffer, filename } = await publicationService.downloadMyCertificatePdf(req.params.manuscriptId, req.user.uid, req.user)
   res.setHeader('Content-Type', 'application/pdf')
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+  res.setHeader('Cache-Control', 'no-store, max-age=0')
   res.send(pdfBuffer)
 })
 

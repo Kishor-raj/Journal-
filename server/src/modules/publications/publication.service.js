@@ -1,8 +1,8 @@
 import pool from '../../config/db.js'
 import { AppError } from '../../shared/errors/AppError.js'
-import { generateToken, buildAppUrl } from '../email/email.utils.js'
+import { generateToken, buildAppUrl, buildServerUrl } from '../email/email.utils.js'
 import { renderCertificatePdf } from './certificate.renderer.js'
-import { uploadCertificatePdf, getCertificateDownloadUrl } from './certificate.storage.js'
+import { uploadCertificatePdf } from './certificate.storage.js'
 import { sendPublicationCertificate } from '../notification/manuscript-notification.service.js'
 
 const DEFAULT_VOLUME = 1
@@ -185,6 +185,28 @@ async function loadPublicationContext(manuscriptId) {
   }
 
   return { publication, manuscript: manuscriptResult.rows[0] }
+}
+
+async function loadCertificateContextByToken(token) {
+  const result = await pool.query(
+    `SELECT pc.id, pc.manuscript_id, pc.author_id, pc.certificate_number, pc.verification_token,
+            pc.status, pc.pdf_file_url, pc.cloudinary_public_id,
+            m.title AS manuscript_title, m.submission_number, m.submitted_by,
+            p.volume, p.issue, p.publication_year, p.publication_date, p.doi, p.article_url,
+            ma.first_name, ma.last_name, ma.email,
+            j.name AS journal_name, j.short_name AS journal_short_name,
+            j.publisher_name, j.issn_print, j.issn_online
+     FROM publication_certificates pc
+     JOIN manuscripts m ON m.id = pc.manuscript_id
+     JOIN publications p ON p.manuscript_id = pc.manuscript_id
+     JOIN manuscript_authors ma ON ma.id = pc.author_id
+     LEFT JOIN journals j ON j.id = m.journal_id
+     WHERE pc.verification_token = $1
+     LIMIT 1`,
+    [token]
+  )
+
+  return result.rows[0] || null
 }
 
 async function generateAndStoreCertificate({ publication, manuscript, certificate }) {
@@ -592,6 +614,43 @@ export async function downloadMyCertificatePdf(manuscriptId, userId, user = {}) 
 }
 
 /**
+ * Downloads a freshly rendered certificate PDF using the public verification token.
+ * This avoids depending on the cached Cloudinary delivery URL.
+ */
+export async function downloadPublicCertificatePdf(token) {
+  const certInfo = await loadCertificateContextByToken(token)
+  if (!certInfo) {
+    throw new AppError('Certificate not found.', 404)
+  }
+  if (certInfo.status !== 'active') {
+    throw new AppError('Certificate is not available for download.', 404)
+  }
+
+  const context = {
+    authorName: [certInfo.first_name, certInfo.last_name].filter(Boolean).join(' ').trim() || certInfo.email || 'Author',
+    articleTitle: certInfo.manuscript_title || 'Untitled Article',
+    journalName: certInfo.journal_name || certInfo.journal_short_name || 'International Journal of Intelligent Digital Computing Research',
+    journalShortName: certInfo.journal_short_name || 'IJIDCR',
+    publisherName: certInfo.publisher_name || 'IJIDCR Publishing',
+    volume: certInfo.volume || DEFAULT_VOLUME,
+    issue: certInfo.issue || DEFAULT_ISSUE,
+    year: certInfo.publication_year || new Date().getFullYear(),
+    publicationDate: certInfo.publication_date || new Date(),
+    certificateNumber: certInfo.certificate_number,
+    submissionNumber: certInfo.submission_number,
+    verificationUrl: buildAppUrl(`/verify/${certInfo.verification_token}`),
+    doi: certInfo.doi || '',
+    issn: certInfo.issn_print || certInfo.issn_online || '',
+  }
+
+  const pdfBuffer = await renderCertificatePdf(context)
+  return {
+    pdfBuffer,
+    filename: `Certificate-${certInfo.certificate_number || 'Publication'}.pdf`,
+  }
+}
+
+/**
  * Public certificate verification. Exposes public information only.
  */
 export async function getCertificateVerification(token) {
@@ -634,6 +693,7 @@ export async function getCertificateVerification(token) {
       date: row.publication_date,
       doi: row.doi,
     },
+    download_url: buildServerUrl(`/api/public/verify/${token}/download`),
     journal: {
       name: row.journal_name,
       short_name: row.journal_short_name,
