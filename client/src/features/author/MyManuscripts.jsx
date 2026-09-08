@@ -139,6 +139,21 @@ export default function MyManuscripts() {
     }
   }
 
+  const handleDownloadCertificate = (cert) => {
+    const url = cert.download_url || cert.pdf_url
+    if (!url) return
+    if (url.startsWith('data:application/pdf')) {
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `Certificate-${cert.certificate_number || 'download'}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   return (
     <div style={styles.page}>
       <PageHeader
@@ -195,7 +210,16 @@ export default function MyManuscripts() {
         {certState.loading ? (
           <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>Loading certificate...</p>
         ) : certState.error ? (
-          <p style={{ color: 'var(--color-danger)', fontSize: 'var(--text-sm)', margin: '0 0 20px' }}>{certState.error}</p>
+          <div>
+            <p style={{ color: 'var(--color-danger)', fontSize: 'var(--text-sm)', margin: '0 0 16px' }}>{certState.error}</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => certificateRow && openCertificate(certificateRow)}
+            >
+              🔄 Retry Generation
+            </Button>
+          </div>
         ) : certificate ? (
           <>
             <div style={{ marginBottom: '18px', padding: '14px 16px', border: '1px solid #C4A24C', borderRadius: 'var(--radius-sm)', background: '#FBF6EA' }}>
@@ -217,11 +241,11 @@ export default function MyManuscripts() {
                   Your certificate is ready. Download the PDF or verify it publicly using the link below.
                 </p>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  {certificate.download_url && (
+                  {(certificate.download_url || certificate.pdf_url) && (
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => window.open(certificate.download_url, '_blank', 'noopener,noreferrer')}
+                      onClick={() => handleDownloadCertificate(certificate)}
                     >
                       ⬇ Download Certificate PDF
                     </Button>
