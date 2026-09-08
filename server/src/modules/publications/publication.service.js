@@ -1,7 +1,7 @@
 import pool from '../../config/db.js'
 import { AppError } from '../../shared/errors/AppError.js'
 import { generateToken, buildAppUrl, buildServerUrl } from '../email/email.utils.js'
-import { renderCertificatePdf } from './certificate.renderer.js'
+import { renderCertificatePdf, formatCertificateName } from './certificate.renderer.js'
 import { uploadCertificatePdf } from './certificate.storage.js'
 import { sendPublicationCertificate } from '../notification/manuscript-notification.service.js'
 
@@ -17,18 +17,108 @@ function twoDigitYear(value) {
 function normalizeName(value) {
   return String(value ?? '')
     .replace(/\bundefined\b/gi, '')
+    .replace(/\bnull\b/gi, '')
     .replace(/^for\s+/i, '')
     .replace(/\s+/g, ' ')
     .trim()
 }
 
-function resolveCertificateAuthorName(author = {}) {
-  const profileDisplayName = normalizeName(author.profile_display_name)
-  const profileName = normalizeName([author.profile_first_name, author.profile_last_name].filter(Boolean).join(' '))
-  const snapshotName = normalizeName([author.first_name, author.last_name].filter(Boolean).join(' '))
-  const emailName = normalizeName(author.profile_email || author.email)
+function isGenericAuthor(name) {
+  if (!name) return true
+  const lower = String(name).trim().toLowerCase()
+  return (
+    lower === '' ||
+    lower === 'author' ||
+    lower === 'author name' ||
+    lower === 'undefined' ||
+    lower === 'null'
+  )
+}
 
-  return profileDisplayName || profileName || snapshotName || emailName.split('@')[0] || 'Author'
+export function resolveCertificateAuthorName(author = {}) {
+  if (!author) return 'Author'
+
+  // Snapshot name from manuscript_authors
+  const snapshotFirst = normalizeName(author.first_name)
+  const snapshotLast = normalizeName(author.last_name)
+  const snapshotFull = normalizeName([snapshotFirst, snapshotLast].filter(Boolean).join(' '))
+
+  // Profile name from joined user profile
+  const profileFirst = normalizeName(
+    author.profile_first_name || author.author_profile_first_name || author.user_first_name
+  )
+  const profileLast = normalizeName(
+    author.profile_last_name || author.author_profile_last_name || author.user_last_name
+  )
+  const profileFull = normalizeName([profileFirst, profileLast].filter(Boolean).join(' '))
+
+  // Profile display name
+  const profileDisplayName = normalizeName(
+    author.profile_display_name || author.author_display_name || author.display_name
+  )
+
+  // Submitter name if joined
+  const submitterFirst = normalizeName(author.submitter_first_name)
+  const submitterLast = normalizeName(author.submitter_last_name)
+  const submitterFull = normalizeName([submitterFirst, submitterLast].filter(Boolean).join(' '))
+  const submitterDisplayName = normalizeName(author.submitter_display_name)
+
+  // Explicit passed name
+  const explicitName = normalizeName(author.author_name || author.name)
+
+  // 1. Snapshot has non-generic full name with both first and last name
+  if (!isGenericAuthor(snapshotFull) && snapshotFirst && snapshotLast) {
+    return formatCertificateName(snapshotFull)
+  }
+
+  // 2. User profile has non-generic name with both first and last name
+  if (!isGenericAuthor(profileFull) && profileFirst && profileLast) {
+    return formatCertificateName(profileFull)
+  }
+
+  // 3. Submitter has non-generic name with both first and last name
+  if (!isGenericAuthor(submitterFull) && submitterFirst && submitterLast) {
+    return formatCertificateName(submitterFull)
+  }
+
+  // 4. Snapshot non-generic name (even if single name)
+  if (!isGenericAuthor(snapshotFull)) {
+    return formatCertificateName(snapshotFull)
+  }
+
+  // 5. Profile non-generic name
+  if (!isGenericAuthor(profileFull)) {
+    return formatCertificateName(profileFull)
+  }
+
+  // 6. Profile display name
+  if (!isGenericAuthor(profileDisplayName)) {
+    return formatCertificateName(profileDisplayName)
+  }
+
+  // 7. Submitter single/display name
+  if (!isGenericAuthor(submitterFull)) {
+    return formatCertificateName(submitterFull)
+  }
+  if (!isGenericAuthor(submitterDisplayName)) {
+    return formatCertificateName(submitterDisplayName)
+  }
+
+  // 8. Explicit author_name / name
+  if (!isGenericAuthor(explicitName)) {
+    return formatCertificateName(explicitName)
+  }
+
+  // 9. Derive from email username if available
+  const email = author.email || author.profile_email || author.author_profile_email
+  if (email && typeof email === 'string' && email.includes('@')) {
+    const localPart = email.split('@')[0].replace(/[._0-9-]+/g, ' ').trim()
+    if (!isGenericAuthor(localPart)) {
+      return formatCertificateName(localPart)
+    }
+  }
+
+  return 'Author'
 }
 
 /**
@@ -113,6 +203,21 @@ export async function createPublicationRow(client, { manuscriptId, editorId, vol
  * never corrupt the transaction.
  */
 export async function createCertificateRows(client, { manuscriptId, submissionNumber, publicationYear }) {
+  // Sync any authors with missing user_id or first/last name with users table
+  await client.query(`
+    UPDATE manuscript_authors ma
+    SET user_id = COALESCE(ma.user_id, u.id),
+        first_name = COALESCE(NULLIF(TRIM(ma.first_name), ''), NULLIF(TRIM(ma.first_name), 'Author'), u.first_name),
+        last_name = COALESCE(NULLIF(TRIM(ma.last_name), ''), u.last_name),
+        institution = COALESCE(NULLIF(TRIM(ma.institution), ''), u.institution),
+        department = COALESCE(NULLIF(TRIM(ma.department), ''), u.department),
+        country = COALESCE(NULLIF(TRIM(ma.country), ''), u.country),
+        orcid_id = COALESCE(ma.orcid_id, u.orcid_id)
+    FROM users u
+    WHERE ma.manuscript_id = $1
+      AND (ma.user_id = u.id OR (ma.user_id IS NULL AND LOWER(TRIM(ma.email)) = LOWER(TRIM(u.email))))
+  `, [manuscriptId])
+
   let authorsResult = await client.query(
     `SELECT id FROM manuscript_authors
      WHERE manuscript_id = $1
@@ -123,7 +228,7 @@ export async function createCertificateRows(client, { manuscriptId, submissionNu
 
   if (authors.length === 0) {
     const submitterRes = await client.query(
-      `SELECT u.id, u.first_name, u.last_name, u.email
+      `SELECT u.id, u.first_name, u.last_name, u.display_name, u.email, u.institution, u.department, u.country, u.orcid_id
        FROM manuscripts m
        JOIN users u ON u.id = m.submitted_by
        WHERE m.id = $1`,
@@ -131,18 +236,39 @@ export async function createCertificateRows(client, { manuscriptId, submissionNu
     )
     if (submitterRes.rows.length > 0) {
       const u = submitterRes.rows[0]
+      let fName = u.first_name?.trim() || ''
+      let lName = u.last_name?.trim() || ''
+      if (!fName && !lName && u.display_name) {
+        const parts = u.display_name.trim().split(/\s+/)
+        fName = parts[0] || ''
+        lName = parts.slice(1).join(' ') || ''
+      }
       const ins = await client.query(
         `INSERT INTO manuscript_authors
-           (manuscript_id, user_id, author_order, first_name, last_name, email, is_corresponding)
-         VALUES ($1, $2, 1, $3, $4, $5, true)
+           (manuscript_id, user_id, author_order, first_name, last_name, email, institution, department, country, orcid_id, is_corresponding)
+         VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, true)
          RETURNING id`,
-        [manuscriptId, u.id, u.first_name || 'Author', u.last_name || '', u.email]
+        [manuscriptId, u.id, fName || 'Author', lName || '', u.email, u.institution, u.department, u.country, u.orcid_id]
       )
       if (ins.rows[0]) {
         authors = [ins.rows[0]]
       }
     }
   }
+
+  // If single author with generic Author name, sync from manuscript submitter
+  await client.query(`
+    UPDATE manuscript_authors ma
+    SET user_id = COALESCE(ma.user_id, u.id),
+        first_name = COALESCE(NULLIF(TRIM(u.first_name), ''), ma.first_name),
+        last_name = COALESCE(NULLIF(TRIM(u.last_name), ''), ma.last_name)
+    FROM manuscripts m
+    JOIN users u ON u.id = m.submitted_by
+    WHERE ma.manuscript_id = $1
+      AND ma.manuscript_id = m.id
+      AND (ma.first_name IS NULL OR TRIM(ma.first_name) = '' OR LOWER(TRIM(ma.first_name)) = 'author')
+      AND (SELECT COUNT(*) FROM manuscript_authors sub_ma WHERE sub_ma.manuscript_id = ma.manuscript_id) = 1
+  `, [manuscriptId])
 
   const validSubNumber = submissionNumber || `SUB-${String(manuscriptId).slice(0, 8).toUpperCase()}`
   const certificateNumber = buildCertificateNumber(validSubNumber, publicationYear)
@@ -211,15 +337,21 @@ async function loadCertificateContextByToken(token) {
             m.title AS manuscript_title, m.submission_number, m.submitted_by,
             p.volume, p.issue, p.publication_year, p.publication_date, p.doi, p.article_url,
             ma.first_name, ma.last_name, ma.email,
-            u.display_name AS profile_display_name, u.first_name AS profile_first_name,
-            u.last_name AS profile_last_name, u.email AS profile_email,
+            COALESCE(u.display_name, sub.display_name) AS profile_display_name,
+            COALESCE(u.first_name, sub.first_name) AS profile_first_name,
+            COALESCE(u.last_name, sub.last_name) AS profile_last_name,
+            COALESCE(u.email, sub.email) AS profile_email,
+            sub.first_name AS submitter_first_name,
+            sub.last_name AS submitter_last_name,
+            sub.display_name AS submitter_display_name,
             j.name AS journal_name, j.short_name AS journal_short_name,
             j.publisher_name, j.issn_print, j.issn_online
      FROM publication_certificates pc
      JOIN manuscripts m ON m.id = pc.manuscript_id
      JOIN publications p ON p.manuscript_id = pc.manuscript_id
      JOIN manuscript_authors ma ON ma.id = pc.author_id
-     LEFT JOIN users u ON u.id = ma.user_id
+     LEFT JOIN users u ON u.id = ma.user_id OR (ma.user_id IS NULL AND LOWER(TRIM(u.email)) = LOWER(TRIM(ma.email)))
+     LEFT JOIN users sub ON sub.id = m.submitted_by
      LEFT JOIN journals j ON j.id = m.journal_id
      WHERE pc.verification_token = $1
      LIMIT 1`,
@@ -313,6 +445,21 @@ async function markCertificateFailed(certificateId, manuscriptId, errorMessage) 
 export async function generateCertificatesForManuscript(manuscriptId, { triggerNotifications = true } = {}) {
   const { publication, manuscript } = await loadPublicationContext(manuscriptId)
 
+  // Sync any authors with missing user_id or first/last name with users table
+  await pool.query(`
+    UPDATE manuscript_authors ma
+    SET user_id = COALESCE(ma.user_id, u.id),
+        first_name = COALESCE(NULLIF(TRIM(ma.first_name), ''), NULLIF(TRIM(ma.first_name), 'Author'), u.first_name),
+        last_name = COALESCE(NULLIF(TRIM(ma.last_name), ''), u.last_name),
+        institution = COALESCE(NULLIF(TRIM(ma.institution), ''), u.institution),
+        department = COALESCE(NULLIF(TRIM(ma.department), ''), u.department),
+        country = COALESCE(NULLIF(TRIM(ma.country), ''), u.country),
+        orcid_id = COALESCE(ma.orcid_id, u.orcid_id)
+    FROM users u
+    WHERE ma.manuscript_id = $1
+      AND (ma.user_id = u.id OR (ma.user_id IS NULL AND LOWER(TRIM(ma.email)) = LOWER(TRIM(u.email))))
+  `, [manuscriptId])
+
   // Ensure author rows exist
   const authorCheck = await pool.query(
     `SELECT id FROM manuscript_authors WHERE manuscript_id = $1`,
@@ -352,11 +499,18 @@ export async function generateCertificatesForManuscript(manuscriptId, { triggerN
   const certificateResult = await pool.query(
     `SELECT pc.id, pc.author_id, pc.certificate_number, pc.verification_token, pc.status,
             ma.user_id, ma.first_name, ma.last_name, ma.email, ma.author_order,
-            u.display_name AS profile_display_name, u.first_name AS profile_first_name,
-            u.last_name AS profile_last_name, u.email AS profile_email
+            COALESCE(u.display_name, sub.display_name) AS profile_display_name,
+            COALESCE(u.first_name, sub.first_name) AS profile_first_name,
+            COALESCE(u.last_name, sub.last_name) AS profile_last_name,
+            COALESCE(u.email, sub.email) AS profile_email,
+            sub.first_name AS submitter_first_name,
+            sub.last_name AS submitter_last_name,
+            sub.display_name AS submitter_display_name
      FROM publication_certificates pc
      JOIN manuscript_authors ma ON ma.id = pc.author_id
-     LEFT JOIN users u ON u.id = ma.user_id
+     JOIN manuscripts m ON m.id = pc.manuscript_id
+     LEFT JOIN users u ON u.id = ma.user_id OR (ma.user_id IS NULL AND LOWER(TRIM(u.email)) = LOWER(TRIM(ma.email)))
+     LEFT JOIN users sub ON sub.id = m.submitted_by
      WHERE pc.manuscript_id = $1 AND pc.status IN ('pending', 'failed')
      ORDER BY ma.author_order ASC`,
     [manuscriptId]
@@ -484,6 +638,21 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
     }
   }
 
+  // Sync any authors with missing user_id or first/last name with users table
+  await pool.query(`
+    UPDATE manuscript_authors ma
+    SET user_id = COALESCE(ma.user_id, u.id),
+        first_name = COALESCE(NULLIF(TRIM(ma.first_name), ''), NULLIF(TRIM(ma.first_name), 'Author'), u.first_name),
+        last_name = COALESCE(NULLIF(TRIM(ma.last_name), ''), u.last_name),
+        institution = COALESCE(NULLIF(TRIM(ma.institution), ''), u.institution),
+        department = COALESCE(NULLIF(TRIM(ma.department), ''), u.department),
+        country = COALESCE(NULLIF(TRIM(ma.country), ''), u.country),
+        orcid_id = COALESCE(ma.orcid_id, u.orcid_id)
+    FROM users u
+    WHERE ma.manuscript_id = $1
+      AND (ma.user_id = u.id OR (ma.user_id IS NULL AND LOWER(TRIM(ma.email)) = LOWER(TRIM(u.email))))
+  `, [manuscriptId])
+
   // Fetch certificate for this user
   let result = await pool.query(
     `SELECT pc.id, pc.certificate_number, pc.verification_token, pc.pdf_file_url,
@@ -491,20 +660,30 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
             m.title AS manuscript_title, m.submission_number,
             p.volume, p.issue, p.publication_year, p.publication_date, p.doi, p.article_url,
             ma.first_name, ma.last_name, ma.email,
-            au.display_name AS author_display_name, au.first_name AS author_profile_first_name,
-            au.last_name AS author_profile_last_name, au.email AS author_profile_email,
+            COALESCE(au.display_name, u.display_name, sub.display_name) AS profile_display_name,
+            COALESCE(au.first_name, u.first_name, sub.first_name) AS profile_first_name,
+            COALESCE(au.last_name, u.last_name, sub.last_name) AS profile_last_name,
+            COALESCE(au.email, u.email, sub.email) AS profile_email,
+            au.display_name AS author_display_name,
+            au.first_name AS author_profile_first_name,
+            au.last_name AS author_profile_last_name,
+            au.email AS author_profile_email,
+            sub.first_name AS submitter_first_name,
+            sub.last_name AS submitter_last_name,
+            sub.display_name AS submitter_display_name,
             j.name AS journal_name, j.short_name AS journal_short_name,
             j.publisher_name, j.issn_print, j.issn_online
      FROM publication_certificates pc
      JOIN manuscripts m ON m.id = pc.manuscript_id
      JOIN publications p ON p.manuscript_id = pc.manuscript_id
      JOIN manuscript_authors ma ON ma.id = pc.author_id
-     LEFT JOIN users au ON au.id = ma.user_id
-     LEFT JOIN journals j ON j.id = m.journal_id
      JOIN users u ON u.id = $2
+     LEFT JOIN users au ON au.id = ma.user_id OR (ma.user_id IS NULL AND LOWER(TRIM(au.email)) = LOWER(TRIM(ma.email)))
+     LEFT JOIN users sub ON sub.id = m.submitted_by
+     LEFT JOIN journals j ON j.id = m.journal_id
      WHERE pc.manuscript_id = $1
-       AND (ma.user_id = u.id OR LOWER(ma.email) = LOWER(u.email) OR m.submitted_by = u.id)
-     ORDER BY (ma.user_id = u.id) DESC, (LOWER(ma.email) = LOWER(u.email)) DESC, ma.is_corresponding DESC, ma.author_order ASC
+       AND (ma.user_id = u.id OR LOWER(TRIM(ma.email)) = LOWER(TRIM(u.email)) OR m.submitted_by = u.id)
+     ORDER BY (ma.user_id = u.id) DESC, (LOWER(TRIM(ma.email)) = LOWER(TRIM(u.email))) DESC, ma.is_corresponding DESC, ma.author_order ASC
      LIMIT 1`,
     [manuscriptId, userId]
   )
@@ -516,15 +695,25 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
               m.title AS manuscript_title, m.submission_number,
               p.volume, p.issue, p.publication_year, p.publication_date, p.doi, p.article_url,
               ma.first_name, ma.last_name, ma.email,
-              au.display_name AS author_display_name, au.first_name AS author_profile_first_name,
-              au.last_name AS author_profile_last_name, au.email AS author_profile_email,
+              COALESCE(au.display_name, sub.display_name) AS profile_display_name,
+              COALESCE(au.first_name, sub.first_name) AS profile_first_name,
+              COALESCE(au.last_name, sub.last_name) AS profile_last_name,
+              COALESCE(au.email, sub.email) AS profile_email,
+              au.display_name AS author_display_name,
+              au.first_name AS author_profile_first_name,
+              au.last_name AS author_profile_last_name,
+              au.email AS author_profile_email,
+              sub.first_name AS submitter_first_name,
+              sub.last_name AS submitter_last_name,
+              sub.display_name AS submitter_display_name,
               j.name AS journal_name, j.short_name AS journal_short_name,
               j.publisher_name, j.issn_print, j.issn_online
        FROM publication_certificates pc
        JOIN manuscripts m ON m.id = pc.manuscript_id
        JOIN publications p ON p.manuscript_id = pc.manuscript_id
        JOIN manuscript_authors ma ON ma.id = pc.author_id
-       LEFT JOIN users au ON au.id = ma.user_id
+       LEFT JOIN users au ON au.id = ma.user_id OR (ma.user_id IS NULL AND LOWER(TRIM(au.email)) = LOWER(TRIM(ma.email)))
+       LEFT JOIN users sub ON sub.id = m.submitted_by
        LEFT JOIN journals j ON j.id = m.journal_id
        WHERE pc.manuscript_id = $1
        ORDER BY ma.is_corresponding DESC, ma.author_order ASC
@@ -559,6 +748,7 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
 
   const isActive = row.status === 'active'
   const downloadUrl = isActive ? `/api/publications/manuscripts/${manuscriptId}/certificate/download` : null
+  const resolvedAuthorName = resolveCertificateAuthorName(row)
 
   return {
     id: row.id,
@@ -573,13 +763,13 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
     doi: row.doi,
     article_url: row.article_url,
     author: {
-      first_name: row.first_name,
-      last_name: row.last_name,
-      email: row.email,
-      display_name: row.author_display_name,
-      name: resolveCertificateAuthorName(row),
+      first_name: row.first_name || row.profile_first_name || row.submitter_first_name,
+      last_name: row.last_name || row.profile_last_name || row.submitter_last_name,
+      email: row.email || row.profile_email,
+      display_name: row.profile_display_name || row.author_display_name,
+      name: resolvedAuthorName,
     },
-    author_name: resolveCertificateAuthorName(row),
+    author_name: resolvedAuthorName,
     journal_name: row.journal_name,
     journal_short_name: row.journal_short_name,
     publisher_name: row.publisher_name,
@@ -604,8 +794,10 @@ export async function downloadMyCertificatePdf(manuscriptId, userId, user = {}) 
 
   const { publication, manuscript } = await loadPublicationContext(manuscriptId)
 
+  const authorName = certInfo.author_name || certInfo.author?.name || resolveCertificateAuthorName(certInfo)
+
   const context = {
-    authorName: certInfo.author?.name || certInfo.author_name || certInfo.author?.display_name || [certInfo.author?.first_name, certInfo.author?.last_name].filter(Boolean).join(' ').trim() || certInfo.author?.email || 'Author',
+    authorName,
     articleTitle: certInfo.manuscript_title || manuscript.title || 'Untitled Article',
     journalName: certInfo.journal_name || manuscript.journal_name || 'International Journal of Intelligent Digital Computing Research',
     journalShortName: certInfo.journal_short_name || manuscript.journal_short_name || 'IJIDCR',
@@ -678,15 +870,25 @@ export async function getCertificateVerification(token) {
             m.title AS manuscript_title, m.submission_number,
             p.volume, p.issue, p.publication_year, p.publication_date, p.doi,
             ma.first_name, ma.last_name, ma.email,
-            au.display_name AS author_display_name, au.first_name AS author_profile_first_name,
-            au.last_name AS author_profile_last_name, au.email AS author_profile_email,
+            COALESCE(au.display_name, sub.display_name) AS profile_display_name,
+            COALESCE(au.first_name, sub.first_name) AS profile_first_name,
+            COALESCE(au.last_name, sub.last_name) AS profile_last_name,
+            COALESCE(au.email, sub.email) AS profile_email,
+            au.display_name AS author_display_name,
+            au.first_name AS author_profile_first_name,
+            au.last_name AS author_profile_last_name,
+            au.email AS author_profile_email,
+            sub.first_name AS submitter_first_name,
+            sub.last_name AS submitter_last_name,
+            sub.display_name AS submitter_display_name,
             j.name AS journal_name, j.short_name AS journal_short_name,
             j.issn_print, j.issn_online
      FROM publication_certificates pc
      JOIN manuscripts m ON m.id = pc.manuscript_id
      JOIN publications p ON p.manuscript_id = pc.manuscript_id
      JOIN manuscript_authors ma ON ma.id = pc.author_id
-     LEFT JOIN users au ON au.id = ma.user_id
+     LEFT JOIN users au ON au.id = ma.user_id OR (ma.user_id IS NULL AND LOWER(TRIM(au.email)) = LOWER(TRIM(ma.email)))
+     LEFT JOIN users sub ON sub.id = m.submitted_by
      LEFT JOIN journals j ON j.id = m.journal_id
      WHERE pc.verification_token = $1`,
     [token]
@@ -698,19 +900,20 @@ export async function getCertificateVerification(token) {
 
   const row = result.rows[0]
   const certStatus = row.status === 'active' ? 'active' : row.status === 'revoked' ? 'revoked' : 'unavailable'
+  const resolvedAuthorName = resolveCertificateAuthorName(row)
 
   return {
     status: certStatus,
     certificate_number: row.certificate_number,
     manuscript: { title: row.manuscript_title, submission_number: row.submission_number },
     author: {
-      first_name: row.first_name,
-      last_name: row.last_name,
-      email: row.email,
-      display_name: row.author_display_name,
-      name: resolveCertificateAuthorName(row),
+      first_name: row.first_name || row.profile_first_name || row.submitter_first_name,
+      last_name: row.last_name || row.profile_last_name || row.submitter_last_name,
+      email: row.email || row.profile_email,
+      display_name: row.profile_display_name || row.author_display_name,
+      name: resolvedAuthorName,
     },
-    author_name: resolveCertificateAuthorName(row),
+    author_name: resolvedAuthorName,
     publication: {
       volume: row.volume,
       issue: row.issue,
@@ -736,14 +939,26 @@ export async function getCertificatesForManuscript(manuscriptId) {
   const result = await pool.query(
     `SELECT pc.id, pc.certificate_number, pc.verification_token, pc.status,
             pc.generated_at, pc.revoked_at, pc.revocation_reason, pc.pdf_file_url,
-            ma.first_name, ma.last_name, ma.email, ma.user_id
+            ma.first_name, ma.last_name, ma.email, ma.user_id,
+            COALESCE(u.display_name, sub.display_name) AS profile_display_name,
+            COALESCE(u.first_name, sub.first_name) AS profile_first_name,
+            COALESCE(u.last_name, sub.last_name) AS profile_last_name,
+            sub.first_name AS submitter_first_name,
+            sub.last_name AS submitter_last_name,
+            sub.display_name AS submitter_display_name
      FROM publication_certificates pc
      JOIN manuscript_authors ma ON ma.id = pc.author_id
+     JOIN manuscripts m ON m.id = pc.manuscript_id
+     LEFT JOIN users u ON u.id = ma.user_id OR (ma.user_id IS NULL AND LOWER(TRIM(u.email)) = LOWER(TRIM(ma.email)))
+     LEFT JOIN users sub ON sub.id = m.submitted_by
      WHERE pc.manuscript_id = $1
      ORDER BY ma.author_order ASC`,
     [manuscriptId]
   )
-  return result.rows
+  return result.rows.map((row) => ({
+    ...row,
+    author_name: resolveCertificateAuthorName(row),
+  }))
 }
 
 /**

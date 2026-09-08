@@ -440,6 +440,11 @@ function PublicationCertificateSection({ manuscriptId }) {
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-base)', fontWeight: 700, color: '#0B1B3A', marginBottom: '4px' }}>
               {cert.certificate_number}
             </div>
+            {(cert.author_name || cert.author?.name) && (
+              <div style={{ fontSize: 'var(--text-sm)', color: '#0B1B3A', marginBottom: '6px' }}>
+                <strong>Author:</strong> {cert.author_name || cert.author?.name}
+              </div>
+            )}
             <div style={styles.authorMeta}>
               {cert.journal_name} · Vol. {cert.volume}, Issue {cert.issue}, {cert.publication_year}
               {cert.doi ? ` · ${cert.doi}` : ''}

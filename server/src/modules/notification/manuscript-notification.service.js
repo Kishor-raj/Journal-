@@ -11,14 +11,42 @@ function normalizeName(value) {
     .trim()
 }
 
-function resolveAuthorName(author = {}) {
+function isGenericAuthor(name) {
+  if (!name) return true
+  const lower = String(name).trim().toLowerCase()
   return (
-    normalizeName(author.author_display_name) ||
-    normalizeName([author.author_profile_first_name, author.author_profile_last_name].filter(Boolean).join(' ')) ||
-    normalizeName([author.first_name, author.last_name].filter(Boolean).join(' ')) ||
-    normalizeName(author.email).split('@')[0] ||
-    'Author'
+    lower === '' ||
+    lower === 'author' ||
+    lower === 'author name' ||
+    lower === 'undefined' ||
+    lower === 'null'
   )
+}
+
+function resolveAuthorName(author = {}) {
+  const profileName = normalizeName([author.author_profile_first_name, author.author_profile_last_name].filter(Boolean).join(' '))
+  const displayName = normalizeName(author.author_display_name)
+  const snapshotName = normalizeName([author.first_name, author.last_name].filter(Boolean).join(' '))
+
+  if (!isGenericAuthor(profileName) && author.author_profile_first_name && author.author_profile_last_name) {
+    return profileName
+  }
+  if (!isGenericAuthor(snapshotName) && author.first_name && author.last_name) {
+    return snapshotName
+  }
+  if (!isGenericAuthor(profileName)) return profileName
+  if (!isGenericAuthor(snapshotName)) return snapshotName
+  if (!isGenericAuthor(displayName)) return displayName
+
+  const email = author.email || author.author_profile_email
+  if (email && email.includes('@')) {
+    const local = email.split('@')[0].replace(/[._0-9-]+/g, ' ').trim()
+    if (!isGenericAuthor(local)) {
+      return local.split(' ').map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : '')).join(' ')
+    }
+  }
+
+  return 'Author'
 }
 
 async function loadManuscriptContext(manuscriptId) {
@@ -42,7 +70,7 @@ async function loadManuscriptContext(manuscriptId) {
   const user = userResult.rows[0] || null
 
   const authorName = user
-    ? (user.display_name || [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email?.split('@')[0] || 'Author')
+    ? ([user.first_name, user.last_name].filter(Boolean).join(' ') || user.display_name || 'Author')
     : 'Author'
 
   const journalName = manuscript.journal_name || 'Asgard Publications'
@@ -336,7 +364,7 @@ export async function sendPublicationCertificate(manuscriptId, authorId) {
               p.volume, p.issue, p.publication_year, p.publication_date, p.doi
        FROM publication_certificates pc
        JOIN manuscript_authors ma ON ma.id = pc.author_id
-       LEFT JOIN users au ON au.id = ma.user_id
+       LEFT JOIN users au ON au.id = ma.user_id OR (ma.user_id IS NULL AND LOWER(TRIM(au.email)) = LOWER(TRIM(ma.email)))
        JOIN publications p ON p.manuscript_id = pc.manuscript_id
        WHERE pc.manuscript_id = $1 AND pc.author_id = $2`,
       [manuscriptId, authorId]

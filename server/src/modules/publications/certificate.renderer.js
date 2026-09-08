@@ -105,14 +105,36 @@ function formatDate(value) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-function formatCertificateName(value) {
+export function toTitleCase(str) {
+  return String(str ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      if (word.length <= 2 && word === word.toUpperCase()) return word
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    })
+    .join(' ')
+}
+
+export function formatCertificateName(value) {
   const cleaned = String(value ?? '')
     .replace(/^for\s+/i, '')
     .replace(/\bundefined\b/gi, '')
+    .replace(/\bnull\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim()
 
-  return cleaned || 'Author Name'
+  if (!cleaned || cleaned.toLowerCase() === 'author' || cleaned.toLowerCase() === 'author name') {
+    return 'Author'
+  }
+
+  // If text is all lowercase or all uppercase, convert to Title Case
+  if (cleaned === cleaned.toLowerCase() || cleaned === cleaned.toUpperCase()) {
+    return toTitleCase(cleaned)
+  }
+
+  return cleaned
 }
 
 /* ─── main export ──────────────────────────────────────────────────────── */

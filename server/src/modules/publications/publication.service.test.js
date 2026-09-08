@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildCertificateNumber, validatePublicationMetadata } from './publication.service.js'
+import { buildCertificateNumber, validatePublicationMetadata, resolveCertificateAuthorName } from './publication.service.js'
 
 describe('buildCertificateNumber', () => {
   it('builds ARFI-YY-ARTICLE_NO reusing the manuscript submission number', () => {
@@ -51,5 +51,64 @@ describe('validatePublicationMetadata', () => {
     expect(() => validatePublicationMetadata({ volume: 1.5 })).toThrow(/Volume/)
     expect(() => validatePublicationMetadata({ issue: 0 })).toThrow(/Issue/)
     expect(() => validatePublicationMetadata({ issue: 'abc' })).toThrow(/Issue/)
+  })
+})
+
+describe('resolveCertificateAuthorName', () => {
+  it('uses first and last name from author record with proper Title Case', () => {
+    expect(resolveCertificateAuthorName({ first_name: 'eswaran', last_name: 'a' })).toBe('Eswaran A')
+    expect(resolveCertificateAuthorName({ first_name: 'Eswar', last_name: 'A' })).toBe('Eswar A')
+  })
+
+  it('falls back to user profile first and last name when author snapshot has nulls', () => {
+    expect(
+      resolveCertificateAuthorName({
+        first_name: null,
+        last_name: null,
+        profile_first_name: 'eswaran',
+        profile_last_name: 'a',
+      })
+    ).toBe('Eswaran A')
+  })
+
+  it('falls back to profile name when author record only has generic "Author"', () => {
+    expect(
+      resolveCertificateAuthorName({
+        first_name: 'Author',
+        last_name: '',
+        profile_first_name: 'Eswar',
+        profile_last_name: 'A',
+      })
+    ).toBe('Eswar A')
+  })
+
+  it('supports author_profile_first_name and author_profile_last_name', () => {
+    expect(
+      resolveCertificateAuthorName({
+        author_profile_first_name: 'Eswar',
+        author_profile_last_name: 'A',
+      })
+    ).toBe('Eswar A')
+  })
+
+  it('resolves consistent author name across multiple manuscripts for the same author', () => {
+    const authorUser = { profile_first_name: 'Eswaran', profile_last_name: 'A' }
+    const manuscript1 = { first_name: 'Eswaran', last_name: 'A', ...authorUser }
+    const manuscript2 = { first_name: null, last_name: null, ...authorUser }
+    const manuscript3 = { first_name: 'Author', last_name: '', ...authorUser }
+
+    const name1 = resolveCertificateAuthorName(manuscript1)
+    const name2 = resolveCertificateAuthorName(manuscript2)
+    const name3 = resolveCertificateAuthorName(manuscript3)
+
+    expect(name1).toBe('Eswaran A')
+    expect(name2).toBe('Eswaran A')
+    expect(name3).toBe('Eswaran A')
+    expect(name1).toBe(name2)
+    expect(name2).toBe(name3)
+  })
+
+  it('falls back to email username if no name fields exist', () => {
+    expect(resolveCertificateAuthorName({ email: 'eswaran.kumar@gmail.com' })).toBe('Eswaran Kumar')
   })
 })
