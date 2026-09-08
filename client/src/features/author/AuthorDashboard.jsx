@@ -84,10 +84,10 @@ export default function AuthorDashboard() {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1280px', margin: '0 auto' }}>
+    <div style={{ padding: 'clamp(16px, 2.5vw, 24px)', maxWidth: '1280px', margin: '0 auto' }}>
 
       {/* ─── Page Header ─── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 700, color: 'var(--dash-text-primary)', lineHeight: 1.2, margin: 0 }}>
             Author Dashboard
@@ -102,7 +102,7 @@ export default function AuthorDashboard() {
       </div>
 
       {/* ─── KPI Cards ─── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px', marginBottom: '24px' }}>
         {KPI_CONFIG.map((kpi) => (
           <div
             key={kpi.key}
@@ -170,7 +170,7 @@ export default function AuthorDashboard() {
 
       {/* ─── Two-column grid ─── */}
       {!loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: '24px' }}>
 
           {/* Needs Attention */}
           <div style={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-surface-border)', borderRadius: '12px', overflow: 'hidden' }}>

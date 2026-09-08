@@ -4,6 +4,23 @@ import { buildAppUrl, buildServerUrl } from '../email/email.utils.js'
 
 const MANUSCRIPT_PATH = '/author/manuscripts'
 
+function normalizeName(value) {
+  return String(value ?? '')
+    .replace(/\bundefined\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function resolveAuthorName(author = {}) {
+  return (
+    normalizeName(author.author_display_name) ||
+    normalizeName([author.author_profile_first_name, author.author_profile_last_name].filter(Boolean).join(' ')) ||
+    normalizeName([author.first_name, author.last_name].filter(Boolean).join(' ')) ||
+    normalizeName(author.email).split('@')[0] ||
+    'Author'
+  )
+}
+
 async function loadManuscriptContext(manuscriptId) {
   const result = await pool.query(
     `SELECT m.id, m.title, m.submission_number, m.journal_id, m.submitted_by,
@@ -314,9 +331,12 @@ export async function sendPublicationCertificate(manuscriptId, authorId) {
       `SELECT pc.id, pc.certificate_number, pc.pdf_file_url, pc.verification_token,
               pc.status, pc.generated_at,
               ma.id AS author_id, ma.user_id, ma.first_name, ma.last_name, ma.email,
+              au.display_name AS author_display_name, au.first_name AS author_profile_first_name,
+              au.last_name AS author_profile_last_name, au.email AS author_profile_email,
               p.volume, p.issue, p.publication_year, p.publication_date, p.doi
        FROM publication_certificates pc
        JOIN manuscript_authors ma ON ma.id = pc.author_id
+       LEFT JOIN users au ON au.id = ma.user_id
        JOIN publications p ON p.manuscript_id = pc.manuscript_id
        WHERE pc.manuscript_id = $1 AND pc.author_id = $2`,
       [manuscriptId, authorId]
@@ -339,10 +359,7 @@ export async function sendPublicationCertificate(manuscriptId, authorId) {
       return { success: false, skipped: true, reason: 'missing_recipient' }
     }
 
-    const authorName =
-      [cert.first_name, cert.last_name].filter(Boolean).join(' ').trim() ||
-      recipientEmail.split('@')[0] ||
-      ctx.authorName
+    const authorName = resolveAuthorName(cert) || recipientEmail.split('@')[0] || ctx.authorName
 
     const verificationUrl = buildAppUrl(`/verify/${cert.verification_token}`)
 

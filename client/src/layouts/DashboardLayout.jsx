@@ -312,7 +312,7 @@ export default function DashboardLayout() {
     navigate('/login', { replace: true })
   }
 
-  const sidebarWidth = isCollapsed ? '64px' : '256px'
+  const sidebarWidth = isMobile ? 'min(86vw, 280px)' : (isCollapsed ? '64px' : '256px')
 
   /* ── SIDEBAR ──────────────────────────────────────────────────────────── */
   const Sidebar = (
@@ -322,7 +322,7 @@ export default function DashboardLayout() {
       background: '#1B2A4A',
       display: 'flex',
       flexDirection: 'column',
-      height: '100vh',
+      height: '100dvh',
       transition: 'width 250ms ease, min-width 250ms ease',
       overflow: 'hidden',
       flexShrink: 0,
@@ -414,7 +414,7 @@ export default function DashboardLayout() {
   return (
     <div className="dash-scope" style={{
       display: 'flex',
-      height: '100vh',
+      height: '100dvh',
       overflow: 'hidden',
       background: '#F4F5F7',
       fontFamily: "'DM Sans', system-ui, sans-serif",
@@ -440,12 +440,12 @@ export default function DashboardLayout() {
           background: '#1B2A4A',
           borderBottom: '2px solid #C4922E',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 24px',
+          padding: `0 ${isMobile ? '16px' : '24px'}`,
           flexShrink: 0,
           zIndex: 10,
         }}>
           {/* Left */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
             {isMobile && (
               <button
                 onClick={() => setMobileOpen(o => !o)}
@@ -461,7 +461,7 @@ export default function DashboardLayout() {
           </div>
 
           {/* Right */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px', minWidth: 0 }}>
             {/* Bell */}
             <button type="button" aria-label="Notifications" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D9A94A', position: 'relative', padding: '4px', display: 'flex' }}>
               <i className="fas fa-bell" style={{ fontSize: '18px' }} />
@@ -473,10 +473,12 @@ export default function DashboardLayout() {
               <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#C4922E', color: '#0F1A30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
                 {initials(user?.name)}
               </div>
-              <div style={{ lineHeight: 1.25 }}>
-                <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>{user?.name ?? 'User'}</div>
-                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', textTransform: 'capitalize' }}>{user?.role ?? ''}</div>
-              </div>
+              {!isMobile && (
+                <div style={{ lineHeight: 1.25, minWidth: 0 }}>
+                  <div style={{ color: '#fff', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>{user?.name ?? 'User'}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '11px', textTransform: 'capitalize' }}>{user?.role ?? ''}</div>
+                </div>
+              )}
             </div>
 
             {/* Logout */}
@@ -485,7 +487,7 @@ export default function DashboardLayout() {
         </header>
 
         {/* Page outlet */}
-        <main style={{ flex: 1, overflowY: 'auto' }}>
+        <main style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <Outlet />
         </main>
       </div>

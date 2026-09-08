@@ -109,6 +109,7 @@ export default function Table({
 const wrapperStyle = {
   width: '100%',
   overflowX: 'auto',
+  WebkitOverflowScrolling: 'touch',
   borderRadius: '8px',
   border: '1px solid var(--color-rule-grey)',
   background: 'var(--color-surface)',

@@ -8,7 +8,7 @@ import StatCard from '../../shared/components/StatCard'
 const styles = {
   page: {
     fontFamily: 'var(--font-body)',
-    padding: '40px',
+    padding: 'clamp(20px, 3vw, 40px)',
     maxWidth: '1200px',
     margin: '0 auto',
   },
@@ -20,7 +20,7 @@ const styles = {
   },
   cardsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
     gap: '24px',
   },
   actionCard: {

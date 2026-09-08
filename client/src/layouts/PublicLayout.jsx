@@ -44,15 +44,19 @@ const FOOTER_COLS = [
 
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isCompact, setIsCompact] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 1180)
+    const handleResize = () => setIsCompact(window.innerWidth < 1180)
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  useEffect(() => {
+    if (!isCompact) setMenuOpen(false)
+  }, [isCompact])
 
   // Close menu on navigation
   const handleNavClick = () => setMenuOpen(false)
@@ -84,12 +88,12 @@ export default function PublicLayout() {
         }}>
           <div style={{ display: 'flex', gap: '6px 26px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span>ISSN 2977-4418 (Online)</span>
-            {!isMobile && <span style={{ opacity: 0.35 }}>|</span>}
-            {!isMobile && <span>Peer-reviewed &amp; Open Access</span>}
+            {!isCompact && <span style={{ opacity: 0.35 }}>|</span>}
+            {!isCompact && <span>Peer-reviewed &amp; Open Access</span>}
           </div>
           <div style={{ display: 'flex', gap: '6px 26px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span>editorial@asgardpublications.com</span>
-            {!isMobile && <span style={{ color: '#C4A24C' }}>Indexed in 14 databases</span>}
+            {!isCompact && <span style={{ color: '#C4A24C' }}>Indexed in 14 databases</span>}
           </div>
         </div>
       </div>
@@ -103,7 +107,7 @@ export default function PublicLayout() {
         boxShadow: '0 2px 10px rgba(196, 162, 76, 0.08), 0 1px 3px rgba(11, 27, 58, 0.04)',
         width: '100%',
         boxSizing: 'border-box',
-        paddingBottom: 'clamp(10px, 1.5vw, 20px)', // 1/4 inch extended below
+        paddingBottom: isCompact ? '10px' : 'clamp(10px, 1.5vw, 20px)',
       }}>
         <div style={{
           width: '100%',
@@ -114,7 +118,7 @@ export default function PublicLayout() {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 'clamp(14px, 1.8vw, 30px)',
-          flexWrap: 'nowrap',
+          flexWrap: isCompact ? 'wrap' : 'nowrap',
           minHeight: '88px',
           boxSizing: 'border-box',
         }}>
@@ -126,35 +130,37 @@ export default function PublicLayout() {
               alignItems: 'center',
               gap: 'clamp(10px, 1.2vw, 16px)',
               cursor: 'pointer',
-              flexShrink: 0,
+              flex: isCompact ? '1 1 100%' : '0 0 auto',
               minWidth: 0,
             }}
           >
             <img
               src="/asgard-logo.jpg"
               alt="Asgard Publications"
-              style={{ height: 'clamp(75px, 7vw, 95px)', width: 'auto', mixBlendMode: 'multiply', flexShrink: 0 }}
+              style={{ height: isCompact ? '56px' : 'clamp(75px, 7vw, 95px)', width: 'auto', mixBlendMode: 'multiply', flexShrink: 0 }}
             />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: isCompact ? 'flex-start' : 'center', minWidth: 0 }}>
               <span style={{
                 fontFamily: 'Jost, sans-serif',
-                fontSize: 'clamp(13px, 1vw, 16px)',
+                fontSize: isCompact ? '12px' : 'clamp(13px, 1vw, 16px)',
                 fontWeight: 700,
                 color: '#0B1B3A',
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
+                whiteSpace: isCompact ? 'normal' : 'nowrap',
+                lineHeight: 1.15,
               }}>
                 INTERNATIONAL JOURNAL OF
               </span>
               <span style={{
                 fontFamily: 'Jost, sans-serif',
-                fontSize: 'clamp(13px, 1vw, 16px)',
+                fontSize: isCompact ? '12px' : 'clamp(13px, 1vw, 16px)',
                 fontWeight: 700,
                 color: '#C4A24C',
                 letterSpacing: '0.04em',
                 textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
+                whiteSpace: isCompact ? 'normal' : 'nowrap',
+                lineHeight: 1.15,
               }}>
                 INTELLIGENT DIGITAL COMPUTING RESEARCH (IJIDCR)
               </span>
@@ -162,76 +168,165 @@ export default function PublicLayout() {
           </div>
 
           {/* Right section: Navigation */}
-          <nav style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'clamp(3px, 0.4vw, 10px)',
-            flexWrap: 'nowrap',
-            justifyContent: 'flex-end',
-            marginLeft: 'auto',
-            flexShrink: 0,
-          }}>
-            {NAV_ITEMS.map(({ label, to }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/'}
-                style={({ isActive }) => ({
-                  fontFamily: 'Jost, sans-serif',
-                  fontSize: 'clamp(14px, 1.1vw, 16px)',
-                  letterSpacing: '0.01em',
-                  whiteSpace: 'nowrap',
-                  color: isActive ? '#0B1B3A' : '#4B5468',
-                  padding: '6px clamp(3px, 0.4vw, 6px)',
-                  cursor: 'pointer',
-                  borderBottom: isActive ? '2.5px solid #C4A24C' : '2.5px solid transparent',
-                  fontWeight: isActive ? 700 : 600,
-                  textDecoration: 'none',
-                  transition: 'color 0.15s, border-bottom 0.15s',
-                })}
-              >
-                {label}
-              </NavLink>
-            ))}
-            <Link
-              to="/login"
+          {isCompact ? (
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               style={{
-                fontFamily: 'Jost, sans-serif',
-                fontSize: 'clamp(14px, 1.1vw, 16px)',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: '#FFFFFF',
-                background: 'linear-gradient(180deg, #D4AF37 0%, #C4A24C 60%, #B38E2F 100%)',
-                padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.2vw, 20px)',
-                borderRadius: '9999px',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                textDecoration: 'none',
-                flexShrink: 0,
-                marginLeft: 'clamp(4px, 0.5vw, 10px)',
-                border: 'none',
-                boxShadow: '0 2px 6px rgba(196, 162, 76, 0.35)',
-                transition: 'all 0.2s ease',
+                marginLeft: 'auto',
+                width: '44px',
+                height: '44px',
+                borderRadius: '10px',
+                border: '1px solid rgba(11, 27, 58, 0.12)',
+                background: '#FFFFFF',
+                color: '#0B1B3A',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-1px)'
-                e.currentTarget.style.boxShadow = '0 4px 10px rgba(196, 162, 76, 0.45)'
-                e.currentTarget.style.filter = 'brightness(1.05)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = '0 2px 6px rgba(196, 162, 76, 0.35)'
-                e.currentTarget.style.filter = 'none'
+                fontSize: '20px',
+                cursor: 'pointer',
+                flexShrink: 0,
+                boxShadow: '0 1px 3px rgba(11, 27, 58, 0.08)',
               }}
             >
-              LOGIN
-            </Link>
-          </nav>
+              {menuOpen ? '✕' : '☰'}
+            </button>
+          ) : (
+            <nav style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'clamp(3px, 0.4vw, 10px)',
+              flexWrap: 'nowrap',
+              justifyContent: 'flex-end',
+              marginLeft: 'auto',
+              flexShrink: 0,
+            }}>
+              {NAV_ITEMS.map(({ label, to }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === '/'}
+                  style={({ isActive }) => ({
+                    fontFamily: 'Jost, sans-serif',
+                    fontSize: 'clamp(14px, 1.1vw, 16px)',
+                    letterSpacing: '0.01em',
+                    whiteSpace: 'nowrap',
+                    color: isActive ? '#0B1B3A' : '#4B5468',
+                    padding: '6px clamp(3px, 0.4vw, 6px)',
+                    cursor: 'pointer',
+                    borderBottom: isActive ? '2.5px solid #C4A24C' : '2.5px solid transparent',
+                    fontWeight: isActive ? 700 : 600,
+                    textDecoration: 'none',
+                    transition: 'color 0.15s, border-bottom 0.15s',
+                  })}
+                >
+                  {label}
+                </NavLink>
+              ))}
+              <Link
+                to="/login"
+                style={{
+                  fontFamily: 'Jost, sans-serif',
+                  fontSize: 'clamp(14px, 1.1vw, 16px)',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: '#FFFFFF',
+                  background: 'linear-gradient(180deg, #D4AF37 0%, #C4A24C 60%, #B38E2F 100%)',
+                  padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.2vw, 20px)',
+                  borderRadius: '9999px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  textDecoration: 'none',
+                  flexShrink: 0,
+                  marginLeft: 'clamp(4px, 0.5vw, 10px)',
+                  border: 'none',
+                  boxShadow: '0 2px 6px rgba(196, 162, 76, 0.35)',
+                  transition: 'all 0.2s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                  e.currentTarget.style.boxShadow = '0 4px 10px rgba(196, 162, 76, 0.45)'
+                  e.currentTarget.style.filter = 'brightness(1.05)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(196, 162, 76, 0.35)'
+                  e.currentTarget.style.filter = 'none'
+                }}
+              >
+                LOGIN
+              </Link>
+            </nav>
+          )}
         </div>
+
+        {isCompact && menuOpen && (
+          <div style={{
+            borderTop: '1px solid #E6E1D6',
+            background: '#FFFFFF',
+            boxShadow: '0 10px 24px rgba(11, 27, 58, 0.08)',
+          }}>
+            <div style={{
+              maxWidth: 'var(--layout-max)',
+              margin: '0 auto',
+              padding: '14px clamp(18px, 2.8vw, 44px) 18px',
+            }}>
+              <nav style={{ display: 'grid', gap: '6px' }}>
+                {NAV_ITEMS.map(({ label, to }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={to === '/'}
+                    onClick={handleNavClick}
+                    style={({ isActive }) => ({
+                      fontFamily: 'Jost, sans-serif',
+                      fontSize: '15px',
+                      letterSpacing: '0.01em',
+                      color: isActive ? '#0B1B3A' : '#4B5468',
+                      padding: '11px 0',
+                      borderBottom: '1px solid #F0ECE3',
+                      fontWeight: isActive ? 700 : 600,
+                      textDecoration: 'none',
+                    })}
+                  >
+                    {label}
+                  </NavLink>
+                ))}
+                <Link
+                  to="/login"
+                  onClick={handleNavClick}
+                  style={{
+                    marginTop: '6px',
+                    fontFamily: 'Jost, sans-serif',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: '#FFFFFF',
+                    background: 'linear-gradient(180deg, #D4AF37 0%, #C4A24C 60%, #B38E2F 100%)',
+                    padding: '12px 16px',
+                    borderRadius: '9999px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    textDecoration: 'none',
+                    border: 'none',
+                    boxShadow: '0 2px 6px rgba(196, 162, 76, 0.35)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  Login
+                </Link>
+              </nav>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ── Page content ──────────────────────────────────────────────────── */}
