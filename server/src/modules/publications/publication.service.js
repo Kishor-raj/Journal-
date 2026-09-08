@@ -362,17 +362,36 @@ export async function generateCertificatesForManuscript(manuscriptId, { triggerN
 /**
  * Returns the authenticated author's own certificate for a manuscript.
  */
-export async function getMyCertificate(manuscriptId, userId) {
+export async function getMyCertificate(manuscriptId, userId, user = {}) {
+  const isPrivileged =
+    user?.role_name === 'admin' ||
+    user?.role_name === 'editor' ||
+    user?.account_role_name === 'admin' ||
+    user?.account_role_name === 'editor' ||
+    user?.assigned_roles?.includes('admin') ||
+    user?.assigned_roles?.includes('editor')
+
   // Validate manuscript and author access
-  const manuscriptRes = await pool.query(
-    `SELECT m.id, m.title, m.submission_number, m.current_status, m.submitted_by
-     FROM manuscripts m
-     JOIN users u ON u.id = $2
-     LEFT JOIN manuscript_authors ma ON ma.manuscript_id = m.id
-     WHERE m.id = $1 AND (m.submitted_by = u.id OR ma.user_id = u.id OR LOWER(ma.email) = LOWER(u.email))
-     LIMIT 1`,
-    [manuscriptId, userId]
-  )
+  let manuscriptRes
+  if (isPrivileged) {
+    manuscriptRes = await pool.query(
+      `SELECT m.id, m.title, m.submission_number, m.current_status, m.submitted_by
+       FROM manuscripts m
+       WHERE m.id = $1
+       LIMIT 1`,
+      [manuscriptId]
+    )
+  } else {
+    manuscriptRes = await pool.query(
+      `SELECT m.id, m.title, m.submission_number, m.current_status, m.submitted_by
+       FROM manuscripts m
+       JOIN users u ON u.id = $2
+       LEFT JOIN manuscript_authors ma ON ma.manuscript_id = m.id
+       WHERE m.id = $1 AND (m.submitted_by = u.id OR ma.user_id = u.id OR LOWER(TRIM(ma.email)) = LOWER(TRIM(u.email)))
+       LIMIT 1`,
+      [manuscriptId, userId]
+    )
+  }
 
   if (manuscriptRes.rows.length === 0) {
     throw new AppError('Manuscript not found.', 404)
