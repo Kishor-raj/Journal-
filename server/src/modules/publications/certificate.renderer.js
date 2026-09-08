@@ -105,6 +105,28 @@ function formatDate(value) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
+function formatCertificateName(value) {
+  const cleaned = String(value ?? '')
+    .replace(/^for\s+/i, '')
+    .trim()
+
+  if (!cleaned) return 'Author Name'
+
+  return cleaned
+    .split(/\s+/)
+    .map((part) =>
+      part
+        .split('-')
+        .map((segment) => {
+          if (/^[A-Z]\.?$/.test(segment)) return `${segment[0].toUpperCase()}.`
+          if (!segment) return segment
+          return segment[0].toUpperCase() + segment.slice(1).toLowerCase()
+        })
+        .join('-')
+    )
+    .join(' ')
+}
+
 /* ─── main export ──────────────────────────────────────────────────────── */
 export async function renderCertificatePdf(context) {
   // Generate QR code with exact scanner verification domain
@@ -125,8 +147,7 @@ export async function renderCertificatePdf(context) {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
 
     // ── extract context fields ──────────────────────────────────────────
-    const rawAuthorName  = String(context.authorName || 'Author Name').trim()
-    const authorName     = (rawAuthorName.replace(/^for\s+/i, '').trim() || rawAuthorName).toUpperCase()
+    const authorName     = formatCertificateName(context.authorName || 'Author Name')
     const rawTitle       = String(context.articleTitle || 'Untitled Article').trim()
     let articleTitle     = rawTitle
     if (articleTitle && !articleTitle.startsWith('“') && !articleTitle.startsWith('"') && !articleTitle.startsWith("'")) {
