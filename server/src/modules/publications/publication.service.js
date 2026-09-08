@@ -96,14 +96,39 @@ export async function createPublicationRow(client, { manuscriptId, editorId, vol
  * never corrupt the transaction.
  */
 export async function createCertificateRows(client, { manuscriptId, submissionNumber, publicationYear }) {
-  const authorsResult = await client.query(
+  let authorsResult = await client.query(
     `SELECT id FROM manuscript_authors
      WHERE manuscript_id = $1
      ORDER BY author_order ASC`,
     [manuscriptId]
   )
-  const authors = authorsResult.rows
-  const certificateNumber = buildCertificateNumber(submissionNumber, publicationYear)
+  let authors = authorsResult.rows
+
+  if (authors.length === 0) {
+    const submitterRes = await client.query(
+      `SELECT u.id, u.first_name, u.last_name, u.email
+       FROM manuscripts m
+       JOIN users u ON u.id = m.submitted_by
+       WHERE m.id = $1`,
+      [manuscriptId]
+    )
+    if (submitterRes.rows.length > 0) {
+      const u = submitterRes.rows[0]
+      const ins = await client.query(
+        `INSERT INTO manuscript_authors
+           (manuscript_id, user_id, author_order, first_name, last_name, email, is_corresponding)
+         VALUES ($1, $2, 1, $3, $4, $5, true)
+         RETURNING id`,
+        [manuscriptId, u.id, u.first_name || 'Author', u.last_name || '', u.email]
+      )
+      if (ins.rows[0]) {
+        authors = [ins.rows[0]]
+      }
+    }
+  }
+
+  const validSubNumber = submissionNumber || `SUB-${String(manuscriptId).slice(0, 8).toUpperCase()}`
+  const certificateNumber = buildCertificateNumber(validSubNumber, publicationYear)
   const certificates = []
 
   for (const author of authors) {
@@ -128,13 +153,26 @@ export async function getPublicationForManuscript(manuscriptId) {
 }
 
 async function loadPublicationContext(manuscriptId) {
-  const publication = await getPublicationForManuscript(manuscriptId)
+  let publication = await getPublicationForManuscript(manuscriptId)
   if (!publication) {
-    throw new AppError('Publication record not found.', 404)
+    const client = await pool.connect()
+    try {
+      publication = await createPublicationRow(client, {
+        manuscriptId,
+        editorId: null,
+        volume: DEFAULT_VOLUME,
+        issue: DEFAULT_ISSUE,
+        publicationYear: new Date().getFullYear(),
+        doi: null,
+        articleUrl: null,
+      })
+    } finally {
+      client.release()
+    }
   }
 
   const manuscriptResult = await pool.query(
-    `SELECT m.id, m.title, m.submission_number, m.current_status,
+    `SELECT m.id, m.title, m.submission_number, m.current_status, m.submitted_by,
             j.name AS journal_name, j.short_name AS journal_short_name,
             j.publisher_name, j.issn_print, j.issn_online
      FROM manuscripts m
@@ -176,13 +214,13 @@ async function generateAndStoreCertificate({ publication, manuscript, certificat
   const context = {
     authorName,
     articleTitle: manuscript.title || 'Untitled Article',
-    journalName: manuscript.journal_name || manuscript.journal_short_name || 'Journal',
-    journalShortName: manuscript.journal_short_name || '',
-    publisherName: manuscript.publisher_name || '',
-    volume: publication.volume,
-    issue: publication.issue,
-    year: publication.publication_year,
-    publicationDate: publication.publication_date,
+    journalName: manuscript.journal_name || manuscript.journal_short_name || 'International Journal of Intelligent Digital Computing Research',
+    journalShortName: manuscript.journal_short_name || 'IJIDCR',
+    publisherName: manuscript.publisher_name || 'IJIDCR Publishing',
+    volume: publication.volume || DEFAULT_VOLUME,
+    issue: publication.issue || DEFAULT_ISSUE,
+    year: publication.publication_year || new Date().getFullYear(),
+    publicationDate: publication.publication_date || new Date(),
     certificateNumber: certificate.certificate_number,
     submissionNumber: manuscript.submission_number,
     verificationUrl: buildAppUrl(`/verify/${certificate.verification_token}`),
@@ -191,12 +229,23 @@ async function generateAndStoreCertificate({ publication, manuscript, certificat
   }
 
   const pdfBuffer = await renderCertificatePdf(context)
-  const { publicId, secureUrl } = await uploadCertificatePdf({
-    pdfBuffer,
-    year: publication.publication_year,
-    submissionNumber: manuscript.submission_number,
-    authorId: certificate.author_id,
-  })
+  let publicId = null
+  let secureUrl = null
+
+  try {
+    const uploadRes = await uploadCertificatePdf({
+      pdfBuffer,
+      year: publication.publication_year,
+      submissionNumber: manuscript.submission_number,
+      authorId: certificate.author_id,
+    })
+    publicId = uploadRes.publicId
+    secureUrl = uploadRes.secureUrl
+  } catch (storageErr) {
+    console.warn('[PUBLICATION] Cloudinary upload fallback to data URL:', storageErr.message)
+    secureUrl = `data:application/pdf;base64,${pdfBuffer.toString('base64')}`
+    publicId = null
+  }
 
   const result = await pool.query(
     `UPDATE publication_certificates
@@ -243,6 +292,42 @@ async function markCertificateFailed(certificateId, manuscriptId, errorMessage) 
 export async function generateCertificatesForManuscript(manuscriptId, { triggerNotifications = true } = {}) {
   const { publication, manuscript } = await loadPublicationContext(manuscriptId)
 
+  // Ensure author rows exist
+  const authorCheck = await pool.query(
+    `SELECT id FROM manuscript_authors WHERE manuscript_id = $1`,
+    [manuscriptId]
+  )
+  if (authorCheck.rows.length === 0) {
+    const client = await pool.connect()
+    try {
+      await createCertificateRows(client, {
+        manuscriptId,
+        submissionNumber: manuscript.submission_number,
+        publicationYear: publication.publication_year || new Date().getFullYear(),
+      })
+    } finally {
+      client.release()
+    }
+  }
+
+  // Ensure pending certificate rows exist if none exist
+  const existingCerts = await pool.query(
+    `SELECT COUNT(*) AS count FROM publication_certificates WHERE manuscript_id = $1`,
+    [manuscriptId]
+  )
+  if (parseInt(existingCerts.rows[0].count, 10) === 0) {
+    const client = await pool.connect()
+    try {
+      await createCertificateRows(client, {
+        manuscriptId,
+        submissionNumber: manuscript.submission_number,
+        publicationYear: publication.publication_year || new Date().getFullYear(),
+      })
+    } finally {
+      client.release()
+    }
+  }
+
   const certificateResult = await pool.query(
     `SELECT pc.id, pc.author_id, pc.certificate_number, pc.verification_token, pc.status,
             ma.user_id, ma.first_name, ma.last_name, ma.email, ma.author_order
@@ -278,6 +363,85 @@ export async function generateCertificatesForManuscript(manuscriptId, { triggerN
  * Returns the authenticated author's own certificate for a manuscript.
  */
 export async function getMyCertificate(manuscriptId, userId) {
+  // Validate manuscript and author access
+  const manuscriptRes = await pool.query(
+    `SELECT m.id, m.title, m.submission_number, m.current_status, m.submitted_by
+     FROM manuscripts m
+     JOIN users u ON u.id = $2
+     LEFT JOIN manuscript_authors ma ON ma.manuscript_id = m.id
+     WHERE m.id = $1 AND (m.submitted_by = u.id OR ma.user_id = u.id OR LOWER(ma.email) = LOWER(u.email))
+     LIMIT 1`,
+    [manuscriptId, userId]
+  )
+
+  if (manuscriptRes.rows.length === 0) {
+    throw new AppError('Manuscript not found.', 404)
+  }
+
+  const manuscript = manuscriptRes.rows[0]
+
+  if (manuscript.current_status !== 'published') {
+    throw new AppError('No certificate is available for this manuscript yet.', 400)
+  }
+
+  // Ensure publication row exists
+  let publication = await getPublicationForManuscript(manuscriptId)
+  if (!publication) {
+    const client = await pool.connect()
+    try {
+      publication = await createPublicationRow(client, {
+        manuscriptId,
+        editorId: null,
+        volume: DEFAULT_VOLUME,
+        issue: DEFAULT_ISSUE,
+        publicationYear: new Date().getFullYear(),
+        doi: null,
+        articleUrl: null,
+      })
+    } finally {
+      client.release()
+    }
+  }
+
+  // Ensure author records exist
+  const authorCountRes = await pool.query(
+    `SELECT COUNT(*) AS count FROM manuscript_authors WHERE manuscript_id = $1`,
+    [manuscriptId]
+  )
+  if (parseInt(authorCountRes.rows[0].count, 10) === 0) {
+    const client = await pool.connect()
+    try {
+      const uRes = await client.query('SELECT first_name, last_name, email FROM users WHERE id = $1', [manuscript.submitted_by || userId])
+      const u = uRes.rows[0] || {}
+      await client.query(
+        `INSERT INTO manuscript_authors (manuscript_id, user_id, author_order, first_name, last_name, email, is_corresponding)
+         VALUES ($1, $2, 1, $3, $4, $5, true)`,
+        [manuscriptId, manuscript.submitted_by || userId, u.first_name || 'Author', u.last_name || '', u.email || 'author@example.com']
+      )
+    } finally {
+      client.release()
+    }
+  }
+
+  // Ensure certificate rows exist
+  const certCountRes = await pool.query(
+    `SELECT COUNT(*) AS count FROM publication_certificates WHERE manuscript_id = $1`,
+    [manuscriptId]
+  )
+  if (parseInt(certCountRes.rows[0].count, 10) === 0) {
+    const client = await pool.connect()
+    try {
+      await createCertificateRows(client, {
+        manuscriptId,
+        submissionNumber: manuscript.submission_number,
+        publicationYear: publication.publication_year || new Date().getFullYear(),
+      })
+    } finally {
+      client.release()
+    }
+  }
+
+  // Fetch certificate for this user
   let result = await pool.query(
     `SELECT pc.id, pc.certificate_number, pc.verification_token, pc.pdf_file_url,
             pc.cloudinary_public_id, pc.status, pc.generated_at, pc.revoked_at, pc.revocation_reason,
@@ -294,68 +458,37 @@ export async function getMyCertificate(manuscriptId, userId) {
      JOIN users u ON u.id = $2
      WHERE pc.manuscript_id = $1
        AND (ma.user_id = u.id OR LOWER(ma.email) = LOWER(u.email) OR m.submitted_by = u.id)
-       AND m.current_status = 'published'
      ORDER BY (ma.user_id = u.id) DESC, (LOWER(ma.email) = LOWER(u.email)) DESC, ma.is_corresponding DESC, ma.author_order ASC
      LIMIT 1`,
     [manuscriptId, userId]
   )
 
-  // If no certificate exists yet, check if the manuscript is published and attempt generation
   if (result.rows.length === 0) {
-    const pubCheck = await pool.query(
-      `SELECT m.id, m.submission_number, m.current_status, p.id AS pub_id, p.publication_year
-       FROM manuscripts m
-       JOIN publications p ON p.manuscript_id = m.id
-       JOIN users u ON u.id = $2
-       LEFT JOIN manuscript_authors ma ON ma.manuscript_id = m.id
-       WHERE m.id = $1 AND m.current_status = 'published'
-         AND (m.submitted_by = u.id OR ma.user_id = u.id OR LOWER(ma.email) = LOWER(u.email))
+    result = await pool.query(
+      `SELECT pc.id, pc.certificate_number, pc.verification_token, pc.pdf_file_url,
+              pc.cloudinary_public_id, pc.status, pc.generated_at, pc.revoked_at, pc.revocation_reason,
+              m.title AS manuscript_title, m.submission_number,
+              p.volume, p.issue, p.publication_year, p.publication_date, p.doi, p.article_url,
+              ma.first_name, ma.last_name, ma.email,
+              j.name AS journal_name, j.short_name AS journal_short_name,
+              j.publisher_name, j.issn_print, j.issn_online
+       FROM publication_certificates pc
+       JOIN manuscripts m ON m.id = pc.manuscript_id
+       JOIN publications p ON p.manuscript_id = pc.manuscript_id
+       JOIN manuscript_authors ma ON ma.id = pc.author_id
+       LEFT JOIN journals j ON j.id = m.journal_id
+       WHERE pc.manuscript_id = $1
+       ORDER BY ma.is_corresponding DESC, ma.author_order ASC
        LIMIT 1`,
-      [manuscriptId, userId]
+      [manuscriptId]
     )
-
-    if (pubCheck.rows.length > 0) {
-      const pub = pubCheck.rows[0]
-      const client = await pool.connect()
-      try {
-        await createCertificateRows(client, {
-          manuscriptId,
-          submissionNumber: pub.submission_number,
-          publicationYear: pub.publication_year || new Date().getFullYear(),
-        })
-      } finally {
-        client.release()
-      }
-      await generateCertificatesForManuscript(manuscriptId, { triggerNotifications: false })
-
-      result = await pool.query(
-        `SELECT pc.id, pc.certificate_number, pc.verification_token, pc.pdf_file_url,
-                pc.cloudinary_public_id, pc.status, pc.generated_at, pc.revoked_at, pc.revocation_reason,
-                m.title AS manuscript_title, m.submission_number,
-                p.volume, p.issue, p.publication_year, p.publication_date, p.doi, p.article_url,
-                ma.first_name, ma.last_name, ma.email,
-                j.name AS journal_name, j.short_name AS journal_short_name,
-                j.publisher_name, j.issn_print, j.issn_online
-         FROM publication_certificates pc
-         JOIN manuscripts m ON m.id = pc.manuscript_id
-         JOIN publications p ON p.manuscript_id = pc.manuscript_id
-         JOIN manuscript_authors ma ON ma.id = pc.author_id
-         LEFT JOIN journals j ON j.id = m.journal_id
-         JOIN users u ON u.id = $2
-         WHERE pc.manuscript_id = $1
-           AND (ma.user_id = u.id OR LOWER(ma.email) = LOWER(u.email) OR m.submitted_by = u.id)
-           AND m.current_status = 'published'
-         ORDER BY (ma.user_id = u.id) DESC, (LOWER(ma.email) = LOWER(u.email)) DESC, ma.is_corresponding DESC, ma.author_order ASC
-         LIMIT 1`,
-        [manuscriptId, userId]
-      )
-    }
   }
 
   if (result.rows.length === 0) {
     throw new AppError('Certificate not found.', 404)
   }
-  const row = result.rows[0]
+
+  let row = result.rows[0]
 
   if (row.status !== 'active') {
     try {
@@ -376,6 +509,7 @@ export async function getMyCertificate(manuscriptId, userId) {
   }
 
   const isActive = row.status === 'active'
+  const downloadUrl = isActive ? (getCertificateDownloadUrl(row.cloudinary_public_id) || row.pdf_file_url) : null
 
   return {
     id: row.id,
@@ -398,7 +532,7 @@ export async function getMyCertificate(manuscriptId, userId) {
     generated_at: row.generated_at,
     revoked_at: row.revoked_at,
     pdf_url: isActive ? row.pdf_file_url : null,
-    download_url: isActive ? getCertificateDownloadUrl(row.cloudinary_public_id) : null,
+    download_url: downloadUrl,
     verification_url: buildAppUrl(`/verify/${row.verification_token}`),
   }
 }
