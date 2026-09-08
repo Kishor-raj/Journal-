@@ -87,8 +87,10 @@ function formatDate(value) {
 
 /* ─── main export ──────────────────────────────────────────────────────── */
 export async function renderCertificatePdf(context) {
-  // Generate QR code
-  const qrBuffer = await QRCode.toBuffer(context.verificationUrl || 'https://ijidcr-asgard.vercel.app/verify', {
+  // Generate QR code with exact scanner verification domain
+  const verificationDomain = 'https://www.ijidcr-asgard.in'
+  const qrTargetUrl = context.verificationUrl || `${verificationDomain}/verify`
+  const qrBuffer = await QRCode.toBuffer(qrTargetUrl, {
     type: 'png',
     width: 200,
     margin: 1,
@@ -103,68 +105,66 @@ export async function renderCertificatePdf(context) {
     doc.on('end', () => resolve(Buffer.concat(chunks)))
 
     // ── extract context fields ──────────────────────────────────────────
-    const authorName      = context.authorName      || 'Author Name'
-    const articleTitle    = context.articleTitle    || 'Untitled Article'
-    const volume          = context.volume          ?? 1
-    const issue           = context.issue           ?? 1
-    const year            = context.year            ?? new Date().getFullYear()
-    const certNo          = context.certificateNumber || '-'
-    const articleNo       = context.submissionNumber  || '-'
+    const rawAuthorName  = String(context.authorName || 'Author Name').trim()
+    const authorName     = rawAuthorName.replace(/^for\s+/i, '').trim() || rawAuthorName
+    const articleTitle   = String(context.articleTitle || 'Untitled Article').trim()
+    const volume         = context.volume ?? 1
+    const issue          = context.issue ?? 1
+    const year           = context.year ?? new Date().getFullYear()
+    const certNo         = context.certificateNumber || '-'
+    const articleNo      = context.submissionNumber || '-'
     const publicationDate = formatDate(context.publicationDate)
-    const doi             = context.doi
-    const issn            = context.issn
-    const verifyUrl       = context.verificationUrl || 'www.ijidcr.com/verify'
+    const doi            = context.doi
+    const issn           = context.issn
 
     // ── Step 1: Draw template as full-page background ───────────────────
     if (existsSync(TEMPLATE_PATH)) {
       doc.image(TEMPLATE_PATH, 0, 0, { width: PAGE_W, height: PAGE_H })
     }
 
-    // ── Step 2: Overlay dynamic data ────────────────────────────────────
+    // ── Step 2: Overlay dynamic data with matched typography ────────────
 
-    // ── Author Name ─────────────────────────────────────────────────────
-    // Template "This is to certify that" is at ~y260. Blank zone is ~y290-315.
-    drawCenteredText(doc, authorName, 292, {
+    // ── Author Name (Harmonized Times-Bold typography) ──────────────────
+    // Placed precisely between "This is to certify that" and "has published..."
+    drawCenteredText(doc, authorName, 290, {
       font: 'Times-Bold',
       size: 22,
       color: NAVY,
-      maxWidth: 500,
-      minSize: 12,
+      maxWidth: 540,
+      minSize: 13,
     })
 
-    // ── Article Title ────────────────────────────────────────────────────
-    // Template "has published a research paper entitled" is at ~y355.
-    // Blank zone is ~y375-400. Place title there.
-    drawCenteredText(doc, `"${articleTitle}"`, 370, {
+    // ── Article Title (Times-BoldItalic with balanced line wrapping) ─────
+    drawCenteredText(doc, `"${articleTitle}"`, 368, {
       font: 'Times-BoldItalic',
       size: 14,
       color: NAVY,
-      maxWidth: 540,
-      minSize: 9,
+      maxWidth: 550,
+      minSize: 9.5,
     })
 
-    // ── Volume / Issue / Year: Cover only the placeholder line ────────
-    doc.rect(260, 392, 322, 22).fillColor('#FFFFFF').fill()
+    // ── Volume / Issue / Year (Times-Bold matching classical serif style) ──
+    doc.rect(240, 392, 362, 22).fillColor('#FFFFFF').fill()
 
     drawCenteredText(doc, `in Volume ${volume},  Issue ${issue},  Year ${year}`, 396, {
-      font: 'Helvetica-Bold',
+      font: 'Times-Bold',
       size: 11.5,
       color: NAVY,
-      maxWidth: 400,
+      maxWidth: 420,
     })
 
-    // ── QR Code (bottom-left — precisely over the template placeholder) ──
+    // ── QR Code (bottom-left scanner pointing to www.ijidcr-asgard.in) ───
     const qrSize = 76
     const qrX    = 48
     const qrY    = 428
     doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize })
 
-    // ── Top-right: Certificate No (replacing Article ID) ─────────────────
+    // ── Top-right: Certificate No. ──────────────────────────────────────
     if (certNo && certNo !== '-') {
       const certLabel = `Certificate No.: ${certNo}`
-      doc.font('Helvetica-Bold').fontSize(8).fillColor(NAVY)
+      doc.font('Times-Bold').fontSize(8.5).fillColor(NAVY)
       const certW = doc.widthOfString(certLabel)
-      doc.text(certLabel, PAGE_W - 30 - certW, 22)
+      doc.text(certLabel, PAGE_W - 32 - certW, 22)
     }
 
     doc.end()
