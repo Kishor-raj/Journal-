@@ -55,3 +55,29 @@ export function getStatusHistory(manuscriptId) {
 export function getMyCertificate(manuscriptId) {
   return apiClient.get(`/publications/manuscripts/${manuscriptId}/certificate`)
 }
+
+export async function downloadCertificatePdf(manuscriptId, certificateNumber) {
+  const { getStoredToken } = await import('../../../services/apiClient')
+  const token = getStoredToken()
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+  const res = await fetch(`${API_BASE_URL}/publications/manuscripts/${manuscriptId}/certificate/download`, {
+    method: 'GET',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'include',
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `HTTP ${res.status}`)
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `Certificate-${certificateNumber || 'Publication'}.pdf`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => URL.revokeObjectURL(url), 5000)
+}

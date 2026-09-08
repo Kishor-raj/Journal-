@@ -528,7 +528,7 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
   }
 
   const isActive = row.status === 'active'
-  const downloadUrl = isActive ? (getCertificateDownloadUrl(row.cloudinary_public_id) || row.pdf_file_url) : null
+  const downloadUrl = isActive ? `/api/publications/manuscripts/${manuscriptId}/certificate/download` : null
 
   return {
     id: row.id,
@@ -553,6 +553,41 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
     pdf_url: isActive ? row.pdf_file_url : null,
     download_url: downloadUrl,
     verification_url: buildAppUrl(`/verify/${row.verification_token}`),
+  }
+}
+
+/**
+ * Downloads the freshly rendered certificate PDF directly for the authenticated user.
+ */
+export async function downloadMyCertificatePdf(manuscriptId, userId, user = {}) {
+  const certInfo = await getMyCertificate(manuscriptId, userId, user)
+  if (!certInfo || certInfo.status !== 'active') {
+    throw new AppError('Certificate is not available for download.', 404)
+  }
+
+  const { publication, manuscript } = await loadPublicationContext(manuscriptId)
+
+  const context = {
+    authorName: [certInfo.author?.first_name, certInfo.author?.last_name].filter(Boolean).join(' ').trim() || certInfo.author?.email || 'Author',
+    articleTitle: certInfo.manuscript_title || manuscript.title || 'Untitled Article',
+    journalName: certInfo.journal_name || manuscript.journal_name || 'International Journal of Intelligent Digital Computing Research',
+    journalShortName: certInfo.journal_short_name || manuscript.journal_short_name || 'IJIDCR',
+    publisherName: certInfo.publisher_name || manuscript.publisher_name || 'IJIDCR Publishing',
+    volume: certInfo.volume || publication.volume || DEFAULT_VOLUME,
+    issue: certInfo.issue || publication.issue || DEFAULT_ISSUE,
+    year: certInfo.publication_year || publication.publication_year || new Date().getFullYear(),
+    publicationDate: certInfo.publication_date || publication.publication_date || new Date(),
+    certificateNumber: certInfo.certificate_number,
+    submissionNumber: certInfo.submission_number || manuscript.submission_number,
+    verificationUrl: certInfo.verification_url,
+    doi: certInfo.doi || publication.doi || '',
+    issn: certInfo.issn_print || certInfo.issn_online || '',
+  }
+
+  const pdfBuffer = await renderCertificatePdf(context)
+  return {
+    pdfBuffer,
+    filename: `Certificate-${certInfo.certificate_number || 'Publication'}.pdf`,
   }
 }
 

@@ -6,7 +6,7 @@ import EmptyState from '../../shared/components/EmptyState'
 import Button from '../../shared/components/Button'
 import PageHeader from '../../shared/components/PageHeader'
 import Modal from '../../shared/components/Modal'
-import { getMyManuscripts, createDraft, deleteManuscript, getMyCertificate } from './services/manuscriptService'
+import { getMyManuscripts, createDraft, deleteManuscript, getMyCertificate, downloadCertificatePdf } from './services/manuscriptService'
 import { formatDate } from '../../shared/utils/formatDate'
 
 const styles = {
@@ -142,18 +142,11 @@ export default function MyManuscripts() {
     }
   }
 
-  const handleDownloadCertificate = (cert) => {
-    const url = cert.download_url || cert.pdf_url
-    if (!url) return
-    if (url.startsWith('data:application/pdf')) {
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `Certificate-${cert.certificate_number || 'download'}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    } else {
-      window.open(url, '_blank', 'noopener,noreferrer')
+  const handleDownloadCertificate = async (cert) => {
+    try {
+      await downloadCertificatePdf(certificateRow?.id, cert.certificate_number)
+    } catch (err) {
+      alert('Failed to download certificate: ' + (err.message || 'Unknown error'))
     }
   }
 
