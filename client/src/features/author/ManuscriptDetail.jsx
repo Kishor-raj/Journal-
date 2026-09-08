@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import StatusBadge from '../../shared/components/StatusBadge'
 import Button from '../../shared/components/Button'
 import Tabs from '../../shared/components/Tabs'
-import { getManuscript, getMyCertificate } from './services/manuscriptService'
+import { getManuscript, getMyCertificate, downloadCertificatePdf } from './services/manuscriptService'
 import { formatDate, formatDateTime } from '../../shared/utils/formatDate'
 
 const TABS = [
@@ -450,18 +450,11 @@ function PublicationCertificateSection({ manuscriptId }) {
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => {
-                      const url = cert.download_url || cert.pdf_url
-                      if (!url) return
-                      if (url.startsWith('data:application/pdf')) {
-                        const link = document.createElement('a')
-                        link.href = url
-                        link.download = `Certificate-${cert.certificate_number || 'download'}.pdf`
-                        document.body.appendChild(link)
-                        link.click()
-                        document.body.removeChild(link)
-                      } else {
-                        window.open(url, '_blank', 'noopener,noreferrer')
+                    onClick={async () => {
+                      try {
+                        await downloadCertificatePdf(manuscriptId, cert.certificate_number)
+                      } catch (err) {
+                        alert('Failed to download certificate: ' + (err.message || 'Unknown error'))
                       }
                     }}
                   >

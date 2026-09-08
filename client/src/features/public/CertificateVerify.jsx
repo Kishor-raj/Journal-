@@ -38,6 +38,27 @@ function StatusCard({ status, data }) {
           <div style={{ color: '#0B1B3A', fontSize: '14px', marginTop: '10px' }}>
             This Certificate of Publication is authentic and issued by IJIDCR.
           </div>
+          {data?.download_url && (
+            <div style={{ marginTop: '18px' }}>
+              <a
+                href={data.download_url}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'inline-block',
+                  padding: '12px 18px',
+                  borderRadius: '10px',
+                  background: '#0B1B3A',
+                  color: '#FFFFFF',
+                  textDecoration: 'none',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                }}
+              >
+                Download PDF
+              </a>
+            </div>
+          )}
         </>
       ) : isRevoked ? (
         <>

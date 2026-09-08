@@ -52,6 +52,20 @@ export function buildAppUrl(pathname, query = {}) {
   return url.toString()
 }
 
+export function buildServerUrl(pathname, query = {}) {
+  const base = (env.SERVER_ORIGIN || 'https://api.ijidcr-asgard.in').replace(/\/+$/, '')
+  const cleanPath = String(pathname || '').startsWith('/') ? pathname : `/${pathname || ''}`
+  const url = new URL(base + cleanPath)
+  if (query && typeof query === 'object') {
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== null && value !== undefined) {
+        url.searchParams.set(key, String(value))
+      }
+    }
+  }
+  return url.toString()
+}
+
 const TOKEN_BYTES = {
   default: 32,
   short: 16,

@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import * as publicService from './public.service.js'
-import { getCertificateVerification } from '../publications/publication.service.js'
+import { getCertificateVerification, downloadPublicCertificatePdf } from '../publications/publication.service.js'
 
 const router = Router()
 
@@ -27,6 +27,15 @@ router.get('/current-issue', async (req, res) => {
 router.get('/verify/:token', async (req, res) => {
   const verification = await getCertificateVerification(req.params.token)
   res.json(verification)
+})
+
+// GET /api/public/verify/:token/download  — public certificate PDF download
+router.get('/verify/:token/download', async (req, res) => {
+  const { pdfBuffer, filename } = await downloadPublicCertificatePdf(req.params.token)
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+  res.setHeader('Cache-Control', 'no-store, max-age=0')
+  res.send(pdfBuffer)
 })
 
 export default router

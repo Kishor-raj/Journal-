@@ -1,6 +1,6 @@
 import pool from '../../config/db.js'
 import { enqueueNotification } from './notification.service.js'
-import { buildAppUrl } from '../email/email.utils.js'
+import { buildAppUrl, buildServerUrl } from '../email/email.utils.js'
 
 const MANUSCRIPT_PATH = '/author/manuscripts'
 
@@ -357,7 +357,7 @@ export async function sendPublicationCertificate(manuscriptId, authorId) {
       issue: cert.issue,
       publication_year: cert.publication_year,
       publication_date: formatDate(cert.publication_date),
-      certificate_download_url: cert.pdf_file_url || '',
+      certificate_download_url: buildServerUrl(`/api/public/verify/${cert.verification_token}/download`),
       verification_url: verificationUrl,
       manuscript_url: buildManuscriptUrl(manuscriptId),
       manuscript_id: manuscriptId,

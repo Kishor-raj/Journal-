@@ -11,6 +11,15 @@ router.get('/manuscripts/:manuscriptId/certificate', authenticate, async (req, r
   res.json(certificate)
 })
 
+// Direct download of author's certificate PDF
+router.get('/manuscripts/:manuscriptId/certificate/download', authenticate, async (req, res) => {
+  const { pdfBuffer, filename } = await publicationService.downloadMyCertificatePdf(req.params.manuscriptId, req.user.uid, req.user)
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+  res.setHeader('Cache-Control', 'no-store, max-age=0')
+  res.send(pdfBuffer)
+})
+
 // Editor/Admin certificate management
 router.get('/manuscripts/:manuscriptId/certificates', authenticate, requireRole('editor', 'admin'), async (req, res) => {
   const certificates = await publicationService.getCertificatesForManuscript(req.params.manuscriptId)
