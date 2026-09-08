@@ -102,10 +102,10 @@ function StatusCard({ status, data }) {
         </div>
       )}
 
-      {(data?.author?.first_name || data?.author?.last_name) && (
+      {(data?.author_name || data?.author?.name || data?.author?.first_name || data?.author?.last_name) && (
         <div style={{ marginTop: '10px', fontSize: '13px', color: '#374151' }}>
-          <strong>{data.author_name || data.author?.name || [data.author.first_name, data.author.last_name].filter(Boolean).join(' ')}</strong>
-          {data.author.email && ` · ${data.author.email}`}
+          <strong>{data.author_name || data.author?.name || [data.author?.first_name, data.author?.last_name].filter(Boolean).join(' ')}</strong>
+          {data.author?.email && ` · ${data.author.email}`}
         </div>
       )}
 

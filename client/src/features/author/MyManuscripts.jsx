@@ -222,10 +222,15 @@ export default function MyManuscripts() {
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 700, color: '#0B1B3A', marginBottom: '4px' }}>
                 {certificate.certificate_number}
               </div>
-              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-black)' }}>
+              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-black)', fontWeight: 600 }}>
                 {certificate.manuscript_title}
               </div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: '8px' }}>
+              {(certificate.author_name || certificate.author?.name) && (
+                <div style={{ fontSize: 'var(--text-xs)', color: '#0B1B3A', marginTop: '6px' }}>
+                  <strong>Author:</strong> {certificate.author_name || certificate.author?.name}
+                </div>
+              )}
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: '6px' }}>
                 {certificate.journal_name} · Vol. {certificate.volume}, Issue {certificate.issue}, {certificate.publication_year}
                 {certificate.doi ? ` · ${certificate.doi}` : ''}
               </div>
