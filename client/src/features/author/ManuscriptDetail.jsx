@@ -446,11 +446,24 @@ function PublicationCertificateSection({ manuscriptId }) {
             </div>
             {cert.status === 'active' ? (
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
-                {cert.download_url && (
+                {(cert.download_url || cert.pdf_url) && (
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => window.open(cert.download_url, '_blank', 'noopener,noreferrer')}
+                    onClick={() => {
+                      const url = cert.download_url || cert.pdf_url
+                      if (!url) return
+                      if (url.startsWith('data:application/pdf')) {
+                        const link = document.createElement('a')
+                        link.href = url
+                        link.download = `Certificate-${cert.certificate_number || 'download'}.pdf`
+                        document.body.appendChild(link)
+                        link.click()
+                        document.body.removeChild(link)
+                      } else {
+                        window.open(url, '_blank', 'noopener,noreferrer')
+                      }
+                    }}
                   >
                     ⬇ Download Certificate PDF
                   </Button>
