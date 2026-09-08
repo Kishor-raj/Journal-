@@ -21,13 +21,14 @@ import notificationRoutes from './modules/notification/notification.routes.js'
 import auditRoutes from './modules/audit/audit.routes.js'
 import publicRoutes from './modules/public/public.routes.js'
 import publicationRoutes from './modules/publications/publication.routes.js'
+import { env } from './config/env.js'
 
 const app = express()
-const NODE_ENV = process.env.NODE_ENV || 'development'
+const NODE_ENV = env.NODE_ENV
 const isProduction = NODE_ENV === 'production'
 
-const serverOrigin = process.env.SERVER_ORIGIN || `http://localhost:${process.env.PORT || 3001}`
-const isProductionLike = isProduction || serverOrigin.startsWith('https://') || process.env.RENDER === 'true'
+const serverOrigin = env.SERVER_ORIGIN || `http://localhost:${env.PORT || 3001}`
+const isProductionLike = isProduction || serverOrigin.startsWith('https://') || env.RENDER === 'true'
 
 if (isProductionLike) {
   app.set('trust proxy', 1)
@@ -40,7 +41,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'https://'],
-      connectSrc: ["'self'", process.env.SERVER_ORIGIN || 'http://localhost:3001'],
+      connectSrc: ["'self'", env.SERVER_ORIGIN || 'http://localhost:3001', env.CLIENT_ORIGIN],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://fonts.googleapis.com'],
       frameSrc: ["'self'", 'https://accounts.google.com'],
       objectSrc: ["'none'"],
@@ -58,9 +59,9 @@ app.use(helmet({
 }))
 
 const allowedOrigins = new Set([
-  process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-  process.env.SERVER_ORIGIN || 'http://localhost:3001',
-  process.env.PUBLIC_APP_ORIGIN || '',
+  env.CLIENT_ORIGIN,
+  env.SERVER_ORIGIN,
+  env.PUBLIC_APP_ORIGIN,
 ].filter(Boolean))
 
 app.use(cors({
