@@ -14,6 +14,23 @@ function twoDigitYear(value) {
   return String(Math.abs(Math.trunc(num))).padStart(2, '0').slice(-2)
 }
 
+function normalizeName(value) {
+  return String(value ?? '')
+    .replace(/\bundefined\b/gi, '')
+    .replace(/^for\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function resolveCertificateAuthorName(author = {}) {
+  const profileDisplayName = normalizeName(author.profile_display_name)
+  const profileName = normalizeName([author.profile_first_name, author.profile_last_name].filter(Boolean).join(' '))
+  const snapshotName = normalizeName([author.first_name, author.last_name].filter(Boolean).join(' '))
+  const emailName = normalizeName(author.profile_email || author.email)
+
+  return profileDisplayName || profileName || snapshotName || emailName.split('@')[0] || 'Author'
+}
+
 /**
  * Certificate No. = ARFI-{YY}-{ARTICLE_NO}, reusing the existing Article No.
  * (manuscripts.submission_number). No separate certificate sequence is used.
@@ -194,12 +211,15 @@ async function loadCertificateContextByToken(token) {
             m.title AS manuscript_title, m.submission_number, m.submitted_by,
             p.volume, p.issue, p.publication_year, p.publication_date, p.doi, p.article_url,
             ma.first_name, ma.last_name, ma.email,
+            u.display_name AS profile_display_name, u.first_name AS profile_first_name,
+            u.last_name AS profile_last_name, u.email AS profile_email,
             j.name AS journal_name, j.short_name AS journal_short_name,
             j.publisher_name, j.issn_print, j.issn_online
      FROM publication_certificates pc
      JOIN manuscripts m ON m.id = pc.manuscript_id
      JOIN publications p ON p.manuscript_id = pc.manuscript_id
      JOIN manuscript_authors ma ON ma.id = pc.author_id
+     LEFT JOIN users u ON u.id = ma.user_id
      LEFT JOIN journals j ON j.id = m.journal_id
      WHERE pc.verification_token = $1
      LIMIT 1`,
@@ -210,28 +230,7 @@ async function loadCertificateContextByToken(token) {
 }
 
 async function generateAndStoreCertificate({ publication, manuscript, certificate }) {
-  let authorName = [certificate.first_name, certificate.last_name].filter(Boolean).join(' ').trim()
-
-  if (!authorName) {
-    if (certificate.user_id) {
-      const uRes = await pool.query('SELECT first_name, last_name, display_name FROM users WHERE id = $1', [certificate.user_id])
-      const u = uRes.rows[0]
-      if (u) {
-        authorName = [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.display_name
-      }
-    }
-    if (!authorName && manuscript.submitted_by) {
-      const uRes = await pool.query('SELECT first_name, last_name, display_name FROM users WHERE id = $1', [manuscript.submitted_by])
-      const u = uRes.rows[0]
-      if (u) {
-        authorName = [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.display_name
-      }
-    }
-  }
-
-  if (!authorName) {
-    authorName = (certificate.email || 'Author').split('@')[0]
-  }
+  const authorName = resolveCertificateAuthorName(certificate)
 
   const context = {
     authorName,
@@ -352,9 +351,12 @@ export async function generateCertificatesForManuscript(manuscriptId, { triggerN
 
   const certificateResult = await pool.query(
     `SELECT pc.id, pc.author_id, pc.certificate_number, pc.verification_token, pc.status,
-            ma.user_id, ma.first_name, ma.last_name, ma.email, ma.author_order
+            ma.user_id, ma.first_name, ma.last_name, ma.email, ma.author_order,
+            u.display_name AS profile_display_name, u.first_name AS profile_first_name,
+            u.last_name AS profile_last_name, u.email AS profile_email
      FROM publication_certificates pc
      JOIN manuscript_authors ma ON ma.id = pc.author_id
+     LEFT JOIN users u ON u.id = ma.user_id
      WHERE pc.manuscript_id = $1 AND pc.status IN ('pending', 'failed')
      ORDER BY ma.author_order ASC`,
     [manuscriptId]
@@ -489,12 +491,15 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
             m.title AS manuscript_title, m.submission_number,
             p.volume, p.issue, p.publication_year, p.publication_date, p.doi, p.article_url,
             ma.first_name, ma.last_name, ma.email,
+            au.display_name AS author_display_name, au.first_name AS author_profile_first_name,
+            au.last_name AS author_profile_last_name, au.email AS author_profile_email,
             j.name AS journal_name, j.short_name AS journal_short_name,
             j.publisher_name, j.issn_print, j.issn_online
      FROM publication_certificates pc
      JOIN manuscripts m ON m.id = pc.manuscript_id
      JOIN publications p ON p.manuscript_id = pc.manuscript_id
      JOIN manuscript_authors ma ON ma.id = pc.author_id
+     LEFT JOIN users au ON au.id = ma.user_id
      LEFT JOIN journals j ON j.id = m.journal_id
      JOIN users u ON u.id = $2
      WHERE pc.manuscript_id = $1
@@ -511,12 +516,15 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
               m.title AS manuscript_title, m.submission_number,
               p.volume, p.issue, p.publication_year, p.publication_date, p.doi, p.article_url,
               ma.first_name, ma.last_name, ma.email,
+              au.display_name AS author_display_name, au.first_name AS author_profile_first_name,
+              au.last_name AS author_profile_last_name, au.email AS author_profile_email,
               j.name AS journal_name, j.short_name AS journal_short_name,
               j.publisher_name, j.issn_print, j.issn_online
        FROM publication_certificates pc
        JOIN manuscripts m ON m.id = pc.manuscript_id
        JOIN publications p ON p.manuscript_id = pc.manuscript_id
        JOIN manuscript_authors ma ON ma.id = pc.author_id
+       LEFT JOIN users au ON au.id = ma.user_id
        LEFT JOIN journals j ON j.id = m.journal_id
        WHERE pc.manuscript_id = $1
        ORDER BY ma.is_corresponding DESC, ma.author_order ASC
@@ -564,7 +572,14 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
     publication_date: row.publication_date,
     doi: row.doi,
     article_url: row.article_url,
-    author: { first_name: row.first_name, last_name: row.last_name, email: row.email },
+    author: {
+      first_name: row.first_name,
+      last_name: row.last_name,
+      email: row.email,
+      display_name: row.author_display_name,
+      name: resolveCertificateAuthorName(row),
+    },
+    author_name: resolveCertificateAuthorName(row),
     journal_name: row.journal_name,
     journal_short_name: row.journal_short_name,
     publisher_name: row.publisher_name,
@@ -590,7 +605,7 @@ export async function downloadMyCertificatePdf(manuscriptId, userId, user = {}) 
   const { publication, manuscript } = await loadPublicationContext(manuscriptId)
 
   const context = {
-    authorName: [certInfo.author?.first_name, certInfo.author?.last_name].filter(Boolean).join(' ').trim() || certInfo.author?.email || 'Author',
+    authorName: certInfo.author?.name || certInfo.author_name || certInfo.author?.display_name || [certInfo.author?.first_name, certInfo.author?.last_name].filter(Boolean).join(' ').trim() || certInfo.author?.email || 'Author',
     articleTitle: certInfo.manuscript_title || manuscript.title || 'Untitled Article',
     journalName: certInfo.journal_name || manuscript.journal_name || 'International Journal of Intelligent Digital Computing Research',
     journalShortName: certInfo.journal_short_name || manuscript.journal_short_name || 'IJIDCR',
@@ -627,7 +642,7 @@ export async function downloadPublicCertificatePdf(token) {
   }
 
   const context = {
-    authorName: [certInfo.first_name, certInfo.last_name].filter(Boolean).join(' ').trim() || certInfo.email || 'Author',
+    authorName: resolveCertificateAuthorName(certInfo),
     articleTitle: certInfo.manuscript_title || 'Untitled Article',
     journalName: certInfo.journal_name || certInfo.journal_short_name || 'International Journal of Intelligent Digital Computing Research',
     journalShortName: certInfo.journal_short_name || 'IJIDCR',
@@ -663,12 +678,15 @@ export async function getCertificateVerification(token) {
             m.title AS manuscript_title, m.submission_number,
             p.volume, p.issue, p.publication_year, p.publication_date, p.doi,
             ma.first_name, ma.last_name, ma.email,
+            au.display_name AS author_display_name, au.first_name AS author_profile_first_name,
+            au.last_name AS author_profile_last_name, au.email AS author_profile_email,
             j.name AS journal_name, j.short_name AS journal_short_name,
             j.issn_print, j.issn_online
      FROM publication_certificates pc
      JOIN manuscripts m ON m.id = pc.manuscript_id
      JOIN publications p ON p.manuscript_id = pc.manuscript_id
      JOIN manuscript_authors ma ON ma.id = pc.author_id
+     LEFT JOIN users au ON au.id = ma.user_id
      LEFT JOIN journals j ON j.id = m.journal_id
      WHERE pc.verification_token = $1`,
     [token]
@@ -685,7 +703,14 @@ export async function getCertificateVerification(token) {
     status: certStatus,
     certificate_number: row.certificate_number,
     manuscript: { title: row.manuscript_title, submission_number: row.submission_number },
-    author: { first_name: row.first_name, last_name: row.last_name, email: row.email },
+    author: {
+      first_name: row.first_name,
+      last_name: row.last_name,
+      email: row.email,
+      display_name: row.author_display_name,
+      name: resolveCertificateAuthorName(row),
+    },
+    author_name: resolveCertificateAuthorName(row),
     publication: {
       volume: row.volume,
       issue: row.issue,

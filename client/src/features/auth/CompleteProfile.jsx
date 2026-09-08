@@ -12,7 +12,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'var(--color-vellum)',
-    padding: '40px 20px',
+    padding: 'clamp(20px, 4vw, 40px) 16px',
     fontFamily: 'var(--font-body)',
   },
   card: {
@@ -22,7 +22,7 @@ const styles = {
     boxShadow: 'var(--shadow-elevated)',
     maxWidth: '680px',
     width: '100%',
-    padding: '40px',
+    padding: 'clamp(24px, 4vw, 40px)',
   },
   header: {
     marginBottom: '28px',
@@ -41,7 +41,7 @@ const styles = {
   },
   row: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
     gap: '16px',
   },
   input: {

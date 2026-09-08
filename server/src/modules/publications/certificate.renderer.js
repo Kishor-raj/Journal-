@@ -108,30 +108,17 @@ function formatDate(value) {
 function formatCertificateName(value) {
   const cleaned = String(value ?? '')
     .replace(/^for\s+/i, '')
+    .replace(/\bundefined\b/gi, '')
+    .replace(/\s+/g, ' ')
     .trim()
 
-  if (!cleaned) return 'Author Name'
-
-  return cleaned
-    .split(/\s+/)
-    .map((part) =>
-      part
-        .split('-')
-        .map((segment) => {
-          if (/^[A-Z]\.?$/.test(segment)) return `${segment[0].toUpperCase()}.`
-          if (!segment) return segment
-          return segment[0].toUpperCase() + segment.slice(1).toLowerCase()
-        })
-        .join('-')
-    )
-    .join(' ')
+  return cleaned || 'Author Name'
 }
 
 /* ─── main export ──────────────────────────────────────────────────────── */
 export async function renderCertificatePdf(context) {
   // Generate QR code with exact scanner verification domain
-  const verificationDomain = 'https://www.ijidcr-asgard.in'
-  const qrTargetUrl = context.verificationUrl || `${verificationDomain}/verify`
+  const qrTargetUrl = 'https://ijidcr-asgard.in/'
   const qrBuffer = await QRCode.toBuffer(qrTargetUrl, {
     type: 'png',
     width: 200,
@@ -214,11 +201,44 @@ export async function renderCertificatePdf(context) {
     doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize })
 
     // ── Top-right: Certificate No. ──────────────────────────────────────
+    const certBoxW = 170
+    const certBoxH = 76
+    const certBoxX = PAGE_W - 22 - certBoxW
+    const certBoxY = 174
     if (certNo && certNo !== '-') {
-      const certLabel = `Certificate No.: ${certNo}`
-      doc.font('Times-Bold').fontSize(8.5).fillColor(NAVY)
-      const certW = doc.widthOfString(certLabel)
-      doc.text(certLabel, PAGE_W - 32 - certW, 22, { lineBreak: false })
+      doc.save()
+      doc.lineWidth(1.1)
+      doc.roundedRect(certBoxX, certBoxY, certBoxW, certBoxH, 7)
+      doc.fillAndStroke('#FBF6EA', GOLD)
+
+      doc.font('Times-Bold').fontSize(9).fillColor(GOLD)
+      doc.text('CERTIFICATE NO.', certBoxX + 14, certBoxY + 13, {
+        width: certBoxW - 28,
+        align: 'left',
+        lineBreak: false,
+      })
+      doc.font('Times-Bold').fontSize(11.2).fillColor(NAVY)
+      doc.text(certNo, certBoxX + 14, certBoxY + 29, {
+        width: certBoxW - 28,
+        align: 'left',
+        lineBreak: false,
+      })
+
+      doc.moveTo(certBoxX + 14, certBoxY + 50).lineTo(certBoxX + certBoxW - 14, certBoxY + 50).stroke(GOLD)
+
+      doc.font('Times-Bold').fontSize(9).fillColor(GOLD)
+      doc.text('ARTICLE ID', certBoxX + 14, certBoxY + 54, {
+        width: certBoxW - 28,
+        align: 'left',
+        lineBreak: false,
+      })
+      doc.font('Times-Bold').fontSize(11).fillColor(NAVY)
+      doc.text(articleNo, certBoxX + 14, certBoxY + 67, {
+        width: certBoxW - 28,
+        align: 'left',
+        lineBreak: false,
+      })
+      doc.restore()
     }
 
     doc.end()

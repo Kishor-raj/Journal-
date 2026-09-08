@@ -11,10 +11,11 @@ export default function StatCard({ label, value, sublabel, icon, iconBg, iconCol
         borderRadius: '12px',
         border: '1px solid var(--dash-surface-border, #E2E4E8)',
         borderTop: `3px solid ${accentColor || 'var(--dash-accent, #C4922E)'}`,
-        padding: '24px',
+        padding: 'clamp(18px, 2.4vw, 24px)',
         fontFamily: "'DM Sans', system-ui, sans-serif",
         position: 'relative',
         overflow: 'hidden',
+        minWidth: 0,
       }}
     >
       <div
@@ -32,6 +33,7 @@ export default function StatCard({ label, value, sublabel, icon, iconBg, iconCol
             color: 'var(--dash-text-muted, #8B8F9A)',
             textTransform: 'uppercase',
             letterSpacing: '0.04em',
+            minWidth: 0,
           }}
         >
           {label}
@@ -56,7 +58,7 @@ export default function StatCard({ label, value, sublabel, icon, iconBg, iconCol
       </div>
       <div
         style={{
-          fontSize: '32px',
+          fontSize: 'clamp(24px, 4vw, 32px)',
           fontWeight: 700,
           color: 'var(--dash-text-primary, #1A1A2E)',
           lineHeight: 1,

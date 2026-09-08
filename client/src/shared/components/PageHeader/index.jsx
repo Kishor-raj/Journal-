@@ -9,6 +9,7 @@ export default function PageHeader({ title, subtitle, action }) {
         justifyContent: 'space-between',
         gap: '16px',
         flexWrap: 'wrap',
+        minWidth: 0,
         marginBottom: 'var(--space-4)',
       }}
     >
@@ -30,7 +31,7 @@ export default function PageHeader({ title, subtitle, action }) {
           </div>
         )}
       </div>
-      {action && <div style={{ flexShrink: 0 }}>{action}</div>}
+      {action && <div style={{ flexShrink: 0, marginLeft: 'auto' }}>{action}</div>}
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { formatDate } from '../../shared/utils/formatDate'
 const S = {
   page: {
     fontFamily: 'var(--font-body)',
-    padding: '36px 40px',
+    padding: 'clamp(18px, 3vw, 36px) clamp(16px, 3vw, 40px)',
     maxWidth: '1400px',
     margin: '0 auto',
   },
@@ -27,7 +27,7 @@ const S = {
   // ─ Stat cards row
   statsRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, minmax(180px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
     gap: '18px',
     marginBottom: '28px',
   },
@@ -70,6 +70,8 @@ const S = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '12px',
     padding: '18px 22px',
     borderBottom: '1px solid #E4E8F1',
   },

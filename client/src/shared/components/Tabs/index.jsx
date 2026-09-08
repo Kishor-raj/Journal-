@@ -9,6 +9,7 @@ export default function Tabs({ tabs = [], activeKey, onChange }) {
         borderBottom: '2px solid var(--color-rule-grey)',
         marginBottom: 'var(--space-4)',
         overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
         fontFamily: 'inherit',
       }}
     >
@@ -18,8 +19,8 @@ export default function Tabs({ tabs = [], activeKey, onChange }) {
           <div
             key={tab.key}
             onClick={() => onChange(tab.key)}
-            style={{
-              padding: '10px 18px',
+              style={{
+              padding: '10px 14px',
               fontSize: 'var(--text-sm)',
               fontWeight: 600,
               cursor: 'pointer',

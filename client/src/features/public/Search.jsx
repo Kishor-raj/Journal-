@@ -20,15 +20,16 @@ const styles = {
   main: {
     maxWidth: '800px',
     margin: '0 auto',
-    padding: '4rem 2rem',
+    padding: 'clamp(2.5rem, 5vw, 4rem) clamp(1rem, 3vw, 2rem)',
   },
   searchForm: {
     display: 'flex',
     gap: '0.75rem',
     marginBottom: '2.5rem',
+    flexWrap: 'wrap',
   },
   searchInput: {
-    flex: 1,
+    flex: '1 1 320px',
     fontFamily: 'var(--font-body)',
     fontSize: '1rem',
     padding: '0.875rem 1.25rem',
@@ -39,6 +40,7 @@ const styles = {
     outline: 'none',
   },
   searchButton: {
+    flex: '0 0 auto',
     fontFamily: 'var(--font-body)',
     fontSize: '1rem',
     fontWeight: 600,
