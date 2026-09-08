@@ -7,7 +7,7 @@ const router = Router()
 
 // Author's own certificate for one of their published manuscripts
 router.get('/manuscripts/:manuscriptId/certificate', authenticate, async (req, res) => {
-  const certificate = await publicationService.getMyCertificate(req.params.manuscriptId, req.user.uid)
+  const certificate = await publicationService.getMyCertificate(req.params.manuscriptId, req.user.uid, req.user)
   res.json(certificate)
 })
 

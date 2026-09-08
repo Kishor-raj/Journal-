@@ -416,7 +416,14 @@ function PublicationCertificateSection({ manuscriptId }) {
     let active = true
     getMyCertificate(manuscriptId)
       .then((data) => { if (active) { setCert(data); setState({ loading: false, error: '' }) } })
-      .catch(() => { if (active) setState({ loading: false, error: 'Certificate is not available yet.' }) })
+      .catch((err) => {
+        if (active) {
+          setState({
+            loading: false,
+            error: err.response?.data?.error || 'Certificate is not available yet.'
+          })
+        }
+      })
     return () => { active = false }
   }, [manuscriptId])
 

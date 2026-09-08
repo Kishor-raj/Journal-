@@ -68,8 +68,8 @@ async function upsertEmailNotification({ eventKey, templateKey, recipientUserId,
              status = $2,
              provider_message_id = COALESCE($3, provider_message_id),
              last_error = $4,
-             sent_at = CASE WHEN $2::text = 'sent' THEN $5 ELSE sent_at END,
-             failed_at = CASE WHEN $2::text = 'failed' THEN $5 ELSE failed_at END,
+             sent_at = CASE WHEN $2 = 'sent' THEN $5 ELSE sent_at END,
+             failed_at = CASE WHEN $2 = 'failed' THEN $5 ELSE failed_at END,
              updated_at = $5
          WHERE id = $6
          RETURNING id`,
@@ -88,8 +88,8 @@ async function upsertEmailNotification({ eventKey, templateKey, recipientUserId,
            status = $8,
            provider_message_id = COALESCE($10, email_notifications.provider_message_id),
            last_error = $11,
-           sent_at = CASE WHEN $8::text = 'sent' THEN $12 ELSE email_notifications.sent_at END,
-           failed_at = CASE WHEN $8::text = 'failed' THEN $12 ELSE email_notifications.failed_at END,
+           sent_at = CASE WHEN $8 = 'sent' THEN $12 ELSE email_notifications.sent_at END,
+           failed_at = CASE WHEN $8 = 'failed' THEN $12 ELSE email_notifications.failed_at END,
            updated_at = $12
      RETURNING id`,
     [

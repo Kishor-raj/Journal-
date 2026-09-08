@@ -43,8 +43,11 @@ export default function MyManuscripts() {
     try {
       const data = await getMyCertificate(row.id)
       setCertificate(data)
-    } catch {
-      setCertState({ loading: false, error: 'No certificate is available for this manuscript yet.' })
+    } catch (err) {
+      setCertState({
+        loading: false,
+        error: err.response?.data?.error || err.message || 'No certificate is available for this manuscript yet.'
+      })
     } finally {
       setCertState((s) => ({ ...s, loading: false }))
     }
