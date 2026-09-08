@@ -20,12 +20,12 @@ const MUTED = '#5A6572'
 const INK   = '#1A2A3A'
 
 /* ─── helpers ──────────────────────────────────────────────────────────── */
-function wrapLines(doc, words, maxWidth) {
+function wrapLines(doc, words, maxWidth, characterSpacing = 0) {
   const lines = []
   let current = ''
   for (const word of words) {
     const candidate = current ? `${current} ${word}` : word
-    if (doc.widthOfString(candidate) <= maxWidth) {
+    if (doc.widthOfString(candidate, { characterSpacing }) <= maxWidth) {
       current = candidate
     } else {
       if (current) lines.push(current)
@@ -36,14 +36,14 @@ function wrapLines(doc, words, maxWidth) {
   return lines
 }
 
-function fitTextSlot(doc, text, maxWidth, maxHeight, startSize, minSize, fontName, maxLines = 2, lineHeightFactor = 1.15) {
+function fitTextSlot(doc, text, maxWidth, maxHeight, startSize, minSize, fontName, maxLines = 2, lineHeightFactor = 1.15, characterSpacing = 0) {
   const words = String(text ?? '').trim().split(/\s+/).filter(Boolean)
   if (words.length === 0) return { lines: [], size: startSize }
 
   for (let size = startSize; size >= minSize; size -= 0.5) {
     doc.font(fontName).fontSize(size)
-    const lines = wrapLines(doc, words, maxWidth)
-    const tooWide = lines.some((line) => doc.widthOfString(line) > maxWidth + 0.5)
+    const lines = wrapLines(doc, words, maxWidth, characterSpacing)
+    const tooWide = lines.some((line) => doc.widthOfString(line, { characterSpacing }) > maxWidth + 0.5)
     const blockHeight = (lines.length - 1) * (size * lineHeightFactor) + size * 0.8
     if (!tooWide && lines.length <= maxLines && blockHeight <= maxHeight) {
       return { lines, size }
@@ -51,7 +51,7 @@ function fitTextSlot(doc, text, maxWidth, maxHeight, startSize, minSize, fontNam
   }
 
   doc.font(fontName).fontSize(minSize)
-  return { lines: wrapLines(doc, words, maxWidth).slice(0, maxLines), size: minSize }
+  return { lines: wrapLines(doc, words, maxWidth, characterSpacing).slice(0, maxLines), size: minSize }
 }
 
 /** Draw centred text within a vertical slot [slotTop, slotBottom] */
@@ -65,6 +65,8 @@ function drawCenteredSlot(doc, text, slotTop, slotBottom, opts = {}) {
     maxLines = 2,
     lineHeightFactor = 1.15,
     verticalPadding = 2.5,
+    yOffset = 0,
+    characterSpacing = 0,
   } = opts
 
   const slotHeight = slotBottom - slotTop
@@ -78,18 +80,19 @@ function drawCenteredSlot(doc, text, slotTop, slotBottom, opts = {}) {
     minSize,
     font,
     maxLines,
-    lineHeightFactor
+    lineHeightFactor,
+    characterSpacing
   )
   if (lines.length === 0) return slotBottom
 
   doc.font(font).fontSize(usedSize).fillColor(color)
 
   const blockHeight = (lines.length - 1) * (usedSize * lineHeightFactor) + usedSize * 0.8
-  let cursorY = slotTop + (slotHeight - blockHeight) / 2
+  let cursorY = slotTop + (slotHeight - blockHeight) / 2 + yOffset
 
   for (const line of lines) {
-    const width = doc.widthOfString(line)
-    doc.text(line, (PAGE_W - width) / 2, cursorY, { lineBreak: false })
+    const width = doc.widthOfString(line, { characterSpacing })
+    doc.text(line, (PAGE_W - width) / 2, cursorY, { lineBreak: false, characterSpacing })
     cursorY += usedSize * lineHeightFactor
   }
   return cursorY
@@ -123,7 +126,7 @@ export async function renderCertificatePdf(context) {
 
     // ── extract context fields ──────────────────────────────────────────
     const rawAuthorName  = String(context.authorName || 'Author Name').trim()
-    const authorName     = rawAuthorName.replace(/^for\s+/i, '').trim() || rawAuthorName
+    const authorName     = (rawAuthorName.replace(/^for\s+/i, '').trim() || rawAuthorName).toUpperCase()
     const rawTitle       = String(context.articleTitle || 'Untitled Article').trim()
     let articleTitle     = rawTitle
     if (articleTitle && !articleTitle.startsWith('“') && !articleTitle.startsWith('"') && !articleTitle.startsWith("'")) {
@@ -131,6 +134,7 @@ export async function renderCertificatePdf(context) {
     } else if (articleTitle.startsWith('"') && articleTitle.endsWith('"') && articleTitle.length > 1) {
       articleTitle = `“${articleTitle.slice(1, -1)}”`
     }
+    articleTitle = articleTitle.toUpperCase()
 
     const volume         = context.volume ?? 1
     const issue          = context.issue ?? 1
@@ -151,24 +155,27 @@ export async function renderCertificatePdf(context) {
     // ── Author Name (Slot 1: Y 290.6 -> 325.1) ───────────────────────────
     drawCenteredSlot(doc, authorName, 290.6, 325.1, {
       font: 'Times-Bold',
-      size: 22,
+      size: 21,
       color: NAVY,
       maxWidth: 560,
       minSize: 12,
       maxLines: 1,
       verticalPadding: 3.5,
+      yOffset: 2,
+      characterSpacing: 1.2,
     })
 
     // ── Article Title (Slot 2: Y 353.7 -> 378.1) ──────────────────────────
     drawCenteredSlot(doc, articleTitle, 353.7, 378.1, {
-      font: 'Times-BoldItalic',
-      size: 14,
+      font: 'Times-Bold',
+      size: 13.5,
       color: NAVY,
       maxWidth: 560,
       minSize: 8.5,
       maxLines: 2,
       lineHeightFactor: 1.15,
       verticalPadding: 2.5,
+      characterSpacing: 0.8,
     })
 
     // ── Volume / Issue / Year (Cover placeholder and render dynamic text) ─
