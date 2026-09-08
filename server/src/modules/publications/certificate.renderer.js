@@ -36,44 +36,61 @@ function wrapLines(doc, words, maxWidth) {
   return lines
 }
 
-function fitText(doc, text, maxWidth, startSize, minSize, fontName) {
+function fitTextSlot(doc, text, maxWidth, maxHeight, startSize, minSize, fontName, maxLines = 2, lineHeightFactor = 1.15) {
   const words = String(text ?? '').trim().split(/\s+/).filter(Boolean)
   if (words.length === 0) return { lines: [], size: startSize }
 
-  for (let size = startSize; size >= minSize; size -= 1) {
+  for (let size = startSize; size >= minSize; size -= 0.5) {
     doc.font(fontName).fontSize(size)
     const lines = wrapLines(doc, words, maxWidth)
     const tooWide = lines.some((line) => doc.widthOfString(line) > maxWidth + 0.5)
-    if (!tooWide) return { lines, size }
+    const blockHeight = (lines.length - 1) * (size * lineHeightFactor) + size * 0.8
+    if (!tooWide && lines.length <= maxLines && blockHeight <= maxHeight) {
+      return { lines, size }
+    }
   }
 
   doc.font(fontName).fontSize(minSize)
-  return { lines: wrapLines(doc, words, maxWidth), size: minSize }
+  return { lines: wrapLines(doc, words, maxWidth).slice(0, maxLines), size: minSize }
 }
 
-/** Draw centred text; returns the Y after the last line */
-function drawCenteredText(doc, text, y, opts = {}) {
-  const { font = 'Helvetica', size = 11, color = INK, maxWidth = 560, minSize } = opts
-  const { lines, size: usedSize } = fitText(doc, text, maxWidth, size, Math.max(6, minSize ?? size - 6), font)
+/** Draw centred text within a vertical slot [slotTop, slotBottom] */
+function drawCenteredSlot(doc, text, slotTop, slotBottom, opts = {}) {
+  const {
+    font = 'Times-Roman',
+    size = 14,
+    color = NAVY,
+    maxWidth = 560,
+    minSize = 8.5,
+    maxLines = 2,
+    lineHeightFactor = 1.15,
+    verticalPadding = 2.5,
+  } = opts
+
+  const slotHeight = slotBottom - slotTop
+  const availableHeight = slotHeight - verticalPadding * 2
+  const { lines, size: usedSize } = fitTextSlot(
+    doc,
+    text,
+    maxWidth,
+    availableHeight,
+    size,
+    minSize,
+    font,
+    maxLines,
+    lineHeightFactor
+  )
+  if (lines.length === 0) return slotBottom
+
   doc.font(font).fontSize(usedSize).fillColor(color)
-  let cursorY = y
+
+  const blockHeight = (lines.length - 1) * (usedSize * lineHeightFactor) + usedSize * 0.8
+  let cursorY = slotTop + (slotHeight - blockHeight) / 2
+
   for (const line of lines) {
     const width = doc.widthOfString(line)
-    doc.text(line, (PAGE_W - width) / 2, cursorY)
-    cursorY += usedSize * 1.22
-  }
-  return cursorY
-}
-
-/** Draw left-aligned text; returns the Y after the last line */
-function drawLeftText(doc, text, x, y, opts = {}) {
-  const { font = 'Helvetica', size = 11, color = INK, maxWidth = 320 } = opts
-  const { lines, size: usedSize } = fitText(doc, text, maxWidth, size, Math.max(6, size - 4), font)
-  doc.font(font).fontSize(usedSize).fillColor(color)
-  let cursorY = y
-  for (const line of lines) {
-    doc.text(line, x, cursorY)
-    cursorY += usedSize * 1.25
+    doc.text(line, (PAGE_W - width) / 2, cursorY, { lineBreak: false })
+    cursorY += usedSize * lineHeightFactor
   }
   return cursorY
 }
@@ -107,7 +124,14 @@ export async function renderCertificatePdf(context) {
     // ── extract context fields ──────────────────────────────────────────
     const rawAuthorName  = String(context.authorName || 'Author Name').trim()
     const authorName     = rawAuthorName.replace(/^for\s+/i, '').trim() || rawAuthorName
-    const articleTitle   = String(context.articleTitle || 'Untitled Article').trim()
+    const rawTitle       = String(context.articleTitle || 'Untitled Article').trim()
+    let articleTitle     = rawTitle
+    if (articleTitle && !articleTitle.startsWith('“') && !articleTitle.startsWith('"') && !articleTitle.startsWith("'")) {
+      articleTitle = `“${articleTitle}”`
+    } else if (articleTitle.startsWith('"') && articleTitle.endsWith('"') && articleTitle.length > 1) {
+      articleTitle = `“${articleTitle.slice(1, -1)}”`
+    }
+
     const volume         = context.volume ?? 1
     const issue          = context.issue ?? 1
     const year           = context.year ?? new Date().getFullYear()
@@ -124,34 +148,36 @@ export async function renderCertificatePdf(context) {
 
     // ── Step 2: Overlay dynamic data with matched typography ────────────
 
-    // ── Author Name (Harmonized Times-Bold typography) ──────────────────
-    // Placed precisely between "This is to certify that" and "has published..."
-    drawCenteredText(doc, authorName, 290, {
+    // ── Author Name (Slot 1: Y 290.6 -> 325.1) ───────────────────────────
+    drawCenteredSlot(doc, authorName, 290.6, 325.1, {
       font: 'Times-Bold',
       size: 22,
       color: NAVY,
-      maxWidth: 540,
-      minSize: 13,
+      maxWidth: 560,
+      minSize: 12,
+      maxLines: 1,
+      verticalPadding: 3.5,
     })
 
-    // ── Article Title (Times-BoldItalic with balanced line wrapping) ─────
-    drawCenteredText(doc, `"${articleTitle}"`, 368, {
+    // ── Article Title (Slot 2: Y 353.7 -> 378.1) ──────────────────────────
+    drawCenteredSlot(doc, articleTitle, 353.7, 378.1, {
       font: 'Times-BoldItalic',
       size: 14,
       color: NAVY,
-      maxWidth: 550,
-      minSize: 9.5,
+      maxWidth: 560,
+      minSize: 8.5,
+      maxLines: 2,
+      lineHeightFactor: 1.15,
+      verticalPadding: 2.5,
     })
 
-    // ── Volume / Issue / Year (Times-Bold matching classical serif style) ──
-    doc.rect(240, 392, 362, 22).fillColor('#FFFFFF').fill()
+    // ── Volume / Issue / Year (Cover placeholder and render dynamic text) ─
+    doc.rect(300, 394, 242, 16).fillColor('#FFFFFF').fill()
 
-    drawCenteredText(doc, `in Volume ${volume},  Issue ${issue},  Year ${year}`, 396, {
-      font: 'Times-Bold',
-      size: 11.5,
-      color: NAVY,
-      maxWidth: 420,
-    })
+    const volText = `in Volume ${volume},  Issue ${issue},  Year ${year}`
+    doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
+    const volW = doc.widthOfString(volText)
+    doc.text(volText, (PAGE_W - volW) / 2, 396, { lineBreak: false })
 
     // ── QR Code (bottom-left scanner pointing to www.ijidcr-asgard.in) ───
     const qrSize = 76
@@ -164,7 +190,7 @@ export async function renderCertificatePdf(context) {
       const certLabel = `Certificate No.: ${certNo}`
       doc.font('Times-Bold').fontSize(8.5).fillColor(NAVY)
       const certW = doc.widthOfString(certLabel)
-      doc.text(certLabel, PAGE_W - 32 - certW, 22)
+      doc.text(certLabel, PAGE_W - 32 - certW, 22, { lineBreak: false })
     }
 
     doc.end()
