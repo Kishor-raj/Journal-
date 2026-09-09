@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Button from '../../shared/components/Button'
 import StatusBadge from '../../shared/components/StatusBadge'
@@ -11,9 +11,6 @@ import {
   getExtensionRequests,
   handleExtension,
   publishManuscript,
-  getManuscriptCertificates,
-  regenerateCertificates,
-  revokeCertificate,
 } from '../../services/editorialService'
 import { getFileAccess } from '../../services/fileService'
 import { formatDate } from '../../shared/utils/formatDate'
@@ -155,10 +152,6 @@ export default function ManuscriptDetail() {
   const [publishing, setPublishing] = useState(false)
   const [publishModal, setPublishModal] = useState(false)
   const [publishForm, setPublishForm] = useState({ volume: '', issue: '', doi: '' })
-  const [certificates, setCertificates] = useState([])
-  const [certLoading, setCertLoading] = useState(false)
-  const [certNote, setCertNote] = useState('')
-  const [revokingId, setRevokingId] = useState(null)
 
   const openFile = async (fileId, accessType) => {
     try {
@@ -188,21 +181,6 @@ export default function ManuscriptDetail() {
       .then(setExtensions)
       .catch(() => {})
   }, [id])
-
-  const loadCertificates = useCallback(() => {
-    getManuscriptCertificates(id)
-      .then((rows) => setCertificates(Array.isArray(rows) ? rows : []))
-      .catch(() => setCertificates([]))
-      .finally(() => setCertLoading(false))
-  }, [id])
-
-  useEffect(() => {
-    if (manuscript?.current_status === 'published') {
-      setCertLoading(true)
-      loadCertificates()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manuscript?.current_status])
 
   const toDateInputValue = (value) => {
     if (!value) return ''
@@ -254,56 +232,19 @@ export default function ManuscriptDetail() {
   const handleConfirmPublish = async () => {
     setPublishing(true)
     try {
-      const result = await publishManuscript(id, {
+      await publishManuscript(id, {
         volume: publishForm.volume,
         issue: publishForm.issue,
         doi: publishForm.doi,
       })
       setManuscript((prev) => prev ? { ...prev, current_status: 'published' } : prev)
-      const certNote =
-        result?.certificates_created > 0
-          ? ` Certificate(s) prepared: ${result.certificates_created} (${result.certificates_generated ?? 0} generated).`
-          : ''
       setPublishSuccess(true)
       setPublishModal(false)
       setTimeout(() => setPublishSuccess(false), 6000)
-      setTimeout(() => setCertNote(certNote), 400)
-      loadCertificates()
     } catch (err) {
       alert(err.message || 'Failed to publish manuscript')
     } finally {
       setPublishing(false)
-    }
-  }
-
-  const handleRegenerateCertificates = async () => {
-    setCertLoading(true)
-    try {
-      const result = await regenerateCertificates(id)
-      const generated = result?.results?.filter((r) => r.status === 'active').length ?? 0
-      setCertNote(`Certificate regeneration finished. ${generated} active, ${(result?.results?.length ?? 0) - generated} pending/failed.`)
-      setTimeout(() => setCertNote(''), 6000)
-    } catch (err) {
-      alert(err.message || 'Failed to regenerate certificates')
-    } finally {
-      setCertLoading(false)
-      loadCertificates()
-    }
-  }
-
-  const handleRevokeCertificate = async (certificate) => {
-    const reason = window.prompt(`Revoke certificate ${certificate.certificate_number}? Enter a reason (optional):`, '')
-    if (reason === null) return
-    setRevokingId(certificate.id)
-    try {
-      await revokeCertificate(certificate.id, reason)
-      setCertNote(`Certificate ${certificate.certificate_number} revoked.`)
-      setTimeout(() => setCertNote(''), 6000)
-      loadCertificates()
-    } catch (err) {
-      alert(err.message || 'Failed to revoke certificate')
-    } finally {
-      setRevokingId(null)
     }
   }
 
@@ -584,97 +525,6 @@ export default function ManuscriptDetail() {
           })
         )}
       </div>
-
-      {certNote && (
-        <div style={{
-          background: '#FBF6EA',
-          border: '1px solid #C4A24C',
-          color: '#0B1B3A',
-          padding: '12px 16px',
-          borderRadius: 'var(--radius-md)',
-          marginBottom: '20px',
-          fontSize: 'var(--text-sm)',
-          fontWeight: 500,
-        }}>
-          {certNote}
-        </div>
-      )}
-
-      {manuscript.current_status === 'published' && (
-        <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>Certificates of Publication</h2>
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-            <Button
-              variant="secondary"
-              size="sm"
-              loading={certLoading}
-              onClick={handleRegenerateCertificates}
-            >
-              Regenerate Certificates
-            </Button>
-          </div>
-          {certLoading && certificates.length === 0 ? (
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>Loading certificates...</p>
-          ) : certificates.length === 0 ? (
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-              No certificates found. Regenerate to create Certificate of Publication PDFs for each author.
-            </p>
-          ) : (
-            certificates.map((c) => (
-              <div
-                key={c.id}
-                style={{
-                  border: '1px solid var(--color-rule-grey)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '14px 16px',
-                  marginBottom: '10px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '16px',
-                  background: c.status === 'active' ? '#F4FAF6' : c.status === 'revoked' ? '#FDF3F0' : 'transparent',
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--color-ink-navy)' }}>
-                    {[c.first_name, c.last_name].filter(Boolean).join(' ') || c.email}
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                    {c.certificate_number}
-                  </div>
-                  {c.status === 'revoked' && c.revocation_reason && (
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-danger)', marginTop: '4px' }}>
-                      Reason: {c.revocation_reason}
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', whiteSpace: 'nowrap' }}>
-                  <StatusBadge status={c.status === 'active' ? 'published' : c.status === 'revoked' ? 'revoked' : c.status} />
-                  {c.status === 'active' && c.pdf_file_url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => window.open(c.pdf_file_url, '_blank', 'noopener,noreferrer')}
-                    >
-                      View
-                    </Button>
-                  )}
-                  {c.status === 'active' && (
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      loading={revokingId === c.id}
-                      onClick={() => handleRevokeCertificate(c)}
-                    >
-                      Revoke
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
 
       {publishModal && (
         <div
