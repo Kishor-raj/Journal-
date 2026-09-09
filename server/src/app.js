@@ -21,6 +21,7 @@ import notificationRoutes from './modules/notification/notification.routes.js'
 import auditRoutes from './modules/audit/audit.routes.js'
 import publicRoutes from './modules/public/public.routes.js'
 import publicationRoutes from './modules/publications/publication.routes.js'
+import aiEmailRoutes from './modules/ai-email/ai-email.routes.js'
 import { env } from './config/env.js'
 
 const app = express()
@@ -72,7 +73,13 @@ app.use(cors({
   },
   credentials: true,
 }))
-app.use(express.json())
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    if (req.url?.includes('/email/hostinger/webhook')) {
+      req.rawBody = buf.toString()
+    }
+  },
+}))
 app.use(cookieParser())
 
 app.use((req, res, next) => {
@@ -98,6 +105,7 @@ app.use('/api/notifications', notificationRoutes)
 app.use('/api/audit', auditRoutes)
 app.use('/api/public', publicRoutes)
 app.use('/api/publications', publicationRoutes)
+app.use('/api/email', aiEmailRoutes)
 
 app.use(errorHandler)
 

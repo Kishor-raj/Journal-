@@ -38,6 +38,14 @@ async function start() {
         reminderAfterDays: parseInt(process.env.DRAFT_REMINDER_AFTER_DAYS, 10) || 3,
         cooldownDays: parseInt(process.env.DRAFT_REMINDER_COOLDOWN_DAYS, 10) || 7,
       },
+      webhookEvent: {
+        enabled: true,
+        pollIntervalMs: parseInt(process.env.WEBHOOK_EVENT_WORKER_INTERVAL_MS, 10) || 15 * 1000,
+      },
+      aiEmail: {
+        enabled: true,
+        pollIntervalMs: parseInt(process.env.AI_EMAIL_WORKER_INTERVAL_MS, 10) || 20 * 1000,
+      },
     })
     if (jobs) process.on('SIGTERM', () => jobs.stop())
   } else {
