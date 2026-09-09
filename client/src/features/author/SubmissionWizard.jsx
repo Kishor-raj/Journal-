@@ -13,6 +13,8 @@ import {
   requestSignature,
   confirmUpload,
   deleteManuscriptFile,
+  getCategories,
+  getArticleTypes,
 } from './services/manuscriptService'
 
 const STEPS = [
@@ -24,28 +26,7 @@ const STEPS = [
   { key: 'submit', label: 'Submit' },
 ]
 
-const CATEGORIES = [
-  'Original Research',
-  'Review Article',
-  'Case Study',
-  'Short Communication',
-  'Commentary',
-  'Letter to Editor',
-  'Book Review',
-  'Technical Note',
-]
 
-const SUBJECTS = [
-  'Machine Learning',
-  'Computer Vision',
-  'Natural Language Processing',
-  'Software Engineering',
-  'Cybersecurity',
-  'Quantum Computing',
-  'IoT / Edge Computing',
-  'Data Science',
-  'Artificial Intelligence',
-]
 
 const CONTRIBUTION_ROLES = [
   'Conceptualization',
@@ -511,6 +492,49 @@ function KeywordInput({ value = [], onChange }) {
 
 // Step 1: Basic Information
 function StepBasic({ manuscript, onChange, errors }) {
+  const [dbCategories, setDbCategories] = useState([])
+  const [catLoading, setCatLoading] = useState(true)
+  const [catError, setCatError] = useState(false)
+
+  const [dbArticleTypes, setDbArticleTypes] = useState([])
+  const [typeLoading, setTypeLoading] = useState(true)
+  const [typeError, setTypeError] = useState(false)
+
+  const fetchCategories = () => {
+    setCatLoading(true)
+    setCatError(false)
+    getCategories()
+      .then((res) => {
+        const data = res?.data ?? res
+        setDbCategories(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        setCatError(true)
+        setDbCategories([])
+      })
+      .finally(() => setCatLoading(false))
+  }
+
+  const fetchArticleTypes = () => {
+    setTypeLoading(true)
+    setTypeError(false)
+    getArticleTypes()
+      .then((res) => {
+        const data = res?.data ?? res
+        setDbArticleTypes(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        setTypeError(true)
+        setDbArticleTypes([])
+      })
+      .finally(() => setTypeLoading(false))
+  }
+
+  useEffect(() => {
+    fetchCategories()
+    fetchArticleTypes()
+  }, [])
+
   const handleChange = (field, value) => {
     onChange({ ...manuscript, [field]: value })
   }
@@ -518,7 +542,7 @@ function StepBasic({ manuscript, onChange, errors }) {
   return (
     <div>
       <h2 style={styles.sectionTitle}>Basic Information</h2>
-      
+
       <FormField label="Manuscript Title" required error={errors.title}>
         <input
           type="text"
@@ -528,7 +552,7 @@ function StepBasic({ manuscript, onChange, errors }) {
           style={styles.input}
         />
       </FormField>
-      
+
       <FormField label="Abstract" required error={errors.abstract} helperText="Do not include author names or affiliations if the journal uses double-blind review.">
         <textarea
           value={manuscript.abstract || ''}
@@ -537,35 +561,78 @@ function StepBasic({ manuscript, onChange, errors }) {
           style={{ ...styles.textarea, minHeight: '120px' }}
         />
       </FormField>
-      
+
       <div style={styles.formRow}>
-        <FormField label="Article Type" required error={errors.category}>
+        <FormField label="Article Type" required error={errors.article_type}>
           <select
-            value={manuscript.category || ''}
-            onChange={(e) => handleChange('category', e.target.value)}
-            style={styles.select}
+            value={manuscript.article_type || ''}
+            onChange={(e) => handleChange('article_type', e.target.value)}
+            style={{ ...styles.select, opacity: typeLoading ? 0.6 : 1 }}
+            disabled={typeLoading}
           >
-            <option value="">Select type...</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
+            <option value="">
+              {typeLoading
+                ? 'Loading...'
+                : typeError
+                ? 'Failed to load — retry'
+                : dbArticleTypes.length === 0
+                ? 'No types available'
+                : 'Select type...'}
+            </option>
+            {dbArticleTypes.map((t) => (
+              <option key={t.id} value={t.name}>{t.name}</option>
             ))}
           </select>
+          {typeError && (
+            <div style={{ ...styles.formHint, color: 'var(--color-danger)', marginTop: '4px' }}>
+              Could not load article types.{' '}
+              <span
+                style={{ textDecoration: 'underline', cursor: 'pointer' }}
+                onClick={fetchArticleTypes}
+              >
+                Retry
+              </span>
+            </div>
+          )}
         </FormField>
-        
-        <FormField label="Subject / Category" required error={errors.subject}>
+
+        <FormField label="Subject / Category" required error={errors.category_id}>
           <select
-            value={manuscript.subject || ''}
-            onChange={(e) => handleChange('subject', e.target.value)}
-            style={styles.select}
+            value={manuscript.category_id || ''}
+            onChange={(e) => handleChange('category_id', e.target.value)}
+            style={{
+              ...styles.select,
+              opacity: catLoading ? 0.6 : 1,
+            }}
+            disabled={catLoading}
           >
-            <option value="">Select subject...</option>
-            {SUBJECTS.map((subj) => (
-              <option key={subj} value={subj}>{subj}</option>
+            <option value="">
+              {catLoading
+                ? 'Loading...'
+                : catError
+                ? 'Failed to load — retry'
+                : dbCategories.length === 0
+                ? 'No categories available'
+                : 'Select subject...'}
+            </option>
+            {dbCategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
+          {catError && (
+            <div style={{ ...styles.formHint, color: 'var(--color-danger)', marginTop: '4px' }}>
+              Could not load categories.{' '}
+              <span
+                style={{ textDecoration: 'underline', cursor: 'pointer' }}
+                onClick={fetchCategories}
+              >
+                Retry
+              </span>
+            </div>
+          )}
         </FormField>
       </div>
-      
+
       <KeywordInput
         value={manuscript.keywords || []}
         onChange={(kw) => handleChange('keywords', kw)}
@@ -1076,12 +1143,12 @@ function StepReview({ manuscript }) {
       
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Article Type</div>
-        <div>{manuscript.category || <span style={{ color: 'var(--color-text-muted)' }}>Not selected</span>}</div>
+        <div>{manuscript.article_type || <span style={{ color: 'var(--color-text-muted)' }}>Not selected</span>}</div>
       </div>
       
       <div style={styles.reviewSection}>
-        <div style={styles.reviewLabel}>Subject</div>
-        <div>{manuscript.subject || <span style={{ color: 'var(--color-text-muted)' }}>Not selected</span>}</div>
+        <div style={styles.reviewLabel}>Subject / Category</div>
+        <div>{manuscript.category_name || manuscript.category || <span style={{ color: 'var(--color-text-muted)' }}>Not selected</span>}</div>
       </div>
       
       <div style={styles.reviewSection}>
@@ -1282,8 +1349,8 @@ export default function SubmissionWizard() {
         title: manuscript.title,
         abstract: manuscript.abstract,
         keywords: manuscript.keywords,
-        category: manuscript.category,
-        subject: manuscript.subject,
+        category_id: manuscript.category_id,
+        article_type: manuscript.article_type,
         conflict_of_interest: manuscript.conflict_of_interest,
         ethics_approval: manuscript.ethics_approval,
         funding: manuscript.funding,
@@ -1293,9 +1360,9 @@ export default function SubmissionWizard() {
     }, 1000)
     return () => clearTimeout(timeout)
   }, [
-    manuscript?.id, step, 
-    manuscript?.title, manuscript?.abstract, manuscript?.keywords, 
-    manuscript?.category, manuscript?.subject,
+    manuscript?.id, step,
+    manuscript?.title, manuscript?.abstract, manuscript?.keywords,
+    manuscript?.category_id, manuscript?.article_type,
     manuscript?.conflict_of_interest, manuscript?.ethics_approval,
     manuscript?.funding, manuscript?.acknowledgements, manuscript?.data_availability,
   ])
@@ -1306,8 +1373,8 @@ export default function SubmissionWizard() {
     if (step === 1) {
       if (!manuscript?.title?.trim()) newErrors.title = 'Title is required'
       if (!manuscript?.abstract?.trim()) newErrors.abstract = 'Abstract is required'
-      if (!manuscript?.category) newErrors.category = 'Category is required'
-      if (!manuscript?.subject) newErrors.subject = 'Subject is required'
+      if (!manuscript?.article_type) newErrors.article_type = 'Article type is required'
+      if (!manuscript?.category_id) newErrors.category_id = 'Subject / Category is required'
     }
     
     if (step === 3) {
@@ -1332,8 +1399,8 @@ export default function SubmissionWizard() {
         title: manuscript.title || '',
         abstract: manuscript.abstract || '',
         keywords: manuscript.keywords || [],
-        category: manuscript.category || '',
-        subject: manuscript.subject || '',
+        category_id: manuscript.category_id || null,
+        article_type: manuscript.article_type || '',
         conflict_of_interest: manuscript.conflict_of_interest || '',
         ethics_approval: manuscript.ethics_approval || '',
         funding: manuscript.funding || '',

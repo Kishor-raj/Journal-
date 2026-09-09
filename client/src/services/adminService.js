@@ -59,3 +59,39 @@ export function getWorkflowLogs(params = {}) {
   const qs = query.toString()
   return apiClient.get(`/audit/workflow${qs ? `?${qs}` : ''}`)
 }
+
+// ─── Categories ──────────────────────────────────────────────────────────────
+
+export function getAdminCategories() {
+  return apiClient.get('/admin/categories')
+}
+
+export function createCategory(data) {
+  return apiClient.post('/admin/categories', data)
+}
+
+export function updateCategory(id, data) {
+  return apiClient.patch(`/admin/categories/${id}`, data)
+}
+
+export function deleteCategory(id) {
+  return apiClient.delete(`/admin/categories/${id}`)
+}
+
+// ─── Article Types ────────────────────────────────────────────────────────────
+
+export function getAdminArticleTypes() {
+  return apiClient.get('/admin/article-types')
+}
+
+export function createArticleType(data) {
+  return apiClient.post('/admin/article-types', data)
+}
+
+export function updateArticleType(id, data) {
+  return apiClient.patch(`/admin/article-types/${id}`, data)
+}
+
+export function deleteArticleType(id) {
+  return apiClient.delete(`/admin/article-types/${id}`)
+}

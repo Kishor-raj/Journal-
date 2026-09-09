@@ -82,6 +82,18 @@ export async function getManuscriptsByUser(userId) {
   return result.rows
 }
 
+export async function getCategories() {
+  const result = await pool.query('SELECT id, name FROM categories WHERE is_active = true ORDER BY name')
+  return result.rows
+}
+
+export async function getArticleTypes() {
+  const result = await pool.query(
+    'SELECT id, name, description FROM article_types WHERE is_active = true ORDER BY sort_order, name'
+  )
+  return result.rows
+}
+
 export async function getManuscriptById(id, userId) {
   const hasAccess = await checkAccess(id, userId)
   if (!hasAccess) {
@@ -171,7 +183,7 @@ export async function updateManuscript(id, data, userId) {
     throw new AppError('Manuscript not found', 404)
   }
 
-  const { title, abstract, keywords, category_id, category } = data
+  const { title, abstract, keywords, category_id, category, article_type } = data
   
   let rawCat = category_id ?? category ?? null
   let cId = (typeof rawCat === 'string' && rawCat.trim() !== '') ? rawCat.trim() : null
@@ -191,10 +203,11 @@ export async function updateManuscript(id, data, userId) {
        abstract = COALESCE($2, abstract),
        keywords = COALESCE($3, keywords),
        category_id = COALESCE($4, category_id),
+       article_type = COALESCE($5, article_type),
        updated_at = now()
-     WHERE id = $5
+     WHERE id = $6
      RETURNING *`,
-    [title ?? null, abstract ?? null, keywords ?? null, cId, id]
+    [title ?? null, abstract ?? null, keywords ?? null, cId, article_type ?? null, id]
   )
 
   return result.rows[0]

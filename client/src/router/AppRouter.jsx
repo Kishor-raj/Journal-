@@ -28,6 +28,7 @@ import ResetPassword from '../features/auth/ResetPassword'
 import AdminDashboard from '../features/admin/AdminDashboard'
 import UserManagement from '../features/admin/UserManagement'
 import AuditLogs from '../features/admin/AuditLogs'
+import JournalSettings from '../features/admin/JournalSettings'
 
 import NotificationHistory from '../features/admin/notifications/NotificationHistory'
 import NotificationDetail from '../features/admin/notifications/NotificationDetail'
@@ -112,6 +113,7 @@ function AppRouter() {
         <Route path="/admin/email-templates" element={<ProtectedRoute allowedRoles={['admin']}><EmailTemplates /></ProtectedRoute>} />
         <Route path="/admin/email-stats" element={<ProtectedRoute allowedRoles={['admin']}><EmailStats /></ProtectedRoute>} />
         <Route path="/admin/email-provider" element={<ProtectedRoute allowedRoles={['admin']}><ProviderStatus /></ProtectedRoute>} />
+        <Route path="/admin/journal-settings" element={<ProtectedRoute allowedRoles={['admin']}><JournalSettings /></ProtectedRoute>} />
 
         {/* Author Routes */}
         <Route path="/author" element={<Navigate to="/author/dashboard" replace />} />

@@ -223,4 +223,99 @@ router.delete('/users/:id', authenticate, requireRole('admin'), async (req, res)
   }
 })
 
+// ─── Categories Management ───────────────────────────────────────────────────
+
+router.get('/categories', authenticate, requireRole('admin'), async (req, res) => {
+  const result = await pool.query(
+    'SELECT id, name, description, is_active, created_at FROM categories ORDER BY name'
+  )
+  res.json(result.rows)
+})
+
+router.post('/categories', authenticate, requireRole('admin'), async (req, res) => {
+  const { name, description } = req.body
+  if (!name?.trim()) return res.status(400).json({ error: 'name is required' })
+  const result = await pool.query(
+    `INSERT INTO categories (name, description)
+     VALUES ($1, $2)
+     RETURNING id, name, description, is_active, created_at`,
+    [name.trim(), description ?? null]
+  )
+  res.status(201).json(result.rows[0])
+})
+
+router.patch('/categories/:id', authenticate, requireRole('admin'), async (req, res) => {
+  const { name, description, is_active } = req.body
+  const result = await pool.query(
+    `UPDATE categories SET
+       name        = COALESCE($1, name),
+       description = COALESCE($2, description),
+       is_active   = COALESCE($3, is_active),
+       updated_at  = now()
+     WHERE id = $4
+     RETURNING id, name, description, is_active, created_at`,
+    [name ?? null, description ?? null, is_active ?? null, req.params.id]
+  )
+  if (result.rows.length === 0) return res.status(404).json({ error: 'Category not found' })
+  res.json(result.rows[0])
+})
+
+router.delete('/categories/:id', authenticate, requireRole('admin'), async (req, res) => {
+  // Check if any manuscripts use this category before deleting
+  const usageCheck = await pool.query(
+    'SELECT COUNT(*) FROM manuscripts WHERE category_id = $1',
+    [req.params.id]
+  )
+  if (parseInt(usageCheck.rows[0].count) > 0) {
+    return res.status(409).json({ error: 'Category is in use by manuscripts and cannot be deleted. Deactivate it instead.' })
+  }
+  const result = await pool.query('DELETE FROM categories WHERE id = $1 RETURNING id', [req.params.id])
+  if (result.rows.length === 0) return res.status(404).json({ error: 'Category not found' })
+  res.status(204).end()
+})
+
+// ─── Article Types Management ────────────────────────────────────────────────
+
+router.get('/article-types', authenticate, requireRole('admin'), async (req, res) => {
+  const result = await pool.query(
+    'SELECT id, name, description, is_active, sort_order, created_at FROM article_types ORDER BY sort_order, name'
+  )
+  res.json(result.rows)
+})
+
+router.post('/article-types', authenticate, requireRole('admin'), async (req, res) => {
+  const { name, description, sort_order } = req.body
+  if (!name?.trim()) return res.status(400).json({ error: 'name is required' })
+  const result = await pool.query(
+    `INSERT INTO article_types (name, description, sort_order)
+     VALUES ($1, $2, $3)
+     RETURNING id, name, description, is_active, sort_order`,
+    [name.trim(), description ?? null, sort_order ?? 0]
+  )
+  res.status(201).json(result.rows[0])
+})
+
+router.patch('/article-types/:id', authenticate, requireRole('admin'), async (req, res) => {
+  const { name, description, is_active, sort_order } = req.body
+  const result = await pool.query(
+    `UPDATE article_types SET
+       name        = COALESCE($1, name),
+       description = COALESCE($2, description),
+       is_active   = COALESCE($3, is_active),
+       sort_order  = COALESCE($4, sort_order),
+       updated_at  = now()
+     WHERE id = $5
+     RETURNING id, name, description, is_active, sort_order`,
+    [name ?? null, description ?? null, is_active ?? null, sort_order ?? null, req.params.id]
+  )
+  if (result.rows.length === 0) return res.status(404).json({ error: 'Article type not found' })
+  res.json(result.rows[0])
+})
+
+router.delete('/article-types/:id', authenticate, requireRole('admin'), async (req, res) => {
+  const result = await pool.query('DELETE FROM article_types WHERE id = $1 RETURNING id', [req.params.id])
+  if (result.rows.length === 0) return res.status(404).json({ error: 'Article type not found' })
+  res.status(204).end()
+})
+
 export default router
