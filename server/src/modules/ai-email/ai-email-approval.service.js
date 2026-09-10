@@ -1,5 +1,5 @@
 import pool from '../../config/db.js'
-import { logReplyAudit } from '../ai/audit.js'
+import { logReplyAudit } from '../../services/ai/audit.js'
 
 export async function getPendingApprovals({ page = 1, limit = 20 } = {}) {
   const perPage = Math.min(Math.max(parseInt(limit) || 20, 1), 100)
