@@ -186,7 +186,7 @@ export async function createSession(userId, ip, userAgent) {
   return { token, expiresAt }
 }
 
-export async function selectRoleForSession(tokenHash, roleName) {
+export async function selectRoleForSession(sessionId, roleName) {
   const roleResult = await pool.query(
     'SELECT id FROM roles WHERE name = $1',
     [roleName]
@@ -200,9 +200,9 @@ export async function selectRoleForSession(tokenHash, roleName) {
   const result = await pool.query(
     `UPDATE user_sessions
      SET role_id = $1
-     WHERE session_token_hash = $2 AND revoked_at IS NULL AND expires_at > now()
+     WHERE id = $2 AND revoked_at IS NULL AND expires_at > now()
      RETURNING id`,
-    [roleId, tokenHash]
+    [roleId, sessionId]
   )
 
   if (result.rowCount === 0) {
@@ -260,7 +260,7 @@ export async function findSession(tokenHash) {
   const result = await pool.query(
     `SELECT s.*, u.id as uid, u.email, u.first_name, u.last_name, u.display_name,
             u.role_id, u.account_status, u.profile_image_url,
-            u.institution, u.department, u.country,
+            u.institution, u.college, u.department, u.state, u.country, u.course,
             COALESCE(r.name, ur.name, 'author') AS role_name,
             ur.name AS account_role_name,
             COALESCE((

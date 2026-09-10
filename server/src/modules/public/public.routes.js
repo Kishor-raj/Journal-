@@ -23,6 +23,12 @@ router.get('/current-issue', async (req, res) => {
   res.json(articles)
 })
 
+// GET /api/public/published/:id/authors — authors for one published article
+router.get('/published/:id/authors', async (req, res) => {
+  const authors = await publicService.getPublishedArticleAuthors(req.params.id)
+  res.json(authors)
+})
+
 // GET /api/public/verify/:token  — public certificate verification (no auth)
 router.get('/verify/:token', async (req, res) => {
   const verification = await getCertificateVerification(req.params.token)

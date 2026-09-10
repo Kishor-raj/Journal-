@@ -98,8 +98,11 @@ export default function CompleteProfile() {
     display_name: '',
     phone: '',
     institution: '',
+    college: '',
     department: '',
+    state: '',
     country: '',
+    course: '',
     orcid_id: '',
     bio: '',
   })
@@ -119,8 +122,11 @@ export default function CompleteProfile() {
           display_name: dn,
           phone: profile.phone || '',
           institution: profile.institution || '',
+          college: profile.college || '',
           department: profile.department || '',
+          state: profile.state || '',
           country: profile.country || '',
+          course: profile.course || '',
           orcid_id: profile.orcid_id || '',
           bio: profile.bio || '',
         })
@@ -149,8 +155,8 @@ export default function CompleteProfile() {
     e.preventDefault()
     setError('')
 
-    if (!formData.institution.trim() || !formData.department.trim() || !formData.country.trim()) {
-      setError('Institution, Department, and Country are required to complete your profile.')
+    if (!formData.institution.trim() || !formData.college.trim() || !formData.department.trim() || !formData.state.trim() || !formData.country.trim() || !formData.course.trim()) {
+      setError('Institute, College, Department, State, Country, and Course are required to complete your profile.')
       return
     }
 
@@ -230,6 +236,19 @@ export default function CompleteProfile() {
                 required
               />
             </FormField>
+            <FormField label="College" required>
+              <input
+                type="text"
+                style={styles.input}
+                value={formData.college}
+                onChange={(e) => handleChange('college', e.target.value)}
+                placeholder="e.g. School of Engineering"
+                required
+              />
+            </FormField>
+          </div>
+
+          <div style={styles.row}>
             <FormField label="Department" required>
               <input
                 type="text"
@@ -240,9 +259,29 @@ export default function CompleteProfile() {
                 required
               />
             </FormField>
+            <FormField label="Course / Program" required>
+              <input
+                type="text"
+                style={styles.input}
+                value={formData.course}
+                onChange={(e) => handleChange('course', e.target.value)}
+                placeholder="e.g. Computer Science"
+                required
+              />
+            </FormField>
           </div>
 
           <div style={styles.row}>
+            <FormField label="State / Province" required>
+              <input
+                type="text"
+                style={styles.input}
+                value={formData.state}
+                onChange={(e) => handleChange('state', e.target.value)}
+                placeholder="e.g. California"
+                required
+              />
+            </FormField>
             <FormField label="Country" required>
               <input
                 type="text"

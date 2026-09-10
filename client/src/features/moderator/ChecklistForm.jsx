@@ -542,7 +542,12 @@ export default function ChecklistForm() {
 
   const author = manuscript.authors?.[0]
   const firstAuthor = author
-    ? [author.first_name, author.last_name].filter(Boolean).join(' ').trim() || '—'
+    ? [author.profile_first_name, author.profile_last_name].filter(Boolean).join(' ').trim()
+      || [author.first_name, author.last_name].filter(Boolean).join(' ').trim()
+      || author.profile_display_name
+      || author.display_name
+      || author.email
+      || '—'
     : '—'
   const submittedAt = manuscript.submitted_at
     ? new Date(manuscript.submitted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })

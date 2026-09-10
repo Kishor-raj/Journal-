@@ -39,7 +39,7 @@ export async function createDraft(userId, journalId) {
   if (userId) {
     try {
       const userRes = await pool.query(
-        `SELECT id, first_name, last_name, display_name, email, institution, department, country, orcid_id
+        `SELECT id, first_name, last_name, display_name, email, institution, college, department, state, country, course, orcid_id
          FROM users WHERE id = $1`,
         [userId]
       )
@@ -54,9 +54,9 @@ export async function createDraft(userId, journalId) {
         }
         await pool.query(
           `INSERT INTO manuscript_authors
-             (manuscript_id, user_id, author_order, first_name, last_name, email, institution, department, country, orcid_id, is_corresponding)
-           VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, true)`,
-          [draft.id, userId, fName, lName, u.email, u.institution, u.department, u.country, u.orcid_id]
+             (manuscript_id, user_id, author_order, first_name, last_name, email, institution, college, department, state, country, course, orcid_id, is_corresponding)
+           VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)`,
+          [draft.id, userId, fName, lName, u.email, u.institution, u.college, u.department, u.state, u.country, u.course, u.orcid_id]
         )
       }
     } catch (err) {
@@ -82,6 +82,18 @@ export async function getManuscriptsByUser(userId) {
   return result.rows
 }
 
+export async function getCategories() {
+  const result = await pool.query('SELECT id, name FROM categories WHERE is_active = true ORDER BY name')
+  return result.rows
+}
+
+export async function getArticleTypes() {
+  const result = await pool.query(
+    'SELECT id, name, description FROM article_types WHERE is_active = true ORDER BY sort_order, name'
+  )
+  return result.rows
+}
+
 export async function getManuscriptById(id, userId) {
   const hasAccess = await checkAccess(id, userId)
   if (!hasAccess) {
@@ -104,13 +116,28 @@ export async function getManuscriptById(id, userId) {
   const manuscript = manuscriptResult.rows[0]
 
   const authorsResult = await pool.query(
-    `SELECT * FROM manuscript_authors WHERE manuscript_id = $1 ORDER BY author_order`,
+    `SELECT ma.*,
+            u.first_name AS profile_first_name,
+            u.last_name AS profile_last_name,
+            u.display_name AS profile_display_name,
+            u.email AS profile_email,
+            u.institution AS profile_institution,
+            u.college AS profile_college,
+            u.department AS profile_department,
+            u.state AS profile_state,
+            u.country AS profile_country,
+            u.course AS profile_course,
+            u.orcid_id AS profile_orcid_id
+     FROM manuscript_authors ma
+     LEFT JOIN users u ON u.id = ma.user_id
+     WHERE ma.manuscript_id = $1
+     ORDER BY ma.author_order`,
     [id]
   )
 
   if (authorsResult.rows.length === 0 && manuscript.submitted_by) {
     const userRes = await pool.query(
-      `SELECT id, first_name, last_name, display_name, email, institution, department, country, orcid_id
+      `SELECT id, first_name, last_name, display_name, email, institution, college, department, state, country, course, orcid_id
        FROM users WHERE id = $1`,
       [manuscript.submitted_by]
     )
@@ -125,10 +152,10 @@ export async function getManuscriptById(id, userId) {
       }
       const insRes = await pool.query(
         `INSERT INTO manuscript_authors
-           (manuscript_id, user_id, author_order, first_name, last_name, email, institution, department, country, orcid_id, is_corresponding)
-         VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, true)
+           (manuscript_id, user_id, author_order, first_name, last_name, email, institution, college, department, state, country, course, orcid_id, is_corresponding)
+         VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)
          RETURNING *`,
-        [id, manuscript.submitted_by, fName, lName, u.email, u.institution, u.department, u.country, u.orcid_id]
+        [id, manuscript.submitted_by, fName, lName, u.email, u.institution, u.college, u.department, u.state, u.country, u.course, u.orcid_id]
       )
       authorsResult.rows = insRes.rows
     }
@@ -171,7 +198,19 @@ export async function updateManuscript(id, data, userId) {
     throw new AppError('Manuscript not found', 404)
   }
 
-  const { title, abstract, keywords, category_id, category } = data
+  const {
+    title,
+    abstract,
+    keywords,
+    category_id,
+    category,
+    article_type,
+    conflict_of_interest,
+    ethics_approval,
+    funding,
+    acknowledgements,
+    data_availability,
+  } = data
   
   let rawCat = category_id ?? category ?? null
   let cId = (typeof rawCat === 'string' && rawCat.trim() !== '') ? rawCat.trim() : null
@@ -191,10 +230,28 @@ export async function updateManuscript(id, data, userId) {
        abstract = COALESCE($2, abstract),
        keywords = COALESCE($3, keywords),
        category_id = COALESCE($4, category_id),
+       article_type = COALESCE($5, article_type),
+       conflict_of_interest = COALESCE($6, conflict_of_interest),
+       ethics_approval = COALESCE($7, ethics_approval),
+       funding = COALESCE($8, funding),
+       acknowledgements = COALESCE($9, acknowledgements),
+       data_availability = COALESCE($10, data_availability),
        updated_at = now()
-     WHERE id = $5
+     WHERE id = $11
      RETURNING *`,
-    [title ?? null, abstract ?? null, keywords ?? null, cId, id]
+    [
+      title ?? null,
+      abstract ?? null,
+      keywords ?? null,
+      cId,
+      article_type ?? null,
+      conflict_of_interest ?? null,
+      ethics_approval ?? null,
+      funding ?? null,
+      acknowledgements ?? null,
+      data_availability ?? null,
+      id,
+    ]
   )
 
   return result.rows[0]
@@ -231,9 +288,46 @@ export async function addAuthor(manuscriptId, data, userId) {
     throw new AppError('Cannot modify authors after submission', 400)
   }
 
-  const hasAccess = await checkAccess(manuscriptId, userId)
-  if (!hasAccess) {
-    throw new AppError('Manuscript not found', 404)
+  if (manuscriptResult.rows[0].submitted_by !== userId) {
+    throw new AppError('Only the submitting author can manage co-authors', 403)
+  }
+
+  const requestedUserId = data.user_id || null
+  const requestedEmail = typeof data.email === 'string' ? data.email.trim() : ''
+  if (!requestedUserId && !requestedEmail) {
+    throw new AppError('A registered co-author user ID or email is required', 400)
+  }
+
+  const userResult = requestedUserId
+    ? await pool.query(
+      `SELECT id, first_name, last_name, display_name, email, institution, college, department, state, country, course, orcid_id
+       FROM users WHERE id = $1 AND account_status = 'active'`,
+      [requestedUserId]
+    )
+    : await pool.query(
+      `SELECT id, first_name, last_name, display_name, email, institution, college, department, state, country, course, orcid_id
+       FROM users WHERE LOWER(TRIM(email::text)) = LOWER(TRIM($1)) AND account_status = 'active'`,
+      [requestedEmail]
+    )
+
+  if (userResult.rows.length === 0) {
+    throw new AppError('Co-author must be an existing active user', 404)
+  }
+
+  const coAuthor = userResult.rows[0]
+  if (coAuthor.id === manuscriptResult.rows[0].submitted_by) {
+    throw new AppError('The submitting author is already the primary author', 400)
+  }
+
+  const duplicateResult = await pool.query(
+    `SELECT 1 FROM manuscript_authors
+     WHERE manuscript_id = $1
+       AND (user_id = $2 OR LOWER(TRIM(email::text)) = LOWER(TRIM($3)))
+     LIMIT 1`,
+    [manuscriptId, coAuthor.id, coAuthor.email]
+  )
+  if (duplicateResult.rowCount > 0) {
+    throw new AppError('This co-author has already been added', 409)
   }
 
   const maxOrderResult = await pool.query(
@@ -243,44 +337,19 @@ export async function addAuthor(manuscriptId, data, userId) {
 
   const nextOrder = maxOrderResult.rows[0].max_order + 1
 
-  let { user_id, first_name, last_name, email, institution, department, country, orcid_id, is_corresponding, contribution_roles } = data
-
-  // If email is provided, lookup in users table to link user_id and populate missing author details
-  if (email && (!first_name || !last_name || !user_id)) {
-    const userRes = await pool.query(
-      `SELECT id, first_name, last_name, display_name, institution, department, country, orcid_id
-       FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1))`,
-      [email]
-    )
-    if (userRes.rows.length > 0) {
-      const u = userRes.rows[0]
-      user_id = user_id || u.id
-      first_name = first_name || u.first_name
-      last_name = last_name || u.last_name
-      if (!first_name && !last_name && u.display_name) {
-        const parts = u.display_name.trim().split(/\s+/)
-        first_name = parts[0] || ''
-        last_name = parts.slice(1).join(' ') || ''
-      }
-      institution = institution || u.institution
-      department = department || u.department
-      country = country || u.country
-      orcid_id = orcid_id || u.orcid_id
-    }
-  }
-
-  // If a single name string was provided
-  if (data.name && (!first_name && !last_name)) {
-    const parts = String(data.name).trim().split(/\s+/)
-    first_name = parts[0] || ''
-    last_name = parts.slice(1).join(' ') || ''
+  let firstName = coAuthor.first_name || ''
+  let lastName = coAuthor.last_name || ''
+  if (!firstName && !lastName && coAuthor.display_name) {
+    const parts = coAuthor.display_name.trim().split(/\s+/)
+    firstName = parts[0] || ''
+    lastName = parts.slice(1).join(' ') || ''
   }
 
   const result = await pool.query(
-    `INSERT INTO manuscript_authors (manuscript_id, user_id, author_order, first_name, last_name, email, institution, department, country, orcid_id, is_corresponding, contribution_roles)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    `INSERT INTO manuscript_authors (manuscript_id, user_id, author_order, first_name, last_name, email, institution, college, department, state, country, course, orcid_id, is_corresponding, contribution_roles)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      RETURNING *`,
-    [manuscriptId, user_id || null, nextOrder, first_name || null, last_name || null, email || null, institution || null, department || null, country || null, orcid_id || null, is_corresponding || false, contribution_roles || []]
+    [manuscriptId, coAuthor.id, nextOrder, firstName || null, lastName || null, coAuthor.email, coAuthor.institution || null, coAuthor.college || null, coAuthor.department || null, coAuthor.state || null, coAuthor.country || null, coAuthor.course || null, coAuthor.orcid_id || null, false, []]
   )
 
   return result.rows[0]
@@ -322,24 +391,44 @@ export async function updateAuthor(authorId, data, userId) {
 
   const { first_name, last_name, email, institution, department, country, orcid_id, is_corresponding, contribution_roles, author_order } = data
 
-  const result = await pool.query(
-    `UPDATE manuscript_authors SET
-       first_name = COALESCE($1, first_name),
-       last_name = COALESCE($2, last_name),
-       email = COALESCE($3, email),
-       institution = COALESCE($4, institution),
-       department = COALESCE($5, department),
-       country = COALESCE($6, country),
-       orcid_id = COALESCE($7, orcid_id),
-       is_corresponding = COALESCE($8, is_corresponding),
-       contribution_roles = COALESCE($9, contribution_roles),
-       author_order = COALESCE($10, author_order)
-     WHERE id = $11
-     RETURNING *`,
-    [first_name, last_name, email, institution, department, country, orcid_id, is_corresponding, contribution_roles, author_order, authorId]
-  )
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
 
-  return result.rows[0]
+    if (is_corresponding === true) {
+      await client.query(
+        `UPDATE manuscript_authors
+         SET is_corresponding = false
+         WHERE manuscript_id = $1 AND id <> $2`,
+        [author.manuscript_id, authorId]
+      )
+    }
+
+    const result = await client.query(
+      `UPDATE manuscript_authors SET
+         first_name = COALESCE($1, first_name),
+         last_name = COALESCE($2, last_name),
+         email = COALESCE($3, email),
+         institution = COALESCE($4, institution),
+         department = COALESCE($5, department),
+         country = COALESCE($6, country),
+         orcid_id = COALESCE($7, orcid_id),
+         is_corresponding = COALESCE($8, is_corresponding),
+         contribution_roles = COALESCE($9, contribution_roles),
+         author_order = COALESCE($10, author_order)
+       WHERE id = $11
+       RETURNING *`,
+      [first_name, last_name, email, institution, department, country, orcid_id, is_corresponding, contribution_roles, author_order, authorId]
+    )
+
+    await client.query('COMMIT')
+    return result.rows[0]
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
 }
 
 export async function removeAuthor(authorId, userId) {
@@ -397,6 +486,14 @@ export async function submitManuscript(manuscriptId, userId) {
       throw new AppError('Unauthorized', 403)
     }
 
+    if (!String(manuscript.conflict_of_interest || '').trim()) {
+      throw new AppError('Conflict of interest statement is required', 400)
+    }
+
+    if (!String(manuscript.ethics_approval || '').trim()) {
+      throw new AppError('Ethics approval statement is required', 400)
+    }
+
     let authorsResult = await client.query(
       'SELECT id FROM manuscript_authors WHERE manuscript_id = $1',
       [manuscriptId]
@@ -404,7 +501,7 @@ export async function submitManuscript(manuscriptId, userId) {
 
     if (authorsResult.rows.length === 0) {
       const userRes = await client.query(
-        `SELECT id, first_name, last_name, display_name, email, institution, department, country, orcid_id
+        `SELECT id, first_name, last_name, display_name, email, institution, college, department, state, country, course, orcid_id
          FROM users WHERE id = $1`,
         [userId]
       )
@@ -419,9 +516,9 @@ export async function submitManuscript(manuscriptId, userId) {
         }
         await client.query(
           `INSERT INTO manuscript_authors
-             (manuscript_id, user_id, author_order, first_name, last_name, email, institution, department, country, orcid_id, is_corresponding)
-           VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, true)`,
-          [manuscriptId, userId, fName, lName, u.email, u.institution, u.department, u.country, u.orcid_id]
+             (manuscript_id, user_id, author_order, first_name, last_name, email, institution, college, department, state, country, course, orcid_id, is_corresponding)
+           VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)`,
+          [manuscriptId, userId, fName, lName, u.email, u.institution, u.college, u.department, u.state, u.country, u.course, u.orcid_id]
         )
       }
       authorsResult = await client.query(
@@ -441,13 +538,51 @@ export async function submitManuscript(manuscriptId, userId) {
           first_name = COALESCE(NULLIF(TRIM(ma.first_name), ''), NULLIF(TRIM(ma.first_name), 'Author'), u.first_name),
           last_name = COALESCE(NULLIF(TRIM(ma.last_name), ''), u.last_name),
           institution = COALESCE(NULLIF(TRIM(ma.institution), ''), u.institution),
+          college = COALESCE(NULLIF(TRIM(ma.college), ''), u.college),
           department = COALESCE(NULLIF(TRIM(ma.department), ''), u.department),
+          state = COALESCE(NULLIF(TRIM(ma.state), ''), u.state),
           country = COALESCE(NULLIF(TRIM(ma.country), ''), u.country),
+          course = COALESCE(NULLIF(TRIM(ma.course), ''), u.course),
           orcid_id = COALESCE(ma.orcid_id, u.orcid_id)
       FROM users u
       WHERE ma.manuscript_id = $1
         AND (ma.user_id = u.id OR (ma.user_id IS NULL AND LOWER(TRIM(ma.email)) = LOWER(TRIM(u.email))))
     `, [manuscriptId])
+
+    const invalidAuthorsResult = await client.query(
+      `SELECT ma.id
+       FROM manuscript_authors ma
+       LEFT JOIN users u ON u.id = ma.user_id
+       WHERE ma.manuscript_id = $1
+         AND (ma.user_id IS NULL OR u.id IS NULL OR u.account_status <> 'active')`,
+      [manuscriptId]
+    )
+    if (invalidAuthorsResult.rowCount > 0) {
+      throw new AppError('Every manuscript author must be an active registered user', 400)
+    }
+
+    const duplicateAuthorsResult = await client.query(
+      `SELECT user_id
+       FROM manuscript_authors
+       WHERE manuscript_id = $1
+       GROUP BY user_id
+       HAVING COUNT(*) > 1`,
+      [manuscriptId]
+    )
+    if (duplicateAuthorsResult.rowCount > 0) {
+      throw new AppError('A manuscript cannot contain duplicate authors', 400)
+    }
+
+    const selfAuthorResult = await client.query(
+      `SELECT 1
+       FROM manuscript_authors
+       WHERE manuscript_id = $1 AND user_id = $2
+       LIMIT 1`,
+      [manuscriptId, userId]
+    )
+    if (selfAuthorResult.rowCount === 0) {
+      throw new AppError('The submitting author must be included as a manuscript author', 400)
+    }
 
     const versionResult = await client.query(
       `INSERT INTO manuscript_versions (manuscript_id, version_number, version_type, title, abstract, submitted_by, submitted_at, is_current)

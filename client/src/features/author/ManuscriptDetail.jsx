@@ -102,16 +102,57 @@ const styles = {
     padding: '16px',
     marginBottom: '10px',
   },
+  authorHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '12px',
+    flexWrap: 'wrap',
+  },
   authorName: {
     fontSize: 'var(--text-base)',
     fontWeight: 600,
     color: 'var(--color-ink-navy)',
     marginBottom: '4px',
   },
+  authorRole: {
+    display: 'inline-block',
+    marginLeft: '8px',
+    padding: '3px 8px',
+    borderRadius: '9999px',
+    background: 'rgba(196, 162, 76, 0.16)',
+    color: 'var(--color-citation-gold-dark)',
+    fontSize: 'var(--text-xs)',
+    fontWeight: 600,
+    verticalAlign: 'middle',
+  },
   authorMeta: {
     fontSize: 'var(--text-sm)',
     color: 'var(--color-ink-black)',
     opacity: 0.55,
+  },
+  authorDetails: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+    gap: '8px 18px',
+    marginTop: '14px',
+    paddingTop: '12px',
+    borderTop: '1px solid var(--color-rule-grey)',
+  },
+  authorDetail: {
+    minWidth: 0,
+    fontSize: 'var(--text-sm)',
+    color: 'var(--color-ink-black)',
+    lineHeight: 1.45,
+    overflowWrap: 'anywhere',
+  },
+  authorDetailLabel: {
+    display: 'block',
+    marginBottom: '2px',
+    color: 'var(--color-ink-black)',
+    opacity: 0.55,
+    fontSize: 'var(--text-xs)',
+    fontWeight: 600,
   },
   fileItem: {
     display: 'flex',
@@ -192,6 +233,91 @@ function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function getAuthorField(author, field) {
+  return author?.[`profile_${field}`] || author?.[field] || ''
+}
+
+function getAuthorName(author) {
+  const firstName = getAuthorField(author, 'first_name')
+  const lastName = getAuthorField(author, 'last_name')
+  return [firstName, lastName].filter(Boolean).join(' ')
+    || author?.profile_display_name
+    || author?.display_name
+    || author?.email
+    || 'Unknown author'
+}
+
+function getAuthorAffiliation(author) {
+  return [
+    getAuthorField(author, 'institution'),
+    getAuthorField(author, 'college'),
+    getAuthorField(author, 'department'),
+  ].filter(Boolean).join(' · ')
+}
+
+function AuthorDetailCard({ author, index }) {
+  const contributionRoles = Array.isArray(author.contribution_roles)
+    ? author.contribution_roles.filter(Boolean).join(', ')
+    : author.contribution_role
+  const details = [
+    ['Email', author.email || author.profile_email],
+    ['Institution', getAuthorField(author, 'institution')],
+    ['College', getAuthorField(author, 'college')],
+    ['Department', getAuthorField(author, 'department')],
+    ['Course', getAuthorField(author, 'course')],
+    ['State', getAuthorField(author, 'state')],
+    ['Country', getAuthorField(author, 'country')],
+    ['ORCID', getAuthorField(author, 'orcid_id')],
+    ['Contribution', contributionRoles],
+  ].filter(([, value]) => value)
+
+  return (
+    <div style={styles.authorCard}>
+      <div style={styles.authorHeader}>
+        <div>
+          <div style={styles.authorName}>
+            {getAuthorName(author)}
+            <span style={styles.authorRole}>
+              {index === 0 ? 'Primary Author' : 'Co-Author'}
+            </span>
+            {author.is_corresponding && (
+              <span style={{ ...styles.authorRole, background: 'rgba(46, 107, 158, 0.12)', color: 'var(--color-info, #2E6B9E)' }}>
+                Corresponding
+              </span>
+            )}
+          </div>
+          {getAuthorAffiliation(author) && (
+            <div style={styles.authorMeta}>{getAuthorAffiliation(author)}</div>
+          )}
+        </div>
+        <div style={{ ...styles.authorMeta, whiteSpace: 'nowrap' }}>
+          Author {author.author_order || index + 1}
+        </div>
+      </div>
+
+      {details.length > 0 && (
+        <div style={styles.authorDetails}>
+          {details.map(([label, value]) => (
+            <div key={label} style={styles.authorDetail}>
+              <span style={styles.authorDetailLabel}>{label}</span>
+              {label === 'ORCID' ? (
+                <a
+                  href={`https://orcid.org/${String(value).replace(/^https?:\/\/orcid\.org\//, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: 'var(--color-citation-gold-dark)' }}
+                >
+                  {value}
+                </a>
+              ) : value}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function ManuscriptDetail() {
@@ -384,23 +510,9 @@ export default function ManuscriptDetail() {
 
       {currentTab === 'coauthors' && (
         <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Authors &amp; Co-Authors</h2>
           {manuscript.authors.map((author, i) => (
-            <div key={author.id || i} style={styles.authorCard}>
-              <div style={styles.authorName}>
-                {author.name || author.email}
-                {author.is_corresponding && (
-                  <span style={{ color: 'var(--color-citation-gold-dark)', marginLeft: '8px', fontSize: 'var(--text-sm)' }}>
-                    (Corresponding)
-                  </span>
-                )}
-              </div>
-              {author.affiliation && (
-                <div style={styles.authorMeta}>{author.affiliation}</div>
-              )}
-              {author.contribution_role && (
-                <div style={styles.authorMeta}>Role: {author.contribution_role}</div>
-              )}
-            </div>
+            <AuthorDetailCard key={author.id || i} author={author} index={i} />
           ))}
         </div>
       )}

@@ -246,8 +246,11 @@ export default function ReviewerProfile() {
     display_name: '',
     phone: '',
     institution: '',
+    college: '',
     department: '',
+    state: '',
     country: '',
+    course: '',
     orcid_id: '',
     bio: '',
   })
@@ -266,8 +269,11 @@ export default function ReviewerProfile() {
           display_name: profile.display_name || '',
           phone: profile.phone || '',
           institution: profile.institution || '',
+          college: profile.college || '',
           department: profile.department || '',
+          state: profile.state || '',
           country: profile.country || '',
+          course: profile.course || '',
           orcid_id: profile.orcid_id || '',
           bio: profile.bio || '',
         }
@@ -283,8 +289,11 @@ export default function ReviewerProfile() {
             display_name: user.display_name || user.name || '',
             phone: user.phone || '',
             institution: user.institution || '',
+            college: user.college || '',
             department: user.department || '',
+            state: user.state || '',
             country: user.country || '',
+            course: user.course || '',
             orcid_id: user.orcid_id || '',
             bio: user.bio || '',
           }
@@ -308,8 +317,8 @@ export default function ReviewerProfile() {
     setError('')
     setSuccess(false)
 
-    if (!form.institution.trim() || !form.department.trim() || !form.country.trim()) {
-      setError('Institution, Department, and Country are required.')
+    if (!form.institution.trim() || !form.college.trim() || !form.department.trim() || !form.state.trim() || !form.country.trim() || !form.course.trim()) {
+      setError('Institute, College, Department, State, Country, and Course are required.')
       return
     }
 
@@ -439,6 +448,19 @@ export default function ReviewerProfile() {
                   required
                 />
               </Field>
+              <Field label="College" required>
+                <input
+                  type="text"
+                  style={S.input}
+                  value={form.college}
+                  onChange={set('college')}
+                  placeholder="e.g. School of Engineering"
+                  required
+                />
+              </Field>
+            </div>
+
+            <div style={S.row}>
               <Field label="Department" required>
                 <input
                   type="text"
@@ -449,18 +471,40 @@ export default function ReviewerProfile() {
                   required
                 />
               </Field>
+              <Field label="Course / Program" required>
+                <input
+                  type="text"
+                  style={S.input}
+                  value={form.course}
+                  onChange={set('course')}
+                  placeholder="e.g. Computer Science"
+                  required
+                />
+              </Field>
             </div>
 
-            <Field label="Country" required>
-              <input
-                type="text"
-                style={S.input}
-                value={form.country}
-                onChange={set('country')}
-                placeholder="e.g. India"
-                required
-              />
-            </Field>
+            <div style={S.row}>
+              <Field label="State / Province" required>
+                <input
+                  type="text"
+                  style={S.input}
+                  value={form.state}
+                  onChange={set('state')}
+                  placeholder="e.g. Tamil Nadu"
+                  required
+                />
+              </Field>
+              <Field label="Country" required>
+                <input
+                  type="text"
+                  style={S.input}
+                  value={form.country}
+                  onChange={set('country')}
+                  placeholder="e.g. India"
+                  required
+                />
+              </Field>
+            </div>
           </div>
         </div>
 

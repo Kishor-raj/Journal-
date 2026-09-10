@@ -205,17 +205,30 @@ function FeaturedVerticalScroller({ articles }) {
           <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12.5px', color: '#6B7288', letterSpacing: '0.03em' }}>
             {currentItem?.meta}
           </div>
-          <Link
-            to={`/current-issue#article-${currentItem?.id}`}
-            style={{
-              fontFamily: 'Jost, sans-serif', fontSize: '12px',
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              color: '#9A7B23', textDecoration: 'none', fontWeight: 600,
-              display: 'flex', alignItems: 'center', gap: '6px',
-            }}
-          >
-            Read full article <span>→</span>
-          </Link>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Link
+              to={`/current-issue#article-${currentItem?.id}`}
+              style={{
+                fontFamily: 'Jost, sans-serif', fontSize: '12px',
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: '#9A7B23', textDecoration: 'none', fontWeight: 600,
+                display: 'flex', alignItems: 'center', gap: '6px',
+              }}
+            >
+              Read full article <span>→</span>
+            </Link>
+            <Link
+              to={`/current-issue#authors-${currentItem?.id}`}
+              style={{
+                fontFamily: 'Jost, sans-serif', fontSize: '12px',
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: '#0B1B3A', textDecoration: 'none', fontWeight: 600,
+                borderBottom: '1px solid #C4A24C', paddingBottom: '2px',
+              }}
+            >
+              Authors
+            </Link>
+          </div>
         </div>
       </div>
 

@@ -120,6 +120,21 @@ export default function AdminDashboard() {
             View System Logs →
           </Button>
         </div>
+
+        <div style={styles.actionCard}>
+          <div>
+            <h2 style={styles.cardTitle}>Journal Settings</h2>
+            <p style={styles.cardDesc}>
+              Manage subject categories and article types that appear in the author submission form dropdowns. Add, edit, deactivate, or remove options directly from the database.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/admin/journal-settings')}
+          >
+            Manage Dropdowns →
+          </Button>
+        </div>
       </div>
     </div>
   )

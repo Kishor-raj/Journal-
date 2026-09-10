@@ -101,21 +101,18 @@ export async function selectRole(req, res) {
     return res.status(403).json({ error: 'You are not assigned to this role' })
   }
 
-  const rawToken = req.token || req.cookies?.session_token
-  if (!rawToken) {
-    return res.status(401).json({ error: 'Not authenticated' })
-  }
-  const tokenHash = sha256(rawToken)
-  const updated = await selectRoleForSession(tokenHash, role)
+  // `authenticate` has already validated and loaded the exact session. Use
+  // that session's id for the update so cookie and bearer-token handling
+  // cannot cause a valid session to be looked up a second time differently.
+  const updated = await selectRoleForSession(req.user.id, role)
 
   if (!updated) {
     return res.status(404).json({ error: 'Session not found' })
   }
 
-  const session = await findSession(tokenHash)
   res.json({
     message: 'Role selected',
-    role: session?.role_name || role,
+    role: updated,
   })
 }
 
@@ -131,7 +128,7 @@ export async function logout(req, res) {
 
 export async function getMe(req, res) {
   const user = req.user
-  const profileComplete = user.institution && user.department && user.country
+  const profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
 
   let rawDisplayName = user.display_name
   if (rawDisplayName && rawDisplayName.includes('undefined')) {
@@ -156,6 +153,12 @@ export async function getMe(req, res) {
     role: user.role_name || availableRoles[0] || 'author',
     available_roles: availableRoles,
     account_status: user.account_status,
+    institution: user.institution,
+    college: user.college,
+    department: user.department,
+    state: user.state,
+    country: user.country,
+    course: user.course,
     profile_image_url: user.profile_image_url,
     profile_complete: !!profileComplete,
   })

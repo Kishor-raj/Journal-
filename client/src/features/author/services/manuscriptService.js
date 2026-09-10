@@ -4,6 +4,14 @@ export function createDraft() {
   return apiClient.post('/manuscripts', {})
 }
 
+export function getCategories() {
+  return apiClient.get('/manuscripts/categories')
+}
+
+export function getArticleTypes() {
+  return apiClient.get('/manuscripts/article-types')
+}
+
 export function getMyManuscripts() {
   return apiClient.get('/manuscripts/mine')
 }

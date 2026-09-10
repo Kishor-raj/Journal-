@@ -10,6 +10,16 @@ router.post('/', authenticate, async (req, res) => {
   res.status(201).json(manuscript)
 })
 
+router.get('/categories', async (req, res) => {
+  const categories = await manuscriptsService.getCategories()
+  res.json(categories)
+})
+
+router.get('/article-types', async (req, res) => {
+  const types = await manuscriptsService.getArticleTypes()
+  res.json(types)
+})
+
 router.get('/mine', authenticate, async (req, res) => {
   const manuscripts = await manuscriptsService.getManuscriptsByUser(req.user.uid)
   res.json(manuscripts)

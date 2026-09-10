@@ -1,0 +1,9 @@
+ALTER TABLE manuscript_authors
+  DROP COLUMN IF EXISTS course,
+  DROP COLUMN IF EXISTS state,
+  DROP COLUMN IF EXISTS college;
+
+ALTER TABLE users
+  DROP COLUMN IF EXISTS course,
+  DROP COLUMN IF EXISTS state,
+  DROP COLUMN IF EXISTS college;

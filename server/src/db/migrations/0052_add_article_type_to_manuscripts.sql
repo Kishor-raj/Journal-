@@ -1,0 +1,1 @@
+ALTER TABLE manuscripts ADD COLUMN IF NOT EXISTS article_type VARCHAR(100);
