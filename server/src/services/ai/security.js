@@ -40,20 +40,23 @@ export function validateWebhookPayload(body) {
     return { valid: false, errors }
   }
 
-  if (!body.event_id || typeof body.event_id !== 'string') {
+  const eventId = body.event_id ?? body.id
+  const eventType = body.event_type ?? body.event
+
+  if (!eventId || typeof eventId !== 'string') {
     errors.push('event_id is required and must be a string')
   }
 
-  if (!body.event_type || typeof body.event_type !== 'string') {
+  if (!eventType || typeof eventType !== 'string') {
     errors.push('event_type is required and must be a string')
   }
 
-  const validEventTypes = ['message.received', 'message.sent', 'message.updated', 'message.deleted']
-  if (body.event_type && !validEventTypes.includes(body.event_type)) {
+  const validEventTypes = ['message.received', 'message.sent', 'message.updated', 'message.deleted', 'message.created']
+  if (eventType && !validEventTypes.includes(eventType)) {
     errors.push(`event_type must be one of: ${validEventTypes.join(', ')}`)
   }
 
-  if (body.event_id && body.event_id.length > 255) {
+  if (eventId && eventId.length > 255) {
     errors.push('event_id must be 255 characters or fewer')
   }
 
@@ -68,7 +71,7 @@ export function validateEmailPayload(data) {
     return { valid: false, errors }
   }
 
-  const messageId = data.message_id || data.id
+  const messageId = data.message_id || data.id || data.messageId
   if (!messageId) {
     errors.push('message_id is required')
   }

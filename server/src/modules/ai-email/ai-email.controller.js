@@ -16,8 +16,10 @@ export async function handleHostingerWebhook(req, res) {
     return res.status(400).json({ error: 'Invalid payload', details: payloadValidation.errors })
   }
 
-  const { event_id, event_type, data, message } = req.body || {}
-  const emailData = data || message
+  const body = req.body || {}
+  const event_id = body.event_id || body.id
+  const event_type = body.event_type || body.event
+  const emailData = body.data || body.message
 
   if (emailData) {
     const emailValidation = validateEmailPayload(emailData)
