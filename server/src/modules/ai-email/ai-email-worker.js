@@ -168,10 +168,16 @@ export async function runToolCalls(emailId, classification, extractedData) {
 }
 
 export async function runReplyGeneration(emailId, threadId, classification, intent, opts = {}) {
-  if (!isGeminiConfigured()) return { skipped: true, reason: 'gemini_not_configured' }
+  if (!isGeminiConfigured()) {
+    console.warn(`[AI_EMAIL_WORKER] Reply generation skipped for email ${emailId}: gemini not configured`)
+    return { skipped: true, reason: 'gemini_not_configured' }
+  }
 
   const skipClassifications = ['SPAM', 'OTHER']
-  if (skipClassifications.includes(classification)) return { skipped: true, reason: `skipped_${classification}` }
+  if (skipClassifications.includes(classification)) {
+    console.warn(`[AI_EMAIL_WORKER] Reply generation skipped for email ${emailId}: ${classification}`)
+    return { skipped: true, reason: `skipped_${classification}` }
+  }
 
   const existing = await pool.query(
     `SELECT id FROM ai_email_replies WHERE email_id = $1 AND status NOT IN ('failed', 'rejected')`,
@@ -273,6 +279,7 @@ export async function processOneEvent() {
 
     await logAiEmailEvent({ workflowName: 'ai_email', eventName: 'classification_complete', status: 'success',
       payload: { email_id: emailId, classification: classification.classification, confidence: classification.confidence } })
+    console.log(`[AI_EMAIL_WORKER] Email ${emailId} classified as ${classification.classification} (confidence ${classification.confidence})`)
 
     const toolResults = await runToolCalls(emailId, classification.classification, classification.extractedData)
 
@@ -317,10 +324,16 @@ export async function processOneEvent() {
           await markReplySent(replyResult.replyId, sendResult.providerMessageId)
           await logAiEmailEvent({ workflowName: 'ai_email', eventName: 'auto_reply_sent', status: 'success',
             payload: { reply_id: replyResult.replyId, email_id: emailId } })
+          console.log(`[AI_EMAIL_WORKER] Auto-reply sent for email ${emailId} -> ${emailData.from_email}`)
         } else {
           await markReplyFailed(replyResult.replyId, sendResult.error)
+          console.error(`[AI_EMAIL_WORKER] Auto-reply send failed for email ${emailId}: ${sendResult.error}`)
         }
       }
+    } else if (replyResult.skipped) {
+      console.warn(`[AI_EMAIL_WORKER] No reply for email ${emailId}: ${replyResult.reason}`)
+    } else {
+      console.warn(`[AI_EMAIL_WORKER] Reply for email ${emailId} requires human approval (${replyResult.reason || 'approval_required'})`)
     }
 
     await client.query(`UPDATE email_webhook_events SET status = 'processed', processed_at = now() WHERE id = $1`, [event.id])

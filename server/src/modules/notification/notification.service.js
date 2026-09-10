@@ -118,19 +118,28 @@ export async function enqueueNotification(templateKey, recipientUserId, variable
   let logId = null
   const manuscriptId = variables?.manuscript_id || null
 
-  const writeLog = (client, { eventName, status, payload, errorMessage }) =>
-    client.query(
-      `INSERT INTO workflow_logs (workflow_name, manuscript_id, event_name, source, status, payload, error_message)
-       VALUES ('notifications', $1, $2, 'resend', $3, $4, $5)
-       RETURNING id`,
-      [
-        manuscriptId,
-        eventName,
-        status,
-        JSON.stringify(payload || {}),
-        errorMessage || null,
-      ]
-    )
+  const writeLog = async (client, { eventName, status, payload, errorMessage }) => {
+    try {
+      return await client.query(
+        `INSERT INTO workflow_logs (workflow_name, manuscript_id, event_name, source, status, payload, error_message)
+         VALUES ('notifications', $1, $2, 'resend', $3, $4, $5)
+         RETURNING id`,
+        [
+          manuscriptId,
+          eventName,
+          status,
+          JSON.stringify(payload || {}),
+          errorMessage || null,
+        ]
+      )
+    } catch (err) {
+      if (err.code === '23503') {
+        console.warn(`[EMAIL] Skipping workflow log (FK violation, manuscript ${manuscriptId} not found): ${eventName}`)
+        return { rows: [] }
+      }
+      throw err
+    }
+  }
 
 const eventKey = buildEventKey(templateKey, variables)
 
