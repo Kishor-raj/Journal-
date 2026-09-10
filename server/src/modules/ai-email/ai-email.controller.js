@@ -11,13 +11,16 @@ export async function handleHostingerWebhook(req, res) {
 
   const payloadValidation = validateWebhookPayload(req.body)
   if (!payloadValidation.valid) {
+    console.log('[AI_EMAIL_WEBHOOK] Payload validation failed:', JSON.stringify(payloadValidation.errors, null, 2))
+    console.log('[AI_EMAIL_WEBHOOK] Raw body received:', String(req.rawBody || JSON.stringify(req.body)).slice(0, 2000))
     return res.status(400).json({ error: 'Invalid payload', details: payloadValidation.errors })
   }
 
-  const { event_id, event_type, data } = req.body || {}
+  const { event_id, event_type, data, message } = req.body || {}
+  const emailData = data || message
 
-  if (data) {
-    const emailValidation = validateEmailPayload(data)
+  if (emailData) {
+    const emailValidation = validateEmailPayload(emailData)
     if (!emailValidation.valid) {
       console.warn(`[AI_EMAIL_WEBHOOK] Invalid email data in event ${event_id}:`, emailValidation.errors)
     }
@@ -30,7 +33,7 @@ export async function handleHostingerWebhook(req, res) {
       payload: req.body,
     })
 
-    await queueEmailForProcessing(stored.id, { event_type, event_id, data })
+    await queueEmailForProcessing(stored.id, { event_type, event_id, email_data: emailData })
 
     await logAiEmailEvent({
       workflowName: 'ai_email',
