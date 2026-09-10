@@ -9,6 +9,8 @@ import {
   getManuscript,
   updateManuscript,
   addAuthor,
+  updateAuthor,
+  removeAuthor,
   submitManuscript,
   requestSignature,
   confirmUpload,
@@ -648,48 +650,64 @@ function StepAuthors({ manuscript, onChange }) {
   const [email, setEmail] = useState('')
   const [adding, setAdding] = useState(false)
   const [emailError, setEmailError] = useState('')
+  const [authorAction, setAuthorAction] = useState(null)
 
-  const coAuthors = authors.filter(
-    (a) => a.email?.toLowerCase() !== user?.email?.toLowerCase()
-  )
+  const currentUserId = user?.id || user?.uid
+  const primaryAuthor = authors.find((a) => a.user_id === currentUserId)
+    || authors.find((a) => a.author_order === 1)
+    || authors[0]
+  const coAuthors = authors.filter((a) => a.id !== primaryAuthor?.id)
+
+  const getAuthorName = (author) => {
+    const first = author?.profile_first_name || author?.first_name || ''
+    const last = author?.profile_last_name || author?.last_name || ''
+    return [first, last].filter(Boolean).join(' ') || author?.profile_display_name || author?.display_name || author?.profile_email || author?.email || 'Author'
+  }
+
+  const getAuthorField = (author, field) => author?.[`profile_${field}`] || author?.[field] || ''
 
   const handleAddAuthor = async () => {
-    if (!email.trim()) return
-    if (email.trim().toLowerCase() === user?.email?.toLowerCase()) {
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!normalizedEmail) {
+      setEmailError('Enter a co-author email address.')
+      return
+    }
+    if (normalizedEmail === user?.email?.toLowerCase()) {
       setEmailError('You are already listed as the primary author.')
       return
     }
-    if (coAuthors.some((a) => a.email?.toLowerCase() === email.trim().toLowerCase())) {
+    if (coAuthors.some((a) => a.email?.toLowerCase() === normalizedEmail)) {
       setEmailError('This co-author has already been added.')
       return
     }
     setEmailError('')
     setAdding(true)
     try {
-      const newAuthor = await addAuthor(manuscript.id, { email: email.trim() })
+      const newAuthor = await addAuthor(manuscript.id, { email: normalizedEmail })
       onChange({
         ...manuscript,
         authors: [...authors, { ...newAuthor, contribution_role: '' }],
       })
       setEmail('')
-    } catch {
-      const tempAuthor = {
-        id: `temp-${Date.now()}`,
-        email: email.trim(),
-        name: email.trim(),
-        is_corresponding: false,
-        contribution_role: '',
-      }
-      onChange({ ...manuscript, authors: [...authors, tempAuthor] })
-      setEmail('')
+    } catch (err) {
+      setEmailError(err.response?.data?.error || 'Could not add this co-author.')
     } finally {
       setAdding(false)
     }
   }
 
-  const handleRemoveAuthor = (authorId) => {
-    const updated = authors.filter((a) => a.id !== authorId)
-    onChange({ ...manuscript, authors: updated })
+  const handleRemoveAuthor = async (authorId) => {
+    if (!authorId || authorId === primaryAuthor?.id) return
+    setAuthorAction(`remove:${authorId}`)
+    setEmailError('')
+    try {
+      await removeAuthor(manuscript.id, authorId)
+      onChange({ ...manuscript, authors: authors.filter((a) => a.id !== authorId) })
+    } catch (err) {
+      setEmailError(err.response?.data?.error || 'Could not remove this co-author.')
+    } finally {
+      setAuthorAction(null)
+    }
   }
 
   const handleUpdateAuthor = (authorId, field, value) => {
@@ -699,12 +717,20 @@ function StepAuthors({ manuscript, onChange }) {
     onChange({ ...manuscript, authors: updated })
   }
 
-  const handleSetCorresponding = (authorId) => {
-    const updated = authors.map((a) => ({
-      ...a,
-      is_corresponding: a.id === authorId,
-    }))
-    onChange({ ...manuscript, authors: updated })
+  const handleSetCorresponding = async (authorId) => {
+    setAuthorAction(`corresponding:${authorId}`)
+    setEmailError('')
+    try {
+      await updateAuthor(manuscript.id, authorId, { is_corresponding: true })
+      onChange({
+        ...manuscript,
+        authors: authors.map((a) => ({ ...a, is_corresponding: a.id === authorId })),
+      })
+    } catch (err) {
+      setEmailError(err.response?.data?.error || 'Could not update the corresponding author.')
+    } finally {
+      setAuthorAction(null)
+    }
   }
 
   const getInitials = (name) => {
@@ -721,28 +747,30 @@ function StepAuthors({ manuscript, onChange }) {
       <div style={styles.coauthorNotice}>
         <i className="fas fa-info-circle" style={{ marginTop: '2px' }}></i>
         <div>
-          You are automatically added as the corresponding author. Add co-authors below. Author order determines the published byline.
+          You are automatically added as the primary author. Add co-authors below. Author order determines the published byline.
         </div>
       </div>
       
       {/* Primary Author */}
       <div style={styles.authorChip}>
         <div style={{ ...styles.authorChipAvatar, background: 'var(--color-success)' }}>
-          {getInitials(user?.display_name || user?.name || user?.email)}
+          {getInitials(getAuthorName(primaryAuthor))}
         </div>
         <div style={styles.authorChipInfo}>
           <div style={styles.authorChipName}>
-            {user?.display_name || user?.name || user?.email}
+            {getAuthorName(primaryAuthor) || user?.display_name || user?.email}
             <span style={{ 
               fontSize: '11px', 
               color: 'var(--color-success)', 
               fontWeight: 600, 
               marginLeft: '6px' 
             }}>
-              Corresponding Author
+              {primaryAuthor?.is_corresponding ? 'Corresponding Author' : 'Primary Author'}
             </span>
           </div>
-          <div style={styles.authorChipAffil}>{user?.organization || user?.email}</div>
+          <div style={styles.authorChipAffil}>
+            {[getAuthorField(primaryAuthor, 'institution'), getAuthorField(primaryAuthor, 'college'), getAuthorField(primaryAuthor, 'course')].filter(Boolean).join(' · ') || primaryAuthor?.email || user?.email}
+          </div>
         </div>
       </div>
       
@@ -753,11 +781,11 @@ function StepAuthors({ manuscript, onChange }) {
             ...styles.authorChipAvatar, 
             background: avatarColors[index % avatarColors.length] 
           }}>
-            {getInitials(author.name || author.email)}
+            {getInitials(getAuthorName(author))}
           </div>
           <div style={styles.authorChipInfo}>
             <div style={styles.authorChipName}>
-              {author.name || author.email}
+              {getAuthorName(author)}
               {author.is_corresponding && (
                 <span style={{ 
                   fontSize: '11px', 
@@ -769,7 +797,9 @@ function StepAuthors({ manuscript, onChange }) {
                 </span>
               )}
             </div>
-            <div style={styles.authorChipAffil}>{author.affiliation || author.email}</div>
+            <div style={styles.authorChipAffil}>
+              {[getAuthorField(author, 'institution'), getAuthorField(author, 'college'), getAuthorField(author, 'course')].filter(Boolean).join(' · ') || author.email}
+            </div>
           </div>
           {!author.is_corresponding && (
             <button
@@ -784,9 +814,10 @@ function StepAuthors({ manuscript, onChange }) {
                 marginRight: '4px',
               }}
               onClick={() => handleSetCorresponding(author.id)}
+              disabled={authorAction !== null}
               type="button"
             >
-              Set Corresponding
+              {authorAction === `corresponding:${author.id}` ? 'Saving…' : 'Set Corresponding'}
             </button>
           )}
           <button
@@ -799,9 +830,10 @@ function StepAuthors({ manuscript, onChange }) {
               padding: '4px',
             }}
             onClick={() => handleRemoveAuthor(author.id)}
+            disabled={authorAction !== null}
             type="button"
           >
-            <i className="fas fa-times"></i>
+            {authorAction === `remove:${author.id}` ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-times"></i>}
           </button>
         </div>
       ))}
@@ -829,9 +861,6 @@ function StepAuthors({ manuscript, onChange }) {
         )}
       </FormField>
       
-      <div style={styles.formHint}>
-        In a production system, co-authors can be added by email. They will receive a confirmation link to verify their information and affiliate with the manuscript.
-      </div>
     </div>
   )
 }
@@ -1063,7 +1092,7 @@ function StepFiles({ manuscript, onChange, errors }) {
 }
 
 // Step 4: Metadata & Declarations
-function StepMetadata({ manuscript, onChange, errors }) {
+function StepMetadata({ manuscript, onChange, errors, onBlurSave }) {
   const handleChange = (field, value) => {
     onChange({ ...manuscript, [field]: value })
   }
@@ -1076,6 +1105,7 @@ function StepMetadata({ manuscript, onChange, errors }) {
         <textarea
           value={manuscript.conflict_of_interest || ''}
           onChange={(e) => handleChange('conflict_of_interest', e.target.value)}
+          onBlur={onBlurSave}
           placeholder="Declare any financial, personal, or professional conflicts of interest. Write 'None declared' if none apply."
           style={styles.textarea}
         />
@@ -1085,6 +1115,7 @@ function StepMetadata({ manuscript, onChange, errors }) {
         <textarea
           value={manuscript.ethics_approval || ''}
           onChange={(e) => handleChange('ethics_approval', e.target.value)}
+          onBlur={onBlurSave}
           placeholder="If your research involves human or animal subjects, provide the ethics committee name and reference number. If not applicable, state 'Not applicable.'"
           style={styles.textarea}
         />
@@ -1094,6 +1125,7 @@ function StepMetadata({ manuscript, onChange, errors }) {
         <textarea
           value={manuscript.funding || ''}
           onChange={(e) => handleChange('funding', e.target.value)}
+          onBlur={onBlurSave}
           placeholder="List all funding sources with grant numbers. Write 'No external funding' if none."
           style={{ ...styles.textarea, minHeight: '60px' }}
         />
@@ -1103,6 +1135,7 @@ function StepMetadata({ manuscript, onChange, errors }) {
         <textarea
           value={manuscript.acknowledgements || ''}
           onChange={(e) => handleChange('acknowledgements', e.target.value)}
+          onBlur={onBlurSave}
           placeholder="Acknowledge anyone who contributed but does not qualify for authorship."
           style={{ ...styles.textarea, minHeight: '60px' }}
         />
@@ -1112,6 +1145,7 @@ function StepMetadata({ manuscript, onChange, errors }) {
         <textarea
           value={manuscript.data_availability || ''}
           onChange={(e) => handleChange('data_availability', e.target.value)}
+          onBlur={onBlurSave}
           placeholder="Describe where the data/code used in this study can be accessed."
           style={{ ...styles.textarea, minHeight: '60px' }}
         />
@@ -1122,6 +1156,14 @@ function StepMetadata({ manuscript, onChange, errors }) {
 
 // Step 5: Review
 function StepReview({ manuscript }) {
+  const getAuthorName = (author) => {
+    const first = author?.profile_first_name || author?.first_name || ''
+    const last = author?.profile_last_name || author?.last_name || ''
+    return [first, last].filter(Boolean).join(' ') || author?.profile_display_name || author?.display_name || author?.profile_email || author?.email || 'Author'
+  }
+
+  const getAuthorField = (author, field) => author?.[`profile_${field}`] || author?.[field] || ''
+
   return (
     <div>
       <h2 style={styles.sectionTitle}>Review Your Submission</h2>
@@ -1165,8 +1207,17 @@ function StepReview({ manuscript }) {
         <div>
           {(manuscript.authors || []).length > 0 ? (
             manuscript.authors.map((a, i) => (
-              <div key={a.id || i} style={{ marginBottom: '4px' }}>
-                {a.name || a.email}
+              <div key={a.id || i} style={{ marginBottom: '14px', padding: '10px 12px', border: '1px solid var(--color-rule-grey)', borderRadius: '8px' }}>
+                <div style={{ fontWeight: 700 }}>{getAuthorName(a)}</div>
+                <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', display: 'grid', gap: '3px', marginTop: '5px' }}>
+                  <div>Email: {a.profile_email || a.email || 'Not provided'}</div>
+                  <div>Institute: {getAuthorField(a, 'institution') || 'Not provided'}</div>
+                  <div>College: {getAuthorField(a, 'college') || 'Not provided'}</div>
+                  <div>Department: {getAuthorField(a, 'department') || 'Not provided'}</div>
+                  <div>State: {getAuthorField(a, 'state') || 'Not provided'}</div>
+                  <div>Country: {getAuthorField(a, 'country') || 'Not provided'}</div>
+                  <div>Course: {getAuthorField(a, 'course') || 'Not provided'}</div>
+                </div>
                 {a.is_corresponding && (
                   <span style={{ color: 'var(--color-success)', marginLeft: '8px', fontSize: '12px', fontWeight: 600 }}>
                     (Corresponding)
@@ -1200,8 +1251,15 @@ function StepReview({ manuscript }) {
       
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Declarations</div>
-        <div>
-          {manuscript.conflict_of_interest ? 'Completed' : <span style={{ color: 'var(--color-text-muted)' }}>Not completed</span>}
+        <div style={{ display: 'grid', gap: '4px' }}>
+          <div>
+            <strong>Conflict of Interest:</strong>{' '}
+            {manuscript.conflict_of_interest || <span style={{ color: 'var(--color-text-muted)' }}>Not completed</span>}
+          </div>
+          <div>
+            <strong>Ethics Approval:</strong>{' '}
+            {manuscript.ethics_approval || <span style={{ color: 'var(--color-text-muted)' }}>Not completed</span>}
+          </div>
         </div>
       </div>
       
@@ -1367,22 +1425,22 @@ export default function SubmissionWizard() {
     manuscript?.funding, manuscript?.acknowledgements, manuscript?.data_availability,
   ])
 
-  const validateStep = useCallback(() => {
+  const validateStep = useCallback((stepToValidate = step) => {
     const newErrors = {}
     
-    if (step === 1) {
+    if (stepToValidate === 0) {
       if (!manuscript?.title?.trim()) newErrors.title = 'Title is required'
       if (!manuscript?.abstract?.trim()) newErrors.abstract = 'Abstract is required'
       if (!manuscript?.article_type) newErrors.article_type = 'Article type is required'
       if (!manuscript?.category_id) newErrors.category_id = 'Subject / Category is required'
     }
     
-    if (step === 3) {
+    if (stepToValidate === 2) {
       const hasMain = (manuscript?.files || []).some((f) => f.file_type === 'main_manuscript')
       if (!hasMain) newErrors.main_manuscript = 'Main manuscript file is required'
     }
     
-    if (step === 4) {
+    if (stepToValidate === 3) {
       if (!manuscript?.conflict_of_interest?.trim()) newErrors.conflict_of_interest = 'Conflict of interest statement is required'
       if (!manuscript?.ethics_approval?.trim()) newErrors.ethics_approval = 'Ethics approval statement is required'
     }
@@ -1433,7 +1491,18 @@ export default function SubmissionWizard() {
   }
 
   const handleSubmit = async () => {
-    if (!validateStep()) return
+    if (!validateStep(0)) {
+      setStep(0)
+      return
+    }
+    if (!validateStep(2)) {
+      setStep(2)
+      return
+    }
+    if (!validateStep(3)) {
+      setStep(3)
+      return
+    }
     setSubmitting(true)
     try {
       await handleSave()
@@ -1516,6 +1585,7 @@ export default function SubmissionWizard() {
               manuscript={manuscript || {}}
               onChange={handleManuscriptChange}
               errors={errors}
+              onBlurSave={handleSave}
             />
           )}
           {step === 4 && (

@@ -65,8 +65,16 @@ export async function getNotifications() {
        m.submission_number,
        m.title,
        COALESCE(
-         (SELECT string_agg(TRIM(CONCAT_WS(' ', ma.first_name, ma.last_name)), ', ' ORDER BY ma.author_order)
+         (SELECT string_agg(
+            COALESCE(
+              NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),
+              NULLIF(TRIM(CONCAT_WS(' ', ma.first_name, ma.last_name)), ''),
+              NULLIF(TRIM(u.display_name), ''),
+              ma.email::text
+            ),
+            ', ' ORDER BY ma.author_order)
           FROM manuscript_authors ma
+          LEFT JOIN users u ON u.id = ma.user_id
           WHERE ma.manuscript_id = m.id AND ma.author_order = 1),
          'Unknown author'
        ) AS first_author
@@ -131,8 +139,14 @@ export async function getQueue() {
        c.name as category_name,
        m.current_status,
        COALESCE(
-         (SELECT TRIM(CONCAT_WS(' ', ma.first_name, ma.last_name))
+         (SELECT COALESCE(
+            NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),
+            NULLIF(TRIM(CONCAT_WS(' ', ma.first_name, ma.last_name)), ''),
+            NULLIF(TRIM(u.display_name), ''),
+            ma.email::text
+          )
           FROM manuscript_authors ma
+          LEFT JOIN users u ON u.id = ma.user_id
           WHERE ma.manuscript_id = m.id
           ORDER BY ma.author_order
           LIMIT 1),
@@ -167,7 +181,22 @@ export async function getManuscriptForScreening(manuscriptId) {
   }
 
   const authorsResult = await pool.query(
-    `SELECT * FROM manuscript_authors WHERE manuscript_id = $1 ORDER BY author_order`,
+    `SELECT ma.*,
+            u.first_name AS profile_first_name,
+            u.last_name AS profile_last_name,
+            u.display_name AS profile_display_name,
+            u.email AS profile_email,
+            u.institution AS profile_institution,
+            u.college AS profile_college,
+            u.department AS profile_department,
+            u.state AS profile_state,
+            u.country AS profile_country,
+            u.course AS profile_course,
+            u.orcid_id AS profile_orcid_id
+     FROM manuscript_authors ma
+     LEFT JOIN users u ON u.id = ma.user_id
+     WHERE ma.manuscript_id = $1
+     ORDER BY ma.author_order`,
     [manuscriptId]
   )
 

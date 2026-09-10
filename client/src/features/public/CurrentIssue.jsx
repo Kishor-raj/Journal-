@@ -24,6 +24,21 @@ const HIGHLIGHTS = [
   'Immediate Open Access Distribution',
 ]
 
+function collapseRepeatedText(value) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim()
+  if (!text) return ''
+
+  for (let length = 1; length <= text.length / 2; length += 1) {
+    if (text.length % length !== 0) continue
+    const part = text.slice(0, length)
+    if (part.length > 1 && part.repeat(text.length / length) === text) {
+      return part.trim()
+    }
+  }
+
+  return text
+}
+
 /** Shape raw API manuscript into the format ArticleItem expects */
 function toArticle(m, idx) {
   const authorsStr = (m.authors || [])
@@ -41,7 +56,7 @@ function toArticle(m, idx) {
     title: m.title || '(Untitled)',
     authors: authorsStr || 'Unknown author',
     affiliation: '',
-    abstract: m.abstract || '',
+    abstract: collapseRepeatedText(m.abstract),
     keywords: (m.keywords || []).join(', '),
     pages: m.submission_number || `Article ${idx + 1}`,
     doi: '',
@@ -80,9 +95,13 @@ function ActionButton({ children, onClick, active }) {
 }
 
 /* ─── ArticleItem ──────────────────────────────────────────────────────── */
-function ArticleItem({ article, highlight }) {
+function ArticleItem({ article, highlight, openAuthors }) {
   const [showAbstract, setShowAbstract] = useState(false)
   const [showCite, setShowCite] = useState(false)
+  const [showAuthors, setShowAuthors] = useState(false)
+  const [authorProfiles, setAuthorProfiles] = useState([])
+  const [authorsLoading, setAuthorsLoading] = useState(false)
+  const [authorsError, setAuthorsError] = useState('')
   const [copied, setCopied] = useState(false)
   const ref = useRef(null)
 
@@ -99,6 +118,33 @@ function ArticleItem({ article, highlight }) {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  const handleAuthors = async () => {
+    if (showAuthors) {
+      setShowAuthors(false)
+      return
+    }
+
+    setShowAuthors(true)
+    if (authorProfiles.length > 0) return
+
+    setAuthorsLoading(true)
+    setAuthorsError('')
+    try {
+      const authors = await publicService.getPublishedArticleAuthors(article.id)
+      setAuthorProfiles(authors || [])
+    } catch {
+      setAuthorsError('Author details are not available right now.')
+    } finally {
+      setAuthorsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!openAuthors) return
+    if (ref.current) ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    handleAuthors()
+  }, [openAuthors])
 
   return (
     <article
@@ -118,7 +164,7 @@ function ArticleItem({ article, highlight }) {
         <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23' }}>
           {article.tag}
         </div>
-        <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', color: '#6B7288', letterSpacing: '0.04em' }}>
+        <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', color: '#C4A24C', letterSpacing: '0.04em' }}>
           {article.pages} · <span style={{ color: '#2B7A4B', fontWeight: 600 }}>{article.status}</span>
         </div>
       </div>
@@ -139,13 +185,6 @@ function ArticleItem({ article, highlight }) {
         <div style={{ fontSize: '13.5px', color: '#6B7288', marginBottom: '14px' }}>
           {article.affiliation}
         </div>
-      )}
-
-      {/* Abstract always shown */}
-      {article.abstract && (
-        <p style={{ fontSize: '15.5px', lineHeight: 1.75, color: '#3A4157', margin: '0 0 16px', maxWidth: '780px' }}>
-          {article.abstract}
-        </p>
       )}
 
       {/* Keywords */}
@@ -184,6 +223,38 @@ function ArticleItem({ article, highlight }) {
         </div>
       )}
 
+      {showAuthors && (
+        <div style={{ background: '#FFFDF5', border: '1px solid #E6E1D6', borderLeft: '3px solid #C4A24C', padding: '16px 20px', marginBottom: '16px' }}>
+          <strong style={{ display: 'block', color: '#0B1B3A', marginBottom: '10px' }}>Authors</strong>
+          {authorsLoading ? (
+            <div style={{ fontSize: '14px', color: '#6B7288' }}>Loading author profiles…</div>
+          ) : authorsError ? (
+            <div style={{ fontSize: '14px', color: '#B4552D' }}>{authorsError}</div>
+          ) : authorProfiles.length === 0 ? (
+            <div style={{ fontSize: '14px', color: '#6B7288' }}>No author details are available.</div>
+          ) : (
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {authorProfiles.map((author, index) => {
+                const fullName = [author.first_name, author.last_name].filter(Boolean).join(' ') || author.email || 'Unknown author'
+                return (
+                  <div key={author.id || index} style={{ fontSize: '14px', lineHeight: 1.55, color: '#3A4157' }}>
+                    <div style={{ fontWeight: 700, color: '#0B1B3A' }}>
+                      {fullName}
+                      {author.author_order === 1 && <span style={{ color: '#9A7B23', fontSize: '12px', marginLeft: '8px' }}>Primary author</span>}
+                      {author.is_corresponding && <span style={{ color: '#2B7A4B', fontSize: '12px', marginLeft: '8px' }}>Corresponding</span>}
+                    </div>
+                    <div>{author.email || 'Email not provided'}</div>
+                    <div>Institute: {author.institution || 'Not provided'} · College: {author.college || 'Not provided'}</div>
+                    <div>Department: {author.department || 'Not provided'} · State: {author.state || 'Not provided'}</div>
+                    <div>Country: {author.country || 'Not provided'} · Course: {author.course || 'Not provided'}</div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Action footer */}
       <div style={{ display: 'flex', gap: '18px', alignItems: 'center', fontFamily: 'Jost, sans-serif', fontSize: '12.5px', color: '#6B7288', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
         {article.doi && <span>DOI: {article.doi}</span>}
@@ -193,6 +264,9 @@ function ArticleItem({ article, highlight }) {
         </ActionButton>
         <ActionButton onClick={() => setShowCite(!showCite)} active={showCite}>
           {showCite ? 'Close Cite' : 'Cite'}
+        </ActionButton>
+        <ActionButton onClick={handleAuthors} active={showAuthors}>
+          {showAuthors ? 'Close Authors' : 'Authors'}
         </ActionButton>
       </div>
     </article>
@@ -217,6 +291,11 @@ export default function CurrentIssue() {
   // Determine which article to highlight from URL hash
   const highlightId = location.hash.startsWith('#article-')
     ? location.hash.replace('#article-', '')
+    : location.hash.startsWith('#authors-')
+      ? location.hash.replace('#authors-', '')
+      : null
+  const authorsId = location.hash.startsWith('#authors-')
+    ? location.hash.replace('#authors-', '')
     : null
 
   const pageRange = articles.length > 0
@@ -334,7 +413,7 @@ export default function CurrentIssue() {
               Table of Contents
             </div>
             <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12px', letterSpacing: '0.1em', color: '#6B7288' }}>
-              {pageRange}
+              <span style={{ color: '#0B1B3A' }}>{pageRange}</span>
             </div>
           </div>
 
@@ -353,6 +432,7 @@ export default function CurrentIssue() {
                 key={article.id}
                 article={article}
                 highlight={article.id === highlightId}
+                openAuthors={article.id === authorsId}
               />
             ))
           )}
