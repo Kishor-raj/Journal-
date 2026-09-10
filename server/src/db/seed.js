@@ -58,6 +58,13 @@ async function seed() {
       'Materials Science',
       'Artificial Intelligence',
       'Data Science',
+      'Machine Learning',
+      'Computer Vision',
+      'Natural Language Processing',
+      'Software Engineering',
+      'Cybersecurity',
+      'Quantum Computing',
+      'IoT / Edge Computing',
     ]
     for (const name of categories) {
       await client.query(

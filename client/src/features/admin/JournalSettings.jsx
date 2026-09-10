@@ -677,7 +677,6 @@ function ArticleTypesTab() {
 
 const TABS = [
   { key: 'categories', label: '📂 Subject Categories' },
-  { key: 'article-types', label: '📄 Article Types' },
 ]
 
 export default function JournalSettings() {
@@ -703,7 +702,6 @@ export default function JournalSettings() {
       </div>
 
       {activeTab === 'categories' && <CategoriesTab />}
-      {activeTab === 'article-types' && <ArticleTypesTab />}
     </div>
   )
 }
