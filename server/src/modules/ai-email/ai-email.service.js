@@ -2,21 +2,23 @@ import crypto from 'crypto'
 import pool from '../../config/db.js'
 import { env } from '../../config/env.js'
 
-export function verifyWebhookSignature(payload, signature) {
+export function verifyWebhookToken(authorizationHeader) {
   const secret = env.HOSTINGER_WEBHOOK_SECRET
   if (!secret) {
-    console.warn('[AI_EMAIL_WEBHOOK] No HOSTINGER_WEBHOOK_SECRET configured — skipping signature verification')
+    console.warn('[AI_EMAIL_WEBHOOK] No HOSTINGER_WEBHOOK_SECRET configured — skipping token verification')
     return true
   }
-  if (!signature) return false
 
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(typeof payload === 'string' ? payload : JSON.stringify(payload))
-    .digest('hex')
+  const provided = typeof authorizationHeader === 'string' && authorizationHeader.startsWith('Bearer ')
+    ? authorizationHeader.slice('Bearer '.length).trim()
+    : ''
+
+  if (!provided || !secret) return false
 
   try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
+    const a = Buffer.from(provided)
+    const b = Buffer.from(secret)
+    return a.length === b.length && crypto.timingSafeEqual(a, b)
   } catch {
     return false
   }

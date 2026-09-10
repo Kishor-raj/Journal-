@@ -215,13 +215,22 @@ Hostinger → Your backend
 ### Priority
 
 - [x] Fix the 404 routing problem first.
-- [ ] After routing is fixed, investigate possible `401` or `403` responses separately.
+- [x] After routing is fixed, investigate possible `401` or `403` responses separately.
+
+## Root Cause (401)
+
+Hostinger webhooks use **Bearer token authentication** via the `Authorization` header,
+not an HMAC signature header. The previous code looked for `x-hostinger-signature` /
+`x-webhook-signature` / `x-hub-signature-256`, which Hostinger never sends, so every
+request failed with `401 Invalid webhook signature`.
 
 ## TODO
 
 - [x] Verify webhook authentication follows the current Hostinger webhook specification.
 - [x] Verify `HOSTINGER_WEBHOOK_SECRET` is read from the correct environment variable.
 - [x] Verify the authentication middleware/handler executes after the request reaches the correct route.
+- [x] Read the Bearer token from the `Authorization` header.
+- [x] Compare the provided Bearer token against `HOSTINGER_WEBHOOK_SECRET` with a constant-time comparison.
 - [x] Do not log the webhook secret.
 - [x] Do not disable authentication just to make the test pass.
 

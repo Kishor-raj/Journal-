@@ -1,13 +1,12 @@
-import { verifyWebhookSignature, storeWebhookEvent, markWebhookProcessed, markWebhookFailed, queueEmailForProcessing } from './ai-email.service.js'
+import { verifyWebhookToken, storeWebhookEvent, markWebhookProcessed, markWebhookFailed, queueEmailForProcessing } from './ai-email.service.js'
 import { validateWebhookPayload, validateEmailPayload, sanitizeSubject, sanitizePlainText } from '../../services/ai/security.js'
 import { logAiEmailEvent } from '../../services/ai/audit.js'
 
 export async function handleHostingerWebhook(req, res) {
   const rawBody = req.rawBody || JSON.stringify(req.body)
-  const signature = req.headers['x-hostinger-signature'] || req.headers['x-webhook-signature'] || req.headers['x-hub-signature-256']
 
-  if (!verifyWebhookSignature(rawBody, signature)) {
-    return res.status(401).json({ error: 'Invalid webhook signature' })
+  if (!verifyWebhookToken(req.headers['authorization'])) {
+    return res.status(401).json({ error: 'Invalid webhook token' })
   }
 
   const payloadValidation = validateWebhookPayload(req.body)
