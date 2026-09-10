@@ -564,34 +564,6 @@ function StepBasic({ manuscript, onChange, errors }) {
       </FormField>
 
       <div style={styles.formRow}>
-        <FormField label="Article Type" required error={errors.article_type}>
-          <select
-            value={manuscript.article_type || ''}
-            onChange={(e) => handleChange('article_type', e.target.value)}
-            style={{ ...styles.select, opacity: typeLoading ? 0.6 : 1 }}
-            disabled={typeLoading}
-          >
-            <option value="">
-              {typeLoading
-                ? 'Loading...'
-                : typeError
-                ? 'Failed to load — retry'
-                : dbArticleTypes.length === 0
-                ? 'No types available'
-                : 'Select type...'}
-            </option>
-            {dbArticleTypes.map((t) => (
-              <option key={t.id} value={t.name}>{t.name}</option>
-            ))}
-          </select>
-          {typeError && (
-            <div style={{ ...styles.formHint, color: 'var(--color-danger)', marginTop: '4px' }}>
-              Could not load article types.{' '}
-              <span style={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={fetchArticleTypes}>Retry</span>
-            </div>
-          )}
-        </FormField>
-
         <FormField label="Subject / Category" required error={errors.category_id}>
           <select
             value={manuscript.category_id || ''}
@@ -624,6 +596,34 @@ function StepBasic({ manuscript, onChange, errors }) {
               >
                 Retry
               </span>
+            </div>
+          )}
+        </FormField>
+
+        <FormField label="Article Type" required error={errors.article_type}>
+          <select
+            value={manuscript.article_type || ''}
+            onChange={(e) => handleChange('article_type', e.target.value)}
+            style={{ ...styles.select, opacity: typeLoading ? 0.6 : 1 }}
+            disabled={typeLoading}
+          >
+            <option value="">
+              {typeLoading
+                ? 'Loading...'
+                : typeError
+                ? 'Failed to load — retry'
+                : dbArticleTypes.length === 0
+                ? 'No types available'
+                : 'Select type...'}
+            </option>
+            {dbArticleTypes.map((t) => (
+              <option key={t.id} value={t.name}>{t.name}</option>
+            ))}
+          </select>
+          {typeError && (
+            <div style={{ ...styles.formHint, color: 'var(--color-danger)', marginTop: '4px' }}>
+              Could not load article types.{' '}
+              <span style={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={fetchArticleTypes}>Retry</span>
             </div>
           )}
         </FormField>
