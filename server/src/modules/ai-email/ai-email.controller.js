@@ -11,8 +11,7 @@ export async function handleHostingerWebhook(req, res) {
 
   const payloadValidation = validateWebhookPayload(req.body)
   if (!payloadValidation.valid) {
-    console.log('[AI_EMAIL_WEBHOOK] Payload validation failed:', JSON.stringify(payloadValidation.errors, null, 2))
-    console.log('[AI_EMAIL_WEBHOOK] Raw body received:', String(req.rawBody || JSON.stringify(req.body)).slice(0, 2000))
+    console.warn('[AI_EMAIL_WEBHOOK] Payload validation failed:', payloadValidation.errors.join('; '))
     return res.status(400).json({ error: 'Invalid payload', details: payloadValidation.errors })
   }
 
