@@ -1,6 +1,6 @@
 import { replyToMessage, sendMessage } from '../../services/email/hostinger/index.js'
 import { env } from '../../config/env.js'
-import { logAiEmailEvent } from '../services/ai/audit.js'
+import { logAiEmailEvent } from '../../services/ai/audit.js'
 
 export async function sendReplyViaHostinger({ replyId, threadId, toEmail, subject, body, providerThreadId, providerMessageId }) {
   const mailbox = env.HOSTINGER_MAILBOX
