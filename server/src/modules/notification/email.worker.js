@@ -2,8 +2,6 @@ import pool from '../../config/db.js'
 import { enqueueNotification, getNotificationTemplates } from './notification.service.js'
 import { processDraftReminders } from './manuscript-notification.service.js'
 import { MAX_RETRY_ATTEMPTS, RETRY_BACKOFF } from './notification.events.js'
-import { processPendingWebhooks } from '../ai-email/ai-email.controller.js'
-import { startAiEmailWorker } from '../ai-email/ai-email-worker.js'
 
 const DEFAULT_POLL_INTERVAL_MS = 30 * 1000
 
@@ -172,53 +170,12 @@ export async function startDraftReminderScheduler({ intervalMs = 6 * 60 * 60 * 1
 export function startBackgroundJobs(options = {}) {
   const emailWorker = startEmailWorker(options.emailWorker)
   const draftScheduler = startDraftReminderScheduler(options.draftReminder)
-  const webhookWorker = startWebhookEventWorker(options.webhookEvent)
-  const aiEmailWorker = startAiEmailWorker(options.aiEmail)
 
   return {
     stop() {
       if (emailWorker) emailWorker.stop()
       if (draftScheduler) draftScheduler.stop()
-      if (webhookWorker) webhookWorker.stop()
-      if (aiEmailWorker) aiEmailWorker.stop()
       console.log('[BACKGROUND_JOBS] All background jobs stopped')
-    },
-  }
-}
-
-export function startWebhookEventWorker({ pollIntervalMs = 15_000, enabled = true } = {}) {
-  if (!enabled) {
-    console.log('[WEBHOOK_EVENT_WORKER] Disabled')
-    return null
-  }
-
-  let running = false
-  let stopFlag = false
-  let timer = null
-
-  const tick = async () => {
-    if (running || stopFlag) return
-    running = true
-    try {
-      const result = await processPendingWebhooks(10)
-      if (result.total > 0) {
-        console.log(`[WEBHOOK_EVENT_WORKER] Processed ${result.total} pending webhook events`)
-      }
-    } catch (err) {
-      console.error('[WEBHOOK_EVENT_WORKER] Tick error:', err.message)
-    } finally {
-      running = false
-    }
-  }
-
-  timer = setInterval(tick, pollIntervalMs)
-  tick()
-
-  return {
-    stop() {
-      stopFlag = true
-      if (timer) clearInterval(timer)
-      console.log('[WEBHOOK_EVENT_WORKER] Stopped')
     },
   }
 }
