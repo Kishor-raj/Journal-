@@ -227,7 +227,10 @@ router.delete('/users/:id', authenticate, requireRole('admin'), async (req, res)
 
 router.get('/categories', authenticate, requireRole('admin'), async (req, res) => {
   const result = await pool.query(
-    'SELECT id, name, description, is_active, created_at FROM categories ORDER BY name'
+    `SELECT id, name, description, is_active, created_at
+     FROM categories
+     WHERE name NOT IN ('Original Research', 'Review Article', 'Case Study', 'Short Communication', 'Commentary', 'Letter to Editor', 'Book Review', 'Technical Note')
+     ORDER BY name`
   )
   res.json(result.rows)
 })

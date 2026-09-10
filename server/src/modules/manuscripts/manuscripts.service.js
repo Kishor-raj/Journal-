@@ -83,7 +83,13 @@ export async function getManuscriptsByUser(userId) {
 }
 
 export async function getCategories() {
-  const result = await pool.query('SELECT id, name FROM categories WHERE is_active = true ORDER BY name')
+  const result = await pool.query(
+    `SELECT id, name
+     FROM categories
+     WHERE is_active = true
+       AND name NOT IN ('Original Research', 'Review Article', 'Case Study', 'Short Communication', 'Commentary', 'Letter to Editor', 'Book Review', 'Technical Note')
+     ORDER BY name`
+  )
   return result.rows
 }
 
