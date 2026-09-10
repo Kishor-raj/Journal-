@@ -15,6 +15,9 @@ const AUTO_SEND_CATEGORIES = ['SUBMISSION_GUIDELINES', 'JOURNAL_INFORMATION', 'G
 export async function fetchAndStoreEmail(event) {
   const payload = event.payload
   const data = payload?.data || payload
+  if (!data || typeof data !== 'object') {
+    throw new Error('No message data in webhook payload')
+  }
   const messageId = data?.message_id || data?.messageId || data?.id
   const threadId = data?.thread_id
   const mailbox = data?.mailbox || data?.mailboxAddress || process.env.HOSTINGER_MAILBOX
@@ -345,6 +348,13 @@ export async function processOneEvent() {
       reply: replyResult.skipped ? null : { replyId: replyResult.replyId, approvalRequired: replyResult.approvalRequired },
     }
   } catch (err) {
+    console.error(`[AI_EMAIL_WORKER] Processing error for event ${event.event_id} (attempt):`, err.message)
+    try {
+      const p = event.payload
+      const d = (typeof p?.data === 'object' && p.data !== null) ? p.data : p
+      const shape = { payloadKeys: Object.keys(p || {}), dataKeys: typeof d === 'object' && d !== null ? Object.keys(d) : [] }
+      console.log(`[AI_EMAIL_WORKER] Payload shape: ${JSON.stringify(shape)}`)
+    } catch { /* ignore */ }
     await client.query('ROLLBACK')
     await logAiEmailEvent({ workflowName: 'ai_email', eventName: 'processing_error', status: 'failed', payload: { error: err.message } })
 
