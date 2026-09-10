@@ -15,9 +15,9 @@ const AUTO_SEND_CATEGORIES = ['SUBMISSION_GUIDELINES', 'JOURNAL_INFORMATION', 'G
 export async function fetchAndStoreEmail(event) {
   const payload = event.payload
   const data = payload?.data || payload
-  const messageId = data?.message_id || data?.id
+  const messageId = data?.message_id || data?.messageId || data?.id
   const threadId = data?.thread_id
-  const mailbox = data?.mailbox || process.env.HOSTINGER_MAILBOX
+  const mailbox = data?.mailbox || data?.mailboxAddress || process.env.HOSTINGER_MAILBOX
 
   if (!messageId) throw new Error('No message_id in webhook payload')
 
@@ -49,16 +49,21 @@ export async function fetchAndStoreEmail(event) {
     threadRecord = newThread.rows[0]
   }
 
+  const toArray = Array.isArray(data?.to) ? data.to.join(', ') : (data?.to || mailbox)
+  const ccArray = Array.isArray(data?.cc) ? (data.cc.length > 0 ? data.cc.join(', ') : null) : (data?.cc || null)
+  const bodyText = data?.text || data?.body_text || data?.plainBody || null
+  const bodyHtml = data?.html || data?.body_html || data?.htmlBody || null
+
   const emailResult = await pool.query(
     `INSERT INTO emails (thread_id, provider_message_id, message_id, in_reply_to, from_email, to_email, cc_email, subject, body_text, body_html, received_at, direction, raw_metadata)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'inbound', $12)
      ON CONFLICT (provider_message_id) DO NOTHING
      RETURNING id`,
     [
-      threadRecord.id, messageId, data?.message_id || messageId, data?.in_reply_to || null,
-      data?.from || 'unknown@unknown.com', data?.to || mailbox, data?.cc || null,
-      data?.subject || null, data?.text || data?.body_text || null,
-      data?.html || data?.body_html || null, data?.date || data?.received_at || new Date().toISOString(),
+      threadRecord.id, messageId, data?.message_id || data?.messageId || messageId, data?.in_reply_to || null,
+      data?.from || 'unknown@unknown.com', toArray, ccArray,
+      data?.subject || null, bodyText,
+      bodyHtml, data?.date || data?.received_at || new Date().toISOString(),
       JSON.stringify(data),
     ]
   )

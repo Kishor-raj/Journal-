@@ -172,7 +172,7 @@ export function startDraftReminderScheduler({ intervalMs = 6 * 60 * 60 * 1000, r
 export function startBackgroundJobs(options = {}) {
   const emailWorker = startEmailWorker(options.emailWorker)
   const draftScheduler = startDraftReminderScheduler(options.draftReminder)
-  const webhookWorker = startWebhookEventWorker(options.webhookEvent)
+  const webhookWorker = startWebhookEventWorker({ ...options.webhookEvent, enabled: false })
   const aiEmailWorker = startAiEmailWorker(options.aiEmail)
 
   return {

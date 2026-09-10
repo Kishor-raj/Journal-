@@ -51,6 +51,8 @@ function buildEventKey(templateKey, variables) {
 
 async function upsertEmailNotification({ eventKey, templateKey, recipientUserId, recipientEmail, manuscriptId, journalId, data, status, providerMessageId, error, attemptIncrement }) {
   const now = new Date()
+  const sentAt = status === 'sent' ? now : null
+  const failedAt = status === 'failed' ? now : null
 
   if (eventKey) {
     const existing = await pool.query(
@@ -68,12 +70,12 @@ async function upsertEmailNotification({ eventKey, templateKey, recipientUserId,
              status = $2,
              provider_message_id = COALESCE($3, provider_message_id),
              last_error = $4,
-             sent_at = CASE WHEN $2 = 'sent' THEN $5 ELSE sent_at END,
-             failed_at = CASE WHEN $2 = 'failed' THEN $5 ELSE failed_at END,
-             updated_at = $5
-         WHERE id = $6
+             sent_at = $5,
+             failed_at = $6,
+             updated_at = $7
+         WHERE id = $8
          RETURNING id`,
-        [attemptIncrement || 1, status, providerMessageId || null, error || null, now, row.id]
+        [attemptIncrement || 1, status, providerMessageId || null, error || null, sentAt, failedAt, now, row.id]
       )
       return { id: result.rows[0]?.id, skipped: false }
     }
@@ -88,9 +90,9 @@ async function upsertEmailNotification({ eventKey, templateKey, recipientUserId,
            status = $8,
            provider_message_id = COALESCE($10, email_notifications.provider_message_id),
            last_error = $11,
-           sent_at = CASE WHEN $8 = 'sent' THEN $12 ELSE email_notifications.sent_at END,
-           failed_at = CASE WHEN $8 = 'failed' THEN $12 ELSE email_notifications.failed_at END,
-           updated_at = $12
+           sent_at = $12,
+           failed_at = $13,
+           updated_at = $14
      RETURNING id`,
     [
       journalId || null,
@@ -104,8 +106,9 @@ async function upsertEmailNotification({ eventKey, templateKey, recipientUserId,
       attemptIncrement || 1,
       providerMessageId || null,
       error || null,
-      status === 'sent' ? now : null,
-      status === 'failed' ? now : null,
+      sentAt,
+      failedAt,
+      now,
     ]
   )
   return { id: result.rows[0]?.id, skipped: false }
