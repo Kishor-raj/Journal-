@@ -612,7 +612,7 @@ function ArticleTypesTab() {
                 style={styles.input}
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="e.g., Original Research"
+                placeholder="e.g., Cybersecurity"
                 autoFocus
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               />
@@ -677,6 +677,7 @@ function ArticleTypesTab() {
 
 const TABS = [
   { key: 'categories', label: '📂 Subject Categories' },
+  { key: 'article-types', label: '📄 Article Types' },
 ]
 
 export default function JournalSettings() {
@@ -702,6 +703,7 @@ export default function JournalSettings() {
       </div>
 
       {activeTab === 'categories' && <CategoriesTab />}
+      {activeTab === 'article-types' && <ArticleTypesTab />}
     </div>
   )
 }

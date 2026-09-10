@@ -43,28 +43,14 @@ async function seed() {
 
     // Seed categories
     const categories = [
-      'Computer Science',
-      'Electrical Engineering',
-      'Mechanical Engineering',
-      'Civil Engineering',
-      'Chemical Engineering',
-      'Biomedical Engineering',
-      'Mathematics',
-      'Physics',
-      'Chemistry',
-      'Biology',
-      'Medicine',
-      'Environmental Science',
-      'Materials Science',
-      'Artificial Intelligence',
-      'Data Science',
-      'Machine Learning',
-      'Computer Vision',
-      'Natural Language Processing',
-      'Software Engineering',
-      'Cybersecurity',
-      'Quantum Computing',
-      'IoT / Edge Computing',
+      'Original Research',
+      'Review Article',
+      'Case Study',
+      'Short Communication',
+      'Commentary',
+      'Letter to Editor',
+      'Book Review',
+      'Technical Note',
     ]
     for (const name of categories) {
       await client.query(
