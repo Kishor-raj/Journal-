@@ -134,7 +134,7 @@ export async function validateEmailTemplates() {
   return { total_templates: templates.length, issues }
 }
 
-export async function startDraftReminderScheduler({ intervalMs = 6 * 60 * 60 * 1000, reminderAfterDays = 3, cooldownDays = 7, enabled = true } = {}) {
+export function startDraftReminderScheduler({ intervalMs = 6 * 60 * 60 * 1000, reminderAfterDays = 3, cooldownDays = 7, enabled = true } = {}) {
   if (!enabled) {
     console.log('[DRAFT_REMINDER] Disabled')
     return null
