@@ -87,7 +87,7 @@ export async function getCategories() {
     `SELECT id, name
      FROM categories
      WHERE is_active = true
-       AND name NOT IN ('Original Research', 'Review Article', 'Case Study', 'Short Communication', 'Commentary', 'Letter to Editor', 'Book Review', 'Technical Note')
+       AND name IN ('Original Research', 'Review Article', 'Case Study', 'Short Communication', 'Commentary', 'Letter to Editor', 'Book Review', 'Technical Note')
      ORDER BY name`
   )
   return result.rows

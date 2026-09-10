@@ -125,7 +125,7 @@ export default function AdminDashboard() {
           <div>
             <h2 style={styles.cardTitle}>Journal Settings</h2>
             <p style={styles.cardDesc}>
-              Manage subject categories that appear in the author submission form. Add, edit, deactivate, or remove options directly from the database.
+              Manage subject categories and article types that appear in the author submission form. Add, edit, deactivate, or remove options directly from the database.
             </p>
           </div>
           <Button

@@ -16,6 +16,7 @@ import {
   confirmUpload,
   deleteManuscriptFile,
   getCategories,
+  getArticleTypes,
 } from './services/manuscriptService'
 
 const STEPS = [
@@ -496,6 +497,9 @@ function StepBasic({ manuscript, onChange, errors }) {
   const [dbCategories, setDbCategories] = useState([])
   const [catLoading, setCatLoading] = useState(true)
   const [catError, setCatError] = useState(false)
+  const [dbArticleTypes, setDbArticleTypes] = useState([])
+  const [typeLoading, setTypeLoading] = useState(true)
+  const [typeError, setTypeError] = useState(false)
 
   const fetchCategories = () => {
     setCatLoading(true)
@@ -512,8 +516,24 @@ function StepBasic({ manuscript, onChange, errors }) {
       .finally(() => setCatLoading(false))
   }
 
+  const fetchArticleTypes = () => {
+    setTypeLoading(true)
+    setTypeError(false)
+    getArticleTypes()
+      .then((res) => {
+        const data = res?.data ?? res
+        setDbArticleTypes(Array.isArray(data) ? data : [])
+      })
+      .catch(() => {
+        setTypeError(true)
+        setDbArticleTypes([])
+      })
+      .finally(() => setTypeLoading(false))
+  }
+
   useEffect(() => {
     fetchCategories()
+    fetchArticleTypes()
   }, [])
 
   const handleChange = (field, value) => {
@@ -543,7 +563,35 @@ function StepBasic({ manuscript, onChange, errors }) {
         />
       </FormField>
 
-      <div>
+      <div style={styles.formRow}>
+        <FormField label="Article Type" required error={errors.article_type}>
+          <select
+            value={manuscript.article_type || ''}
+            onChange={(e) => handleChange('article_type', e.target.value)}
+            style={{ ...styles.select, opacity: typeLoading ? 0.6 : 1 }}
+            disabled={typeLoading}
+          >
+            <option value="">
+              {typeLoading
+                ? 'Loading...'
+                : typeError
+                ? 'Failed to load — retry'
+                : dbArticleTypes.length === 0
+                ? 'No types available'
+                : 'Select type...'}
+            </option>
+            {dbArticleTypes.map((t) => (
+              <option key={t.id} value={t.name}>{t.name}</option>
+            ))}
+          </select>
+          {typeError && (
+            <div style={{ ...styles.formHint, color: 'var(--color-danger)', marginTop: '4px' }}>
+              Could not load article types.{' '}
+              <span style={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={fetchArticleTypes}>Retry</span>
+            </div>
+          )}
+        </FormField>
+
         <FormField label="Subject / Category" required error={errors.category_id}>
           <select
             value={manuscript.category_id || ''}
@@ -1128,6 +1176,11 @@ function StepReview({ manuscript }) {
         <div style={styles.reviewLabel}>Abstract</div>
         <div>{manuscript.abstract || <span style={{ color: 'var(--color-text-muted)' }}>Not provided yet</span>}</div>
       </div>
+
+      <div style={styles.reviewSection}>
+        <div style={styles.reviewLabel}>Article Type</div>
+        <div>{manuscript.article_type || <span style={{ color: 'var(--color-text-muted)' }}>Not selected</span>}</div>
+      </div>
       
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Subject / Category</div>
@@ -1349,6 +1402,7 @@ export default function SubmissionWizard() {
         abstract: manuscript.abstract,
         keywords: manuscript.keywords,
         category_id: manuscript.category_id,
+        article_type: manuscript.article_type,
         conflict_of_interest: manuscript.conflict_of_interest,
         ethics_approval: manuscript.ethics_approval,
         funding: manuscript.funding,
@@ -1360,7 +1414,7 @@ export default function SubmissionWizard() {
   }, [
     manuscript?.id, step,
     manuscript?.title, manuscript?.abstract, manuscript?.keywords,
-    manuscript?.category_id,
+    manuscript?.category_id, manuscript?.article_type,
     manuscript?.conflict_of_interest, manuscript?.ethics_approval,
     manuscript?.funding, manuscript?.acknowledgements, manuscript?.data_availability,
   ])
@@ -1371,6 +1425,7 @@ export default function SubmissionWizard() {
     if (stepToValidate === 0) {
       if (!manuscript?.title?.trim()) newErrors.title = 'Title is required'
       if (!manuscript?.abstract?.trim()) newErrors.abstract = 'Abstract is required'
+      if (!manuscript?.article_type) newErrors.article_type = 'Article type is required'
       if (!manuscript?.category_id) newErrors.category_id = 'Subject / Category is required'
     }
     
@@ -1397,6 +1452,7 @@ export default function SubmissionWizard() {
         abstract: manuscript.abstract || '',
         keywords: manuscript.keywords || [],
         category_id: manuscript.category_id || null,
+        article_type: manuscript.article_type || '',
         conflict_of_interest: manuscript.conflict_of_interest || '',
         ethics_approval: manuscript.ethics_approval || '',
         funding: manuscript.funding || '',
