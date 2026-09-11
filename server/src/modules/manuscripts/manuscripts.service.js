@@ -64,7 +64,7 @@ export async function createDraft(userId, journalId) {
     }
   }
 
-  return draft
+  return getManuscriptById(draft.id, userId)
 }
 
 export async function getManuscriptsByUser(userId) {
@@ -230,7 +230,18 @@ export async function updateManuscript(id, data, userId) {
     }
   }
 
-  const result = await pool.query(
+  let kwArray = undefined
+  if (keywords !== undefined) {
+    if (Array.isArray(keywords)) {
+      kwArray = keywords.filter((k) => typeof k === 'string' && k.trim()).map((k) => k.trim())
+    } else if (typeof keywords === 'string') {
+      kwArray = keywords.split(',').map((k) => k.trim()).filter(Boolean)
+    } else if (keywords === null) {
+      kwArray = []
+    }
+  }
+
+  await pool.query(
     `UPDATE manuscripts SET
        title = COALESCE($1, title),
        abstract = COALESCE($2, abstract),
@@ -243,12 +254,11 @@ export async function updateManuscript(id, data, userId) {
        acknowledgements = COALESCE($9, acknowledgements),
        data_availability = COALESCE($10, data_availability),
        updated_at = now()
-     WHERE id = $11
-     RETURNING *`,
+     WHERE id = $11`,
     [
       title ?? null,
       abstract ?? null,
-      keywords ?? null,
+      kwArray !== undefined ? kwArray : null,
       cId,
       article_type ?? null,
       conflict_of_interest ?? null,
@@ -260,7 +270,7 @@ export async function updateManuscript(id, data, userId) {
     ]
   )
 
-  return result.rows[0]
+  return getManuscriptById(id, userId)
 }
 
 export async function deleteDraft(id, userId) {

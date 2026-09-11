@@ -448,33 +448,68 @@ const styles = {
 }
 
 // Keyword Input Component
-function KeywordInput({ value = [], onChange }) {
+function KeywordInput({ value = [], onChange, error }) {
   const [inputValue, setInputValue] = useState('')
+  const keywordsList = Array.isArray(value)
+    ? value
+    : typeof value === 'string' && value.trim()
+    ? value.split(',').map((s) => s.trim()).filter(Boolean)
+    : []
+
+  const addKeywords = (keywordsToAdd) => {
+    const cleaned = keywordsToAdd
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0 && !keywordsList.some((existing) => existing.toLowerCase() === k.toLowerCase()))
+    if (cleaned.length > 0) {
+      onChange([...keywordsList, ...cleaned])
+    }
+  }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
-      const trimmed = inputValue.trim()
-      if (trimmed && !value.includes(trimmed)) {
-        onChange([...value, trimmed])
+      if (inputValue.trim()) {
+        addKeywords(inputValue.split(','))
+        setInputValue('')
       }
+    } else if (e.key === 'Backspace' && !inputValue && keywordsList.length > 0) {
+      onChange(keywordsList.slice(0, -1))
+    }
+  }
+
+  const handleInputChange = (e) => {
+    const val = e.target.value
+    if (val.includes(',')) {
+      addKeywords(val.split(','))
       setInputValue('')
-    } else if (e.key === 'Backspace' && !inputValue && value.length > 0) {
-      onChange(value.slice(0, -1))
+    } else {
+      setInputValue(val)
+    }
+  }
+
+  const handleBlur = () => {
+    if (inputValue.trim()) {
+      addKeywords(inputValue.split(','))
+      setInputValue('')
     }
   }
 
   const removeKeyword = (idx) => {
-    onChange(value.filter((_, i) => i !== idx))
+    onChange(keywordsList.filter((_, i) => i !== idx))
   }
 
   return (
-    <FormField label="Keywords" required helperText="Enter 3-6 keywords separated by commas">
+    <FormField label="Keywords" required error={error} helperText="Enter 3-6 keywords separated by commas or Enter">
       <div style={styles.tagInput}>
-        {value.map((kw, i) => (
+        {keywordsList.map((kw, i) => (
           <span key={i} style={styles.tag}>
             {kw}
-            <button style={styles.tagRemove} onClick={() => removeKeyword(i)} type="button">
+            <button
+              style={styles.tagRemove}
+              onClick={() => removeKeyword(i)}
+              type="button"
+              aria-label={`Remove ${kw}`}
+            >
               ×
             </button>
           </span>
@@ -482,9 +517,10 @@ function KeywordInput({ value = [], onChange }) {
         <input
           type="text"
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder={value.length === 0 ? 'e.g., machine learning, neural networks, NLP' : ''}
+          onBlur={handleBlur}
+          placeholder={keywordsList.length === 0 ? 'e.g., machine learning, neural networks, NLP' : 'Add keyword...'}
           style={styles.tagInputField}
         />
       </div>
@@ -540,6 +576,16 @@ function StepBasic({ manuscript, onChange, errors }) {
     onChange({ ...manuscript, [field]: value })
   }
 
+  const handleCategoryChange = (e) => {
+    const selectedId = e.target.value
+    const selected = dbCategories.find((c) => c.id === selectedId)
+    onChange({
+      ...manuscript,
+      category_id: selectedId,
+      category_name: selected ? selected.name : '',
+    })
+  }
+
   return (
     <div>
       <h2 style={styles.sectionTitle}>Basic Information</h2>
@@ -567,7 +613,7 @@ function StepBasic({ manuscript, onChange, errors }) {
         <FormField label="Subject / Category" required error={errors.category_id}>
           <select
             value={manuscript.category_id || ''}
-            onChange={(e) => handleChange('category_id', e.target.value)}
+            onChange={handleCategoryChange}
             style={{
               ...styles.select,
               opacity: catLoading ? 0.6 : 1,
@@ -632,6 +678,7 @@ function StepBasic({ manuscript, onChange, errors }) {
       <KeywordInput
         value={manuscript.keywords || []}
         onChange={(kw) => handleChange('keywords', kw)}
+        error={errors.keywords}
       />
     </div>
   )
@@ -1158,6 +1205,22 @@ function StepReview({ manuscript }) {
 
   const getAuthorField = (author, field) => author?.[`profile_${field}`] || author?.[field] || ''
 
+  const issues = []
+  if (!manuscript?.title?.trim()) issues.push('Title is missing (Basic Information)')
+  if (!manuscript?.abstract?.trim()) issues.push('Abstract is missing (Basic Information)')
+  if (!manuscript?.category_id && !manuscript?.category_name && !manuscript?.category) issues.push('Subject / Category is not selected (Basic Information)')
+  if (!manuscript?.article_type) issues.push('Article Type is not selected (Basic Information)')
+  const kws = Array.isArray(manuscript?.keywords)
+    ? manuscript.keywords
+    : typeof manuscript?.keywords === 'string' && manuscript.keywords.trim()
+    ? manuscript.keywords.split(',').map((k) => k.trim()).filter(Boolean)
+    : []
+  if (kws.length === 0) issues.push('Keywords are missing (Basic Information)')
+  const hasMain = (manuscript?.files || []).some((f) => f.file_type === 'main_manuscript')
+  if (!hasMain) issues.push('Main manuscript file is missing (Manuscript Files)')
+  if (!manuscript?.conflict_of_interest?.trim()) issues.push('Conflict of Interest statement is missing (Metadata & Declarations)')
+  if (!manuscript?.ethics_approval?.trim()) issues.push('Ethics Approval statement is missing (Metadata & Declarations)')
+
   return (
     <div>
       <h2 style={styles.sectionTitle}>Review Your Submission</h2>
@@ -1166,15 +1229,41 @@ function StepReview({ manuscript }) {
         <i className="fas fa-info-circle" style={{ marginTop: '2px' }}></i>
         <div>Review all information below before submitting. You can still go back to make changes.</div>
       </div>
+
+      {issues.length > 0 ? (
+        <div style={{ ...styles.alertBanner, ...styles.alertWarning }}>
+          <i className="fas fa-exclamation-triangle" style={{ marginTop: '2px' }}></i>
+          <div>
+            <strong>Incomplete Fields:</strong> Several required fields are incomplete. Please return to the relevant steps before submitting:
+            <ul style={{ margin: '6px 0 0 18px', padding: 0 }}>
+              {issues.map((issue, idx) => (
+                <li key={idx}>{issue}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : (
+        <div style={{ ...styles.alertBanner, ...styles.alertSuccess }}>
+          <i className="fas fa-check-circle" style={{ marginTop: '2px' }}></i>
+          <div>
+            <strong>All required sections are complete.</strong> Please double-check your submission details below.
+          </div>
+        </div>
+      )}
       
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Title</div>
-        <div>{manuscript.title || <span style={{ color: 'var(--color-text-muted)' }}>Not provided yet</span>}</div>
+        <div style={{ fontSize: '15px', fontWeight: 600 }}>{manuscript.title || <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>Not provided yet</span>}</div>
       </div>
       
       <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Abstract</div>
-        <div>{manuscript.abstract || <span style={{ color: 'var(--color-text-muted)' }}>Not provided yet</span>}</div>
+        <div style={{ whiteSpace: 'pre-wrap' }}>{manuscript.abstract || <span style={{ color: 'var(--color-text-muted)' }}>Not provided yet</span>}</div>
+      </div>
+
+      <div style={styles.reviewSection}>
+        <div style={styles.reviewLabel}>Subject / Category</div>
+        <div>{manuscript.category_name || manuscript.category || <span style={{ color: 'var(--color-text-muted)' }}>Not selected</span>}</div>
       </div>
 
       <div style={styles.reviewSection}>
@@ -1183,15 +1272,16 @@ function StepReview({ manuscript }) {
       </div>
       
       <div style={styles.reviewSection}>
-        <div style={styles.reviewLabel}>Subject / Category</div>
-        <div>{manuscript.category_name || manuscript.category || <span style={{ color: 'var(--color-text-muted)' }}>Not selected</span>}</div>
-      </div>
-      
-      <div style={styles.reviewSection}>
         <div style={styles.reviewLabel}>Keywords</div>
         <div>
-          {(manuscript.keywords || []).length > 0
-            ? manuscript.keywords.join(', ')
+          {kws.length > 0
+            ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                {kws.map((kw, i) => (
+                  <span key={i} style={styles.tag}>{kw}</span>
+                ))}
+              </div>
+            )
             : <span style={{ color: 'var(--color-text-muted)' }}>Not provided</span>}
         </div>
       </div>
@@ -1201,22 +1291,25 @@ function StepReview({ manuscript }) {
         <div>
           {(manuscript.authors || []).length > 0 ? (
             manuscript.authors.map((a, i) => (
-              <div key={a.id || i} style={{ marginBottom: '14px', padding: '10px 12px', border: '1px solid var(--color-rule-grey)', borderRadius: '8px' }}>
-                <div style={{ fontWeight: 700 }}>{getAuthorName(a)}</div>
+              <div key={a.id || i} style={{ marginBottom: '14px', padding: '10px 12px', border: '1px solid var(--color-rule-grey)', borderRadius: '8px', background: 'var(--color-surface)' }}>
+                <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>{getAuthorName(a)}</span>
+                  {a.is_corresponding && (
+                    <span style={{ color: 'var(--color-success)', fontSize: '12px', fontWeight: 600 }}>
+                      (Corresponding)
+                    </span>
+                  )}
+                </div>
                 <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', display: 'grid', gap: '3px', marginTop: '5px' }}>
                   <div>Email: {a.profile_email || a.email || 'Not provided'}</div>
-                  <div>Institute: {getAuthorField(a, 'institution') || 'Not provided'}</div>
-                  <div>College: {getAuthorField(a, 'college') || 'Not provided'}</div>
-                  <div>Department: {getAuthorField(a, 'department') || 'Not provided'}</div>
-                  <div>State: {getAuthorField(a, 'state') || 'Not provided'}</div>
-                  <div>Country: {getAuthorField(a, 'country') || 'Not provided'}</div>
-                  <div>Course: {getAuthorField(a, 'course') || 'Not provided'}</div>
+                  {getAuthorField(a, 'institution') && <div>Institute: {getAuthorField(a, 'institution')}</div>}
+                  {getAuthorField(a, 'college') && <div>College: {getAuthorField(a, 'college')}</div>}
+                  {getAuthorField(a, 'department') && <div>Department: {getAuthorField(a, 'department')}</div>}
+                  {getAuthorField(a, 'state') && <div>State: {getAuthorField(a, 'state')}</div>}
+                  {getAuthorField(a, 'country') && <div>Country: {getAuthorField(a, 'country')}</div>}
+                  {getAuthorField(a, 'course') && <div>Course: {getAuthorField(a, 'course')}</div>}
+                  {getAuthorField(a, 'orcid_id') && <div>ORCID: {getAuthorField(a, 'orcid_id')}</div>}
                 </div>
-                {a.is_corresponding && (
-                  <span style={{ color: 'var(--color-success)', marginLeft: '8px', fontSize: '12px', fontWeight: 600 }}>
-                    (Corresponding)
-                  </span>
-                )}
               </div>
             ))
           ) : (
@@ -1230,10 +1323,11 @@ function StepReview({ manuscript }) {
         <div>
           {(manuscript.files || []).length > 0 ? (
             manuscript.files.map((f, i) => (
-              <div key={i} style={{ marginBottom: '4px' }}>
-                {f.original_name}
-                <span style={{ color: 'var(--color-text-muted)', marginLeft: '8px', fontSize: '12px' }}>
-                  ({f.file_type?.replace(/_/g, ' ')})
+              <div key={i} style={{ marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fas fa-file" style={{ color: 'var(--color-text-muted)' }}></i>
+                <strong>{f.original_name}</strong>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>
+                  ({f.file_type?.replace(/_/g, ' ')}) — {(f.file_size_bytes / 1024 / 1024).toFixed(1)} MB
                 </span>
               </div>
             ))
@@ -1244,8 +1338,8 @@ function StepReview({ manuscript }) {
       </div>
       
       <div style={styles.reviewSection}>
-        <div style={styles.reviewLabel}>Declarations</div>
-        <div style={{ display: 'grid', gap: '4px' }}>
+        <div style={styles.reviewLabel}>Declarations & Metadata</div>
+        <div style={{ display: 'grid', gap: '8px' }}>
           <div>
             <strong>Conflict of Interest:</strong>{' '}
             {manuscript.conflict_of_interest || <span style={{ color: 'var(--color-text-muted)' }}>Not completed</span>}
@@ -1254,13 +1348,18 @@ function StepReview({ manuscript }) {
             <strong>Ethics Approval:</strong>{' '}
             {manuscript.ethics_approval || <span style={{ color: 'var(--color-text-muted)' }}>Not completed</span>}
           </div>
-        </div>
-      </div>
-      
-      <div style={{ ...styles.alertBanner, ...styles.alertWarning }}>
-        <i className="fas fa-exclamation-triangle" style={{ marginTop: '2px' }}></i>
-        <div>
-          <strong>Validation warnings:</strong> Several required fields may be incomplete. Please go back to the relevant steps and fill in all required information before submitting.
+          <div>
+            <strong>Funding Information:</strong>{' '}
+            {manuscript.funding || <span style={{ color: 'var(--color-text-muted)' }}>None declared</span>}
+          </div>
+          <div>
+            <strong>Acknowledgements:</strong>{' '}
+            {manuscript.acknowledgements || <span style={{ color: 'var(--color-text-muted)' }}>None</span>}
+          </div>
+          <div>
+            <strong>Data Availability:</strong>{' '}
+            {manuscript.data_availability || <span style={{ color: 'var(--color-text-muted)' }}>Not provided</span>}
+          </div>
         </div>
       </div>
     </div>
@@ -1395,7 +1494,7 @@ export default function SubmissionWizard() {
   }, [step])
 
   useEffect(() => {
-    if (!manuscript?.id || step === 0) return
+    if (!manuscript?.id) return
     const timeout = setTimeout(() => {
       updateManuscript(manuscript.id, {
         title: manuscript.title,
@@ -1408,11 +1507,16 @@ export default function SubmissionWizard() {
         funding: manuscript.funding,
         acknowledgements: manuscript.acknowledgements,
         data_availability: manuscript.data_availability,
+      }).then((res) => {
+        const updated = res?.data ?? res
+        if (updated?.category_name && !manuscript.category_name) {
+          setManuscript((prev) => ({ ...prev, category_name: updated.category_name }))
+        }
       }).catch(() => {})
     }, 1000)
     return () => clearTimeout(timeout)
   }, [
-    manuscript?.id, step,
+    manuscript?.id,
     manuscript?.title, manuscript?.abstract, manuscript?.keywords,
     manuscript?.category_id, manuscript?.article_type,
     manuscript?.conflict_of_interest, manuscript?.ethics_approval,
@@ -1425,8 +1529,16 @@ export default function SubmissionWizard() {
     if (stepToValidate === 0) {
       if (!manuscript?.title?.trim()) newErrors.title = 'Title is required'
       if (!manuscript?.abstract?.trim()) newErrors.abstract = 'Abstract is required'
-      if (!manuscript?.article_type) newErrors.article_type = 'Article type is required'
       if (!manuscript?.category_id) newErrors.category_id = 'Subject / Category is required'
+      if (!manuscript?.article_type) newErrors.article_type = 'Article type is required'
+      const kws = Array.isArray(manuscript?.keywords)
+        ? manuscript.keywords
+        : typeof manuscript?.keywords === 'string' && manuscript.keywords.trim()
+        ? manuscript.keywords.split(',').map((k) => k.trim()).filter(Boolean)
+        : []
+      if (kws.length === 0) {
+        newErrors.keywords = 'At least one keyword is required'
+      }
     }
     
     if (stepToValidate === 2) {
@@ -1447,7 +1559,7 @@ export default function SubmissionWizard() {
     if (!manuscript?.id) return
     setSaving(true)
     try {
-      await updateManuscript(manuscript.id, {
+      const res = await updateManuscript(manuscript.id, {
         title: manuscript.title || '',
         abstract: manuscript.abstract || '',
         keywords: manuscript.keywords || [],
@@ -1459,6 +1571,15 @@ export default function SubmissionWizard() {
         acknowledgements: manuscript.acknowledgements || '',
         data_availability: manuscript.data_availability || '',
       })
+      const updated = res?.data ?? res
+      if (updated && updated.id) {
+        setManuscript((prev) => ({
+          ...prev,
+          ...updated,
+          authors: updated.authors || prev.authors,
+          files: updated.files || prev.files,
+        }))
+      }
     } catch {
       // silent
     } finally {
@@ -1468,7 +1589,7 @@ export default function SubmissionWizard() {
 
   const handleNext = async () => {
     if (!validateStep()) return
-    if (manuscript?.id && step > 0) {
+    if (manuscript?.id) {
       await handleSave()
     }
     if (step < STEPS.length - 1) {
