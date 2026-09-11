@@ -8,7 +8,7 @@ const DEFAULT_CONFIG = {
   ai_auto_reply_categories: ['SUBMISSION_GUIDELINES', 'JOURNAL_INFORMATION', 'GENERAL_QUESTION', 'MANUSCRIPT_STATUS'],
   ai_human_approval_categories: ['WITHDRAWAL_REQUEST', 'EDITORIAL_DECISION_QUERY', 'COMPLAINT', 'REVIEWER_INVITATION', 'REVIEWER_EXTENSION', 'PAYMENT', 'ETHICS_OR_PLAGIARISM', 'SECURITY'],
   ai_never_auto_reply_categories: ['ETHICS_OR_PLAGIARISM', 'SECURITY', 'SPAM', 'OTHER'],
-  ai_gemini_model: 'gemini-2.0-flash',
+  ai_gemini_model: 'gemini-3.6-flash',
   ai_max_email_context_length: 5000,
   ai_max_reply_length: 2000,
   ai_webhook_rate_limit: 30,

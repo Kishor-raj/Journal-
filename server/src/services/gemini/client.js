@@ -21,7 +21,7 @@ function maskKey(key) {
 
 export function getGeminiConfig() {
   return {
-    model: env.GEMINI_MODEL || 'gemini-2.0-flash',
+    model: env.GEMINI_MODEL || 'gemini-3.6-flash',
     configured: Boolean(env.GEMINI_API_KEY),
     keyPreview: maskKey(env.GEMINI_API_KEY),
   }
@@ -33,7 +33,7 @@ export async function generateContent({ prompt, systemInstruction, model, temper
     throw new Error('Gemini API key not configured')
   }
 
-  const modelName = model || env.GEMINI_MODEL || 'gemini-2.0-flash'
+  const modelName = model || env.GEMINI_MODEL || 'gemini-3.6-flash'
   const timeoutMs = timeout || DEFAULT_TIMEOUT_MS
 
   let lastError = null

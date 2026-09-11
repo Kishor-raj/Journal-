@@ -78,7 +78,7 @@ export const env = {
   HOSTINGER_WEBHOOK_SECRET: process.env.HOSTINGER_WEBHOOK_SECRET,
   HOSTINGER_API_BASE_URL: process.env.HOSTINGER_API_BASE_URL || 'https://email.hostinger.com/api/v1',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
   AI_EMAIL_ENABLED: process.env.AI_EMAIL_ENABLED !== 'false',
   AI_AUTO_REPLY_ENABLED: process.env.AI_AUTO_REPLY_ENABLED === 'true',
   AI_AUTO_REPLY_CONFIDENCE_THRESHOLD: parseFloat(process.env.AI_AUTO_REPLY_CONFIDENCE_THRESHOLD) || 0.90,
