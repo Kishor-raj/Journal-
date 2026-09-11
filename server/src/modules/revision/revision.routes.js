@@ -6,7 +6,8 @@ import * as revisionService from './revision.service.js'
 const router = Router()
 
 router.get('/mine', authenticate, requireRole('author'), async (req, res) => {
-  const revisions = await revisionService.getRevisionsByUser(req.user.uid)
+  const status = req.query.status || 'pending'
+  const revisions = await revisionService.getRevisionsByUser(req.user.uid, status)
   res.json(revisions)
 })
 

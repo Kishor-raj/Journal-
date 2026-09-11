@@ -1,22 +1,53 @@
 import pool from '../../config/db.js'
 import { AppError } from '../../shared/errors/AppError.js'
 
-export async function getRevisionsByUser(userId) {
-  const result = await pool.query(
-    `SELECT rr.*, m.title, m.submission_number, m.current_status,
-            ed.decision, ed.comments_to_author AS decision_letter
+export async function getRevisionsByUser(userId, status = 'pending') {
+  let query = `
+    SELECT rr.*, m.title, m.submission_number, m.current_status,
+            ed.decision, ed.comments_to_author AS decision_letter,
+            EXISTS(
+              SELECT 1 FROM revision_responses resp 
+              WHERE resp.revision_request_id = rr.id AND resp.status = 'submitted'
+            ) AS is_submitted,
+            (
+              SELECT resp.submitted_at FROM revision_responses resp
+              WHERE resp.revision_request_id = rr.id AND resp.status = 'submitted'
+              ORDER BY resp.submitted_at DESC LIMIT 1
+            ) AS response_submitted_at
      FROM revision_requests rr
      JOIN manuscripts m ON m.id = rr.manuscript_id
      LEFT JOIN editorial_decisions ed ON ed.id = rr.editorial_decision_id
-     WHERE m.submitted_by = $1
+     WHERE (m.submitted_by = $1
         OR EXISTS (
           SELECT 1 FROM manuscript_authors ma
           WHERE ma.manuscript_id = m.id AND ma.user_id = $1
-        )
-     ORDER BY rr.created_at DESC`,
-    [userId]
-  )
+        ))
+  `
+  const params = [userId]
 
+  if (status === 'pending') {
+    query += `
+      AND m.current_status = 'revision_requested'
+      AND NOT EXISTS (
+        SELECT 1 FROM revision_responses resp
+        WHERE resp.revision_request_id = rr.id AND resp.status = 'submitted'
+      )
+    `
+  } else if (status === 'completed') {
+    query += `
+      AND (
+        EXISTS (
+          SELECT 1 FROM revision_responses resp
+          WHERE resp.revision_request_id = rr.id AND resp.status = 'submitted'
+        )
+        OR m.current_status != 'revision_requested'
+      )
+    `
+  }
+
+  query += ` ORDER BY rr.created_at DESC`
+
+  const result = await pool.query(query, params)
   return result.rows
 }
 
@@ -52,7 +83,7 @@ export async function getRevisionRequest(requestId, userId) {
             u.display_name as reviewer_name
      FROM reviews r
      LEFT JOIN users u ON u.id = r.reviewer_id
-     WHERE r.manuscript_id = $1 AND r.round_number = $2 - 1
+     WHERE r.manuscript_id = $1 AND r.round_number = $2
      ORDER BY r.submitted_at`,
     [request.manuscript_id, request.round_number]
   )
@@ -64,15 +95,21 @@ export async function getRevisionRequest(requestId, userId) {
     [requestId]
   )
 
+  const filesResult = await pool.query(
+    `SELECT * FROM manuscript_files WHERE manuscript_id = $1 ORDER BY uploaded_at ASC`,
+    [request.manuscript_id]
+  )
+
   return {
     ...request,
     reviews: reviewsResult.rows,
     responses: responsesResult.rows,
+    files: filesResult.rows,
   }
 }
 
 export async function submitRevisionResponse(requestId, userId, responseData) {
-  const { cover_letter, response_summary, reviewer_responses, version_data } = responseData
+  const { cover_letter, response_summary, reviewer_responses, version_data, file_ids } = responseData
 
   const client = await pool.connect()
   try {
@@ -146,6 +183,18 @@ export async function submitRevisionResponse(requestId, userId, responseData) {
       [newVersionId, request.manuscript_id]
     )
 
+    if (file_ids && Array.isArray(file_ids) && file_ids.length > 0) {
+      await client.query(
+        `UPDATE manuscript_files SET version_id = $1, is_accessible = true WHERE id = ANY($2::uuid[]) AND manuscript_id = $3`,
+        [newVersionId, file_ids, request.manuscript_id]
+      )
+    }
+
+    await client.query(
+      `UPDATE manuscript_files SET version_id = $1, is_accessible = true WHERE manuscript_id = $2 AND version_id IS NULL`,
+      [newVersionId, request.manuscript_id]
+    )
+
     const responseResult = await client.query(
       `INSERT INTO revision_responses (revision_request_id, manuscript_version_id, submitted_by, cover_letter, response_summary, submitted_at, status)
        VALUES ($1, $2, $3, $4, $5, now(), 'submitted')
@@ -196,14 +245,28 @@ export async function submitRevisionResponse(requestId, userId, responseData) {
 export async function getRevisionsByManuscript(manuscriptId) {
   const result = await pool.query(
     `SELECT rr.*, ed.decision, ed.comments_to_author AS decision_letter,
-            rr_inst.response_summary
+            rr_inst.id AS response_id, rr_inst.cover_letter, rr_inst.response_summary,
+            rr_inst.submitted_at AS response_submitted_at, rr_inst.status AS response_status,
+            rr_inst.manuscript_version_id
      FROM revision_requests rr
      LEFT JOIN editorial_decisions ed ON ed.id = rr.editorial_decision_id
      LEFT JOIN revision_responses rr_inst ON rr_inst.revision_request_id = rr.id AND rr_inst.status = 'submitted'
      WHERE rr.manuscript_id = $1
-     ORDER BY rr.round_number`,
+     ORDER BY rr.round_number ASC`,
     [manuscriptId]
   )
 
-  return result.rows
+  const commentResponsesResult = await pool.query(
+    `SELECT rcr.*, rr_inst.revision_request_id
+     FROM reviewer_comment_responses rcr
+     JOIN revision_responses rr_inst ON rr_inst.id = rcr.revision_response_id
+     JOIN revision_requests rr ON rr.id = rr_inst.revision_request_id
+     WHERE rr.manuscript_id = $1`,
+    [manuscriptId]
+  )
+
+  return result.rows.map(row => ({
+    ...row,
+    reviewer_responses: commentResponsesResult.rows.filter(cr => cr.revision_request_id === row.id)
+  }))
 }

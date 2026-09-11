@@ -125,6 +125,7 @@ function AppRouter() {
         <Route path="/author/manuscripts" element={<ProtectedRoute allowedRoles={['author']}><MyManuscripts /></ProtectedRoute>} />
         <Route path="/author/manuscripts/:id" element={<ProtectedRoute allowedRoles={['author']}><ManuscriptDetail /></ProtectedRoute>} />
         <Route path="/author/track" element={<ProtectedRoute allowedRoles={['author']}><TrackManuscript /></ProtectedRoute>} />
+        <Route path="/author/track/:id" element={<ProtectedRoute allowedRoles={['author']}><TrackManuscript /></ProtectedRoute>} />
         <Route path="/author/revisions" element={<ProtectedRoute allowedRoles={['author']}><Revisions /></ProtectedRoute>} />
         <Route path="/author/revisions/:id" element={<ProtectedRoute allowedRoles={['author']}><RevisionResponseForm /></ProtectedRoute>} />
         <Route path="/author/withdrawals" element={<ProtectedRoute allowedRoles={['author']}><Withdrawals /></ProtectedRoute>} />
