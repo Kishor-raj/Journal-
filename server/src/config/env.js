@@ -79,7 +79,7 @@ export const env = {
   HOSTINGER_API_BASE_URL: process.env.HOSTINGER_API_BASE_URL || 'https://api.mail.hostinger.com',
   AI_PROVIDER: process.env.AI_PROVIDER || (process.env.GROQ_API_KEY ? 'groq' : 'gemini'),
   GROQ_API_KEY: process.env.GROQ_API_KEY,
-  GROQ_MODEL: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+  GROQ_MODEL: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GEMINI_MODEL: (process.env.GEMINI_MODEL && !process.env.GEMINI_MODEL.includes('2.0') && !process.env.GEMINI_MODEL.includes('2.5')) ? process.env.GEMINI_MODEL : 'gemini-3.6-flash',
   AI_EMAIL_ENABLED: process.env.AI_EMAIL_ENABLED !== 'false',

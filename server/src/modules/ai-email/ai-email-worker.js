@@ -452,6 +452,8 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
             error_message LIKE '%rate limit%' OR
             error_message LIKE '%quota%' OR
             error_message LIKE '%RESOURCE_EXHAUSTED%' OR
+            error_message LIKE '%Groq API%' OR
+            error_message LIKE '%does not exist%' OR
             error_message LIKE '%429%'
           )
          RETURNING id, event_id`
