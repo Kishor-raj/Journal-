@@ -694,10 +694,20 @@ function StepAuthors({ manuscript, onChange }) {
   const [authorAction, setAuthorAction] = useState(null)
 
   const currentUserId = user?.id || user?.uid
-  const primaryAuthor = authors.find((a) => a.user_id === currentUserId)
+  const currentUserEmail = (user?.email || '').toLowerCase().trim()
+  const primaryAuthor = authors.find((a) => a.user_id && currentUserId && a.user_id === currentUserId)
+    || (currentUserEmail ? authors.find((a) => (a.email || '').toLowerCase().trim() === currentUserEmail || (a.profile_email || '').toLowerCase().trim() === currentUserEmail) : null)
     || authors.find((a) => a.author_order === 1)
     || authors[0]
-  const coAuthors = authors.filter((a) => a.id !== primaryAuthor?.id)
+
+  const coAuthors = authors.filter((a) => {
+    if (!a) return false
+    if (primaryAuthor?.id && a.id === primaryAuthor.id) return false
+    if (currentUserId && a.user_id === currentUserId) return false
+    const authorEmail = (a.email || a.profile_email || '').toLowerCase().trim()
+    if (currentUserEmail && authorEmail && authorEmail === currentUserEmail) return false
+    return true
+  })
 
   const getAuthorName = (author) => {
     const first = author?.profile_first_name || author?.first_name || ''
@@ -713,11 +723,12 @@ function StepAuthors({ manuscript, onChange }) {
       setEmailError('Enter a co-author email address.')
       return
     }
-    if (normalizedEmail === user?.email?.toLowerCase()) {
+    const primaryAuthorEmail = (primaryAuthor?.profile_email || primaryAuthor?.email || user?.email || '').toLowerCase().trim()
+    if (normalizedEmail === primaryAuthorEmail || normalizedEmail === currentUserEmail) {
       setEmailError('You are already listed as the primary author.')
       return
     }
-    if (coAuthors.some((a) => a.email?.toLowerCase() === normalizedEmail)) {
+    if (coAuthors.some((a) => (a.profile_email || a.email || '').toLowerCase().trim() === normalizedEmail)) {
       setEmailError('This co-author has already been added.')
       return
     }

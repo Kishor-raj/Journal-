@@ -38,26 +38,32 @@ export async function createDraft(userId, journalId) {
 
   if (userId) {
     try {
-      const userRes = await pool.query(
-        `SELECT id, first_name, last_name, display_name, email, institution, college, department, state, country, course, orcid_id
-         FROM users WHERE id = $1`,
-        [userId]
+      const existingAuthor = await pool.query(
+        `SELECT 1 FROM manuscript_authors WHERE manuscript_id = $1`,
+        [draft.id]
       )
-      if (userRes.rows.length > 0) {
-        const u = userRes.rows[0]
-        let fName = u.first_name?.trim() || ''
-        let lName = u.last_name?.trim() || ''
-        if (!fName && !lName && u.display_name) {
-          const parts = u.display_name.trim().split(/\s+/)
-          fName = parts[0] || ''
-          lName = parts.slice(1).join(' ') || ''
-        }
-        await pool.query(
-          `INSERT INTO manuscript_authors
-             (manuscript_id, user_id, author_order, first_name, last_name, email, institution, college, department, state, country, course, orcid_id, is_corresponding)
-           VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)`,
-          [draft.id, userId, fName, lName, u.email, u.institution, u.college, u.department, u.state, u.country, u.course, u.orcid_id]
+      if (existingAuthor.rowCount === 0) {
+        const userRes = await pool.query(
+          `SELECT id, first_name, last_name, display_name, email, institution, college, department, state, country, course, orcid_id
+           FROM users WHERE id = $1`,
+          [userId]
         )
+        if (userRes.rows.length > 0) {
+          const u = userRes.rows[0]
+          let fName = u.first_name?.trim() || ''
+          let lName = u.last_name?.trim() || ''
+          if (!fName && !lName && u.display_name) {
+            const parts = u.display_name.trim().split(/\s+/)
+            fName = parts[0] || ''
+            lName = parts.slice(1).join(' ') || ''
+          }
+          await pool.query(
+            `INSERT INTO manuscript_authors
+               (manuscript_id, user_id, author_order, first_name, last_name, email, institution, college, department, state, country, course, orcid_id, is_corresponding)
+             VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)`,
+            [draft.id, userId, fName, lName, u.email, u.institution, u.college, u.department, u.state, u.country, u.course, u.orcid_id]
+          )
+        }
       }
     } catch (err) {
       console.error('[MANUSCRIPT] Failed to auto-insert primary author on draft creation:', err.message)
@@ -142,28 +148,52 @@ export async function getManuscriptById(id, userId) {
   )
 
   if (authorsResult.rows.length === 0 && manuscript.submitted_by) {
-    const userRes = await pool.query(
-      `SELECT id, first_name, last_name, display_name, email, institution, college, department, state, country, course, orcid_id
-       FROM users WHERE id = $1`,
-      [manuscript.submitted_by]
+    const existingAuthors = await pool.query(
+      `SELECT id FROM manuscript_authors WHERE manuscript_id = $1`,
+      [id]
     )
-    if (userRes.rows.length > 0) {
-      const u = userRes.rows[0]
-      let fName = u.first_name?.trim() || ''
-      let lName = u.last_name?.trim() || ''
-      if (!fName && !lName && u.display_name) {
-        const parts = u.display_name.trim().split(/\s+/)
-        fName = parts[0] || ''
-        lName = parts.slice(1).join(' ') || ''
-      }
-      const insRes = await pool.query(
-        `INSERT INTO manuscript_authors
-           (manuscript_id, user_id, author_order, first_name, last_name, email, institution, college, department, state, country, course, orcid_id, is_corresponding)
-         VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)
-         RETURNING *`,
-        [id, manuscript.submitted_by, fName, lName, u.email, u.institution, u.college, u.department, u.state, u.country, u.course, u.orcid_id]
+    if (existingAuthors.rows.length === 0) {
+      const userRes = await pool.query(
+        `SELECT id, first_name, last_name, display_name, email, institution, college, department, state, country, course, orcid_id
+         FROM users WHERE id = $1`,
+        [manuscript.submitted_by]
       )
-      authorsResult.rows = insRes.rows
+      if (userRes.rows.length > 0) {
+        const u = userRes.rows[0]
+        let fName = u.first_name?.trim() || ''
+        let lName = u.last_name?.trim() || ''
+        if (!fName && !lName && u.display_name) {
+          const parts = u.display_name.trim().split(/\s+/)
+          fName = parts[0] || ''
+          lName = parts.slice(1).join(' ') || ''
+        }
+        await pool.query(
+          `INSERT INTO manuscript_authors
+             (manuscript_id, user_id, author_order, first_name, last_name, email, institution, college, department, state, country, course, orcid_id, is_corresponding)
+           VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)`,
+          [id, manuscript.submitted_by, fName, lName, u.email, u.institution, u.college, u.department, u.state, u.country, u.course, u.orcid_id]
+        )
+        const recheck = await pool.query(
+          `SELECT ma.*,
+                  u.first_name AS profile_first_name,
+                  u.last_name AS profile_last_name,
+                  u.display_name AS profile_display_name,
+                  u.email AS profile_email,
+                  u.institution AS profile_institution,
+                  u.college AS profile_college,
+                  u.department AS profile_department,
+                  u.state AS profile_state,
+                  u.country AS profile_country,
+                  u.course AS profile_course,
+                  u.orcid_id AS profile_orcid_id
+           FROM manuscript_authors ma
+           LEFT JOIN users u ON u.id = ma.user_id
+           WHERE ma.manuscript_id = $1
+           ORDER BY ma.author_order`,
+          [id]
+        )
+        authorsResult.rows = recheck.rows
+      }
     }
   }
 
