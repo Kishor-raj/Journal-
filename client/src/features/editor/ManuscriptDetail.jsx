@@ -468,9 +468,9 @@ export default function ManuscriptDetail() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {manuscript.files.map((file, idx) => {
+            {manuscript.files.map((file) => {
               const info = getFileVersionInfo(file, manuscript)
-              const isFirstOrLatest = idx === 0 || info.isLatest
+              const isLatest = info.isLatest
               return (
                 <div
                   key={file.id}
@@ -481,7 +481,7 @@ export default function ManuscriptDetail() {
                     padding: '14px 16px',
                     border: '1px solid var(--color-rule-grey)',
                     borderRadius: 'var(--radius-md)',
-                    background: isFirstOrLatest && info.label.includes('Revision') ? '#FAF7FF' : 'var(--color-surface)',
+                    background: isLatest && info.label.includes('Revision') ? '#FAF7FF' : 'var(--color-surface)',
                     gap: '16px',
                     flexWrap: 'wrap',
                   }}
@@ -519,7 +519,7 @@ export default function ManuscriptDetail() {
                         >
                           {info.label}
                         </span>
-                        {isFirstOrLatest && (
+                        {isLatest && (
                           <span
                             style={{
                               fontSize: '11px',

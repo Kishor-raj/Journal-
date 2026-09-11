@@ -172,7 +172,8 @@ export default function RevisionResponseForm() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState('request')
-  const [uploadedFiles, setUploadedFiles] = useState([])
+  const [previousFiles, setPreviousFiles] = useState([])
+  const [newlyUploadedFiles, setNewlyUploadedFiles] = useState([])
   const [uploading, setUploading] = useState(false)
   const [removingFileId, setRemovingFileId] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
@@ -213,7 +214,7 @@ export default function RevisionResponseForm() {
           }))
         }
         if (data.files) {
-          setUploadedFiles(data.files)
+          setPreviousFiles(data.files)
         }
       })
       .catch((err) => {
@@ -265,7 +266,7 @@ export default function RevisionResponseForm() {
         file_size_bytes: file.size,
       })
 
-      setUploadedFiles((prev) => [...prev, savedFile])
+      setNewlyUploadedFiles((prev) => [...prev, savedFile])
     } catch (err) {
       console.error('Upload error:', err)
       setErrorMessage(err.message || 'Failed to upload revised manuscript file.')
@@ -280,7 +281,7 @@ export default function RevisionResponseForm() {
     setRemovingFileId(fileId)
     try {
       await deleteManuscriptFile(request.manuscript_id, fileId)
-      setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId))
+      setNewlyUploadedFiles((prev) => prev.filter((f) => f.id !== fileId))
     } catch (err) {
       console.error('File remove error:', err)
     } finally {
@@ -301,7 +302,7 @@ export default function RevisionResponseForm() {
         cover_letter: form.cover_letter,
         response_summary: form.response_summary,
         reviewer_responses: form.reviewer_responses.filter((r) => r.author_response.trim()),
-        file_ids: uploadedFiles.map((f) => f.id),
+        file_ids: newlyUploadedFiles.map((f) => f.id),
       })
       setSuccessMessage('Revision submitted successfully! Redirecting...')
       setTimeout(() => {
@@ -511,12 +512,12 @@ export default function RevisionResponseForm() {
               </p>
             )}
 
-            {uploadedFiles.length > 0 && (
+            {newlyUploadedFiles.length > 0 && (
               <div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink-navy)', marginBottom: '8px' }}>
-                  Attached Files ({uploadedFiles.length})
+                  Newly Attached Files ({newlyUploadedFiles.length})
                 </div>
-                {uploadedFiles.map((file) => (
+                {newlyUploadedFiles.map((file) => (
                   <div key={file.id} style={styles.fileItem}>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink-black)' }}>
@@ -540,6 +541,29 @@ export default function RevisionResponseForm() {
                         {removingFileId === file.id ? 'Removing...' : 'Remove'}
                       </Button>
                     )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {isSubmitted && previousFiles.length > 0 && (
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink-navy)', marginBottom: '8px' }}>
+                  Attached Files ({previousFiles.length})
+                </div>
+                {previousFiles.map((file) => (
+                  <div key={file.id} style={styles.fileItem}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink-black)' }}>
+                        <i className="fas fa-file-lines" style={{ marginRight: '8px', color: 'var(--color-info, #2E6B9E)' }} />
+                        {file.original_filename || file.file_type}
+                      </div>
+                      {file.file_size_bytes && (
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                          {(file.file_size_bytes / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

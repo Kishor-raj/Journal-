@@ -506,7 +506,7 @@ export default function ManuscriptDetail() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {manuscript.files.map((file, i) => {
                   const versionNum = file.version_number
-                  const isLatest = file.is_current_version || (manuscript.current_version_id && file.version_id === manuscript.current_version_id) || i === 0
+                  const isLatest = Boolean(file.is_current_version || (manuscript.current_version_id && file.version_id === manuscript.current_version_id))
                   const isRevision = versionNum && versionNum > 1
                   return (
                     <div key={file.id || i} style={styles.fileItem}>

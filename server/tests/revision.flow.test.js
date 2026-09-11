@@ -131,7 +131,6 @@ describe('Manuscript Revision Flow — Complete Verification', () => {
         .mockResolvedValueOnce({}) // UPDATE old version is_current
         .mockResolvedValueOnce({}) // UPDATE manuscripts current_version_id
         .mockResolvedValueOnce({}) // UPDATE file_ids version_id
-        .mockResolvedValueOnce({}) // UPDATE unversioned files version_id
         .mockResolvedValueOnce({ rows: [{ id: 'resp-1' }] }) // INSERT revision_responses
         .mockResolvedValueOnce({}) // INSERT reviewer_comment_responses
         .mockResolvedValueOnce({}) // UPDATE manuscripts status = 'resubmitted'

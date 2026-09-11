@@ -188,12 +188,12 @@ export async function submitRevisionResponse(requestId, userId, responseData) {
         `UPDATE manuscript_files SET version_id = $1, is_accessible = true WHERE id = ANY($2::uuid[]) AND manuscript_id = $3`,
         [newVersionId, file_ids, request.manuscript_id]
       )
+    } else {
+      await client.query(
+        `UPDATE manuscript_files SET version_id = $1, is_accessible = true WHERE manuscript_id = $2 AND version_id IS NULL AND uploaded_at >= now() - interval '1 hour'`,
+        [newVersionId, request.manuscript_id]
+      )
     }
-
-    await client.query(
-      `UPDATE manuscript_files SET version_id = $1, is_accessible = true WHERE manuscript_id = $2 AND version_id IS NULL`,
-      [newVersionId, request.manuscript_id]
-    )
 
     const responseResult = await client.query(
       `INSERT INTO revision_responses (revision_request_id, manuscript_version_id, submitted_by, cover_letter, response_summary, submitted_at, status)
