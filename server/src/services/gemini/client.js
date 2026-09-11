@@ -4,7 +4,7 @@ import { env } from '../../config/env.js'
 let client = null
 
 const DEFAULT_TIMEOUT_MS = 60_000
-const MAX_RETRIES = 2
+const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 2_000
 
 function getClient() {
@@ -33,7 +33,8 @@ export async function generateContent({ prompt, systemInstruction, model, temper
     throw new Error('Gemini API key not configured')
   }
 
-  const modelName = model || env.GEMINI_MODEL || 'gemini-3.6-flash'
+  const primaryModel = model || env.GEMINI_MODEL || 'gemini-3.6-flash'
+  let activeModel = primaryModel
   const timeoutMs = timeout || DEFAULT_TIMEOUT_MS
 
   let lastError = null
@@ -55,7 +56,7 @@ export async function generateContent({ prompt, systemInstruction, model, temper
         }
 
         const response = await genAI.models.generateContent({
-          model: modelName,
+          model: activeModel,
           contents: prompt,
           config,
         }, { signal: controller.signal })
@@ -69,7 +70,7 @@ export async function generateContent({ prompt, systemInstruction, model, temper
 
         return {
           text,
-          model: modelName,
+          model: activeModel,
           usage: {
             promptTokenCount: response.usageMetadata?.promptTokenCount || 0,
             candidatesTokenCount: response.usageMetadata?.candidatesTokenCount || 0,
@@ -85,9 +86,18 @@ export async function generateContent({ prompt, systemInstruction, model, temper
         err?.code === 'ECONNRESET' ||
         err?.code === 'ETIMEDOUT' ||
         err?.status === 429 ||
-        err?.status === 503
+        err?.status === 503 ||
+        err?.message?.includes('503') ||
+        err?.message?.includes('high demand') ||
+        err?.message?.includes('UNAVAILABLE')
 
       if (isRetryable && attempt < MAX_RETRIES) {
+        if (err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('high demand') || err?.message?.includes('UNAVAILABLE')) {
+          const alternate = activeModel.includes('2.5') ? 'gemini-3.6-flash' : 'gemini-2.5-flash'
+          console.warn(`[GEMINI] 503 high demand on ${activeModel} — failing over to ${alternate}`)
+          activeModel = alternate
+        }
+
         const delay = RETRY_DELAY_MS * (attempt + 1)
         console.warn(`[GEMINI] Retryable error (attempt ${attempt + 1}/${MAX_RETRIES}): ${err.message}. Retrying in ${delay}ms...`)
         await new Promise((resolve) => setTimeout(resolve, delay))

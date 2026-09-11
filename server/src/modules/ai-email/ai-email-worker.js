@@ -425,7 +425,10 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
             error_message LIKE '%404%' OR
             error_message LIKE '%no longer available%' OR
             error_message LIKE '%parse%' OR
-            error_message LIKE '%sensitive_topic%'
+            error_message LIKE '%sensitive_topic%' OR
+            error_message LIKE '%503%' OR
+            error_message LIKE '%UNAVAILABLE%' OR
+            error_message LIKE '%high demand%'
           )
          RETURNING id, event_id`
       )
