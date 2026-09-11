@@ -58,19 +58,30 @@ export async function fetchAndStoreEmail(event) {
   const bodyText = data?.text || data?.body_text || data?.plainBody || null
   const bodyHtml = data?.html || data?.body_html || data?.htmlBody || null
 
-  const emailResult = await pool.query(
-    `INSERT INTO emails (thread_id, provider_message_id, message_id, in_reply_to, from_email, to_email, cc_email, subject, body_text, body_html, received_at, direction, raw_metadata)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'inbound', $12)
-     ON CONFLICT (provider_message_id) DO NOTHING
-     RETURNING id`,
-    [
-      threadRecord.id, messageId, data?.message_id || data?.messageId || messageId, data?.in_reply_to || null,
-      data?.from || 'unknown@unknown.com', toArray, ccArray,
-      data?.subject || null, bodyText,
-      bodyHtml, data?.date || data?.received_at || new Date().toISOString(),
-      JSON.stringify(data),
-    ]
-  )
+  let emailResult
+  try {
+    emailResult = await pool.query(
+      `INSERT INTO emails (thread_id, provider_message_id, message_id, in_reply_to, from_email, to_email, cc_email, subject, body_text, body_html, received_at, direction, raw_metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'inbound', $12)
+       ON CONFLICT (provider_message_id) WHERE provider_message_id IS NOT NULL DO NOTHING
+       RETURNING id`,
+      [
+        threadRecord.id, messageId, data?.message_id || data?.messageId || messageId, data?.in_reply_to || null,
+        data?.from || 'unknown@unknown.com', toArray, ccArray,
+        data?.subject || null, bodyText,
+        bodyHtml, data?.date || data?.received_at || new Date().toISOString(),
+        JSON.stringify(data),
+      ]
+    )
+  } catch (insertErr) {
+    if (insertErr.code === '23505') {
+      const existing = await pool.query(`SELECT id FROM emails WHERE provider_message_id = $1`, [messageId])
+      if (existing.rows.length > 0) {
+        return { emailId: existing.rows[0].id, duplicate: true }
+      }
+    }
+    throw insertErr
+  }
 
   if (emailResult.rows.length === 0) {
     const existing = await pool.query(`SELECT id FROM emails WHERE provider_message_id = $1`, [messageId])
@@ -313,7 +324,7 @@ export async function processOneEvent() {
       if (!env.AI_AUTO_REPLY_ENABLED) {
         console.warn(`[AI_EMAIL_WORKER] Auto-reply skipped for email ${emailId}: AI_AUTO_REPLY_ENABLED is false`)
       } else {
-        const emailRow = await pool.query(`SELECT from_email, subject, provider_message_id FROM emails WHERE id = $1`, [emailId])
+        const emailRow = await pool.query(`SELECT from_email, to_email, subject, provider_message_id FROM emails WHERE id = $1`, [emailId])
         const threadRow = await pool.query(`SELECT provider_thread_id FROM email_threads WHERE id = $1`, [threadId])
         const emailData = emailRow.rows[0]
         const threadData = threadRow.rows[0]
@@ -327,6 +338,7 @@ export async function processOneEvent() {
             body: replyResult.draftBody,
             providerMessageId: emailData.provider_message_id,
             providerThreadId: threadData?.provider_thread_id,
+            mailbox: emailData.to_email || undefined,
           })
 
           if (sendResult.success) {
@@ -399,6 +411,24 @@ export async function runAiEmailWorkerOnce() {
 export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } = {}) {
   if (!enabled) { console.log('[AI_EMAIL_WORKER] Disabled'); return null }
   let running = false, stopFlag = false, timer = null
+
+  const recoverFailedEvents = async () => {
+    try {
+      const recovered = await pool.query(
+        `UPDATE email_webhook_events
+         SET status = 'pending', error_message = NULL,
+             payload = jsonb_set(COALESCE(payload, '{}'), '{retry_count}', '0'::jsonb)
+         WHERE status = 'failed' AND (error_message LIKE '%ON CONFLICT%' OR error_message LIKE '%unique%')
+         RETURNING id, event_id`
+      )
+      if (recovered.rows.length > 0) {
+        console.log(`[AI_EMAIL_WORKER] Recovered ${recovered.rows.length} failed event(s) for reprocessing:`, recovered.rows.map(r => r.event_id).join(', '))
+      }
+    } catch (err) {
+      console.error('[AI_EMAIL_WORKER] Failed to recover events:', err.message)
+    }
+  }
+
   const tick = async () => {
     if (running || stopFlag) return
     running = true
@@ -408,7 +438,11 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
     } catch (err) { console.error('[AI_EMAIL_WORKER] Tick error:', err.message) }
     finally { running = false }
   }
-  timer = setInterval(tick, pollIntervalMs)
-  tick()
+
+  recoverFailedEvents().finally(() => {
+    timer = setInterval(tick, pollIntervalMs)
+    tick()
+  })
+
   return { stop() { stopFlag = true; if (timer) clearInterval(timer); console.log('[AI_EMAIL_WORKER] Stopped') } }
 }

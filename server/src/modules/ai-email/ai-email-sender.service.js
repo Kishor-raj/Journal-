@@ -2,21 +2,32 @@ import { replyToMessage, sendMessage } from '../../services/email/hostinger/inde
 import { env } from '../../config/env.js'
 import { logAiEmailEvent } from '../../services/ai/audit.js'
 
-export async function sendReplyViaHostinger({ replyId, threadId, toEmail, subject, body, providerThreadId, providerMessageId }) {
-  const mailbox = env.HOSTINGER_MAILBOX
+export async function sendReplyViaHostinger({ replyId, threadId, toEmail, subject, body, providerThreadId, providerMessageId, mailbox }) {
+  const targetMailbox = mailbox || env.HOSTINGER_MAILBOX
 
   try {
     let result
 
-    if (providerThreadId || providerMessageId) {
-      result = await replyToMessage(mailbox, providerMessageId || providerThreadId, {
-        to: toEmail,
-        subject,
-        text: body,
-        html: `<div style="font-family: Arial, sans-serif; font-size: 14px;">${escapeHtml(body).replace(/\n/g, '<br>')}</div>`,
-      })
+    if (providerMessageId || providerThreadId) {
+      try {
+        result = await replyToMessage(targetMailbox, providerMessageId || providerThreadId, {
+          to: toEmail,
+          subject,
+          text: body,
+          html: `<div style="font-family: Arial, sans-serif; font-size: 14px;">${escapeHtml(body).replace(/\n/g, '<br>')}</div>`,
+        })
+      } catch (replyErr) {
+        console.warn(`[AI_EMAIL_SENDER] replyToMessage failed (${replyErr.message}), falling back to sendMessage...`)
+        result = await sendMessage(targetMailbox, {
+          to: toEmail,
+          subject,
+          text: body,
+          html: `<div style="font-family: Arial, sans-serif; font-size: 14px;">${escapeHtml(body).replace(/\n/g, '<br>')}</div>`,
+          inReplyTo: providerMessageId || undefined,
+        })
+      }
     } else {
-      result = await sendMessage(mailbox, {
+      result = await sendMessage(targetMailbox, {
         to: toEmail,
         subject,
         text: body,
