@@ -53,28 +53,12 @@ export async function handleHostingerWebhook(req, res) {
 }
 
 export async function processPendingWebhooks(limit = 10) {
-  const { default: pool } = await import('../../config/db.js')
-
-  const result = await pool.query(
-    `SELECT id, event_id, event_type, payload
-     FROM email_webhook_events
-     WHERE status = 'pending'
-     ORDER BY received_at ASC
-     LIMIT $1`,
-    [limit]
-  )
-
+  const { processOneEvent } = await import('./ai-email-worker.js')
   const processed = []
-  for (const event of result.rows) {
-    try {
-      await queueEmailForProcessing(event.id, event.payload)
-      await markWebhookProcessed(event.id)
-      processed.push({ id: event.id, success: true })
-    } catch (err) {
-      await markWebhookFailed(event.id, err.message)
-      processed.push({ id: event.id, success: false, error: err.message })
-    }
+  for (let i = 0; i < limit; i++) {
+    const res = await processOneEvent()
+    if (!res) break
+    processed.push(res)
   }
-
-  return { total: result.rows.length, processed }
+  return { total: processed.length, processed }
 }

@@ -432,6 +432,27 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
       if (recovered.rows.length > 0) {
         console.log(`[AI_EMAIL_WORKER] Recovered ${recovered.rows.length} failed event(s) for reprocessing:`, recovered.rows.map(r => r.event_id).join(', '))
       }
+
+      // Also recover events that were falsely marked as 'processed' by legacy worker without storing an email
+      const falselyProcessed = await pool.query(
+        `UPDATE email_webhook_events
+         SET status = 'pending', processed_at = NULL, error_message = NULL,
+             payload = jsonb_set(COALESCE(payload, '{}'), '{retry_count}', '0'::jsonb)
+         WHERE status = 'processed'
+           AND NOT EXISTS (
+             SELECT 1 FROM emails
+             WHERE provider_message_id = COALESCE(
+               payload->'data'->>'messageId',
+               payload->'data'->>'message_id',
+               payload->>'messageId',
+               payload->>'message_id'
+             )
+           )
+         RETURNING id, event_id`
+      )
+      if (falselyProcessed.rows.length > 0) {
+        console.log(`[AI_EMAIL_WORKER] Recovered ${falselyProcessed.rows.length} event(s) falsely marked processed by legacy worker:`, falselyProcessed.rows.map(r => r.event_id).join(', '))
+      }
     } catch (err) {
       console.error('[AI_EMAIL_WORKER] Failed to recover events:', err.message)
     }
