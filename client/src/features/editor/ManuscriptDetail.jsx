@@ -536,9 +536,13 @@ export default function ManuscriptDetail() {
                             <i className="fas fa-check" style={{ fontSize: '9px' }} /> Latest Version
                           </span>
                         )}
-                        {file.file_type && file.file_type !== 'manuscript' && (
-                          <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'capitalize' }}>
-                            ({file.file_type.replace(/_/g, ' ')})
+                        {file.file_type === 'main_manuscript' || file.file_type === 'manuscript' ? (
+                          <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', background: '#F1F5F9', color: '#475569' }}>
+                            Main Manuscript
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', background: '#FEF3C7', color: '#92400E', textTransform: 'capitalize' }}>
+                            {file.file_type ? file.file_type.replace(/_/g, ' ') : 'Supplementary File'}
                           </span>
                         )}
                       </div>
