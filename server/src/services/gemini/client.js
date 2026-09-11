@@ -20,8 +20,10 @@ function maskKey(key) {
 }
 
 export function getGeminiConfig() {
+  const configuredModel = env.GEMINI_MODEL || 'gemini-3.6-flash'
+  const model = (configuredModel.includes('2.0') || configuredModel.includes('2.5')) ? 'gemini-3.6-flash' : configuredModel
   return {
-    model: env.GEMINI_MODEL || 'gemini-3.6-flash',
+    model,
     configured: Boolean(env.GEMINI_API_KEY),
     keyPreview: maskKey(env.GEMINI_API_KEY),
   }
@@ -33,8 +35,11 @@ export async function generateContent({ prompt, systemInstruction, model, temper
     throw new Error('Gemini API key not configured')
   }
 
-  const primaryModel = model || env.GEMINI_MODEL || 'gemini-3.6-flash'
-  let activeModel = primaryModel
+  let primaryModel = model || env.GEMINI_MODEL || 'gemini-3.6-flash'
+  if (primaryModel.includes('2.0') || primaryModel.includes('2.5')) {
+    primaryModel = 'gemini-3.6-flash'
+  }
+  const activeModel = primaryModel
   const timeoutMs = timeout || DEFAULT_TIMEOUT_MS
 
   let lastError = null
@@ -92,13 +97,7 @@ export async function generateContent({ prompt, systemInstruction, model, temper
         err?.message?.includes('UNAVAILABLE')
 
       if (isRetryable && attempt < MAX_RETRIES) {
-        if (err?.status === 503 || err?.message?.includes('503') || err?.message?.includes('high demand') || err?.message?.includes('UNAVAILABLE')) {
-          const alternate = activeModel.includes('2.5') ? 'gemini-3.6-flash' : 'gemini-2.5-flash'
-          console.warn(`[GEMINI] 503 high demand on ${activeModel} — failing over to ${alternate}`)
-          activeModel = alternate
-        }
-
-        const delay = RETRY_DELAY_MS * (attempt + 1)
+        const delay = RETRY_DELAY_MS * Math.pow(2, attempt)
         console.warn(`[GEMINI] Retryable error (attempt ${attempt + 1}/${MAX_RETRIES}): ${err.message}. Retrying in ${delay}ms...`)
         await new Promise((resolve) => setTimeout(resolve, delay))
         continue
