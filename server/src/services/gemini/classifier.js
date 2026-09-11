@@ -7,8 +7,9 @@ export async function classifyEmail({ fromEmail, subject, bodyText, mailbox, kno
   const response = await generateContent({
     prompt,
     temperature: 0.1,
-    maxOutputTokens: 512,
+    maxOutputTokens: 2048,
     responseMimeType: 'application/json',
+    thinkingBudget: 0,
   })
 
   let parsed

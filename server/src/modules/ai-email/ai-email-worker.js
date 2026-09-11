@@ -156,17 +156,29 @@ export async function runClassification(emailId) {
 }
 
 export async function runToolCalls(emailId, classification, extractedData) {
-  if (!extractedData?.submission_number) return []
+  let submissionNumber = extractedData?.submission_number
+  if (!submissionNumber && emailId) {
+    try {
+      const emailRow = await pool.query('SELECT subject, body_text FROM emails WHERE id = $1', [emailId])
+      if (emailRow.rows.length > 0) {
+        const fullContent = `${emailRow.rows[0]?.subject || ''} ${emailRow.rows[0]?.body_text || ''}`
+        const match = fullContent.match(/IJIDCR-[0-9]{2}-[0-9]{4,}/i) || fullContent.match(/[A-Z]{3,}-[0-9]{2}-[0-9]{3,}/i)
+        if (match) submissionNumber = match[0]
+      }
+    } catch { /* optional fallback */ }
+  }
+
+  if (!submissionNumber) return []
 
   const toolsToCall = []
   if (['MANUSCRIPT_STATUS', 'REVISION_STATUS', 'REVIEW_STATUS', 'EDITORIAL_DECISION_QUERY'].includes(classification)) {
-    toolsToCall.push({ name: 'get_manuscript_status', args: { submission_number: extractedData.submission_number } })
+    toolsToCall.push({ name: 'get_manuscript_status', args: { submission_number: submissionNumber } })
   }
   if (classification === 'REVISION_STATUS') {
-    toolsToCall.push({ name: 'get_revision_status', args: { submission_number: extractedData.submission_number } })
+    toolsToCall.push({ name: 'get_revision_status', args: { submission_number: submissionNumber } })
   }
   if (classification === 'REVIEW_STATUS') {
-    toolsToCall.push({ name: 'get_review_status', args: { submission_number: extractedData.submission_number } })
+    toolsToCall.push({ name: 'get_review_status', args: { submission_number: submissionNumber } })
   }
 
   const results = []

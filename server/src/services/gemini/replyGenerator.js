@@ -90,8 +90,9 @@ export async function generateReply({
   const response = await generateContent({
     prompt,
     temperature: 0.3,
-    maxOutputTokens: 1024,
+    maxOutputTokens: 2048,
     responseMimeType: 'application/json',
+    thinkingBudget: 0,
   })
 
   let parsed

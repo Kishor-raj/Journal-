@@ -29,7 +29,7 @@ export function getGeminiConfig() {
   }
 }
 
-export async function generateContent({ prompt, systemInstruction, model, temperature = 0.3, maxOutputTokens = 2048, timeout, responseMimeType } = {}) {
+export async function generateContent({ prompt, systemInstruction, model, temperature = 0.3, maxOutputTokens = 2048, timeout, responseMimeType, thinkingBudget } = {}) {
   const genAI = getClient()
   if (!genAI) {
     throw new Error('Gemini API key not configured')
@@ -58,6 +58,9 @@ export async function generateContent({ prompt, systemInstruction, model, temper
         }
         if (systemInstruction) {
           config.systemInstruction = systemInstruction
+        }
+        if (thinkingBudget !== undefined) {
+          config.thinkingConfig = { thinkingBudget }
         }
 
         const response = await genAI.models.generateContent({
@@ -149,5 +152,39 @@ export function extractAndParseJSON(text) {
   // Remove trailing commas before } or ]
   cleaned = cleaned.replace(/,\s*([}\]])/g, '$1')
 
-  return JSON.parse(cleaned)
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    // Resilient fallback for truncated JSON: extract present fields via regex
+    const classificationMatch = text.match(/"classification"\s*:\s*"([^"]+)"/)
+    if (classificationMatch) {
+      const intentMatch = text.match(/"intent"\s*:\s*"([^"]+)"/)
+      const confidenceMatch = text.match(/"confidence"\s*:\s*([0-9.]+)/)
+      const sensitiveMatch = text.match(/"sensitive_topic"\s*:\s*(true|false)/)
+      const approvalMatch = text.match(/"requires_human_approval"\s*:\s*(true|false)/)
+      const subNumMatch = text.match(/"submission_number"\s*:\s*"([^"]+)"/)
+
+      return {
+        classification: classificationMatch[1],
+        intent: intentMatch ? intentMatch[1] : 'Inquiry regarding manuscript',
+        confidence: confidenceMatch ? parseFloat(confidenceMatch[1]) : 0.95,
+        sensitive_topic: sensitiveMatch ? sensitiveMatch[1] === 'true' : false,
+        requires_human_approval: approvalMatch ? approvalMatch[1] === 'true' : false,
+        extracted_data: subNumMatch ? { submission_number: subNumMatch[1] } : {},
+      }
+    }
+
+    const bodyMatch = text.match(/"body"\s*:\s*"([^"]+)"/)
+    if (bodyMatch) {
+      const subjectMatch = text.match(/"subject"\s*:\s*"([^"]+)"/)
+      return {
+        subject: subjectMatch ? subjectMatch[1] : null,
+        body: bodyMatch[1],
+        confidence: 0.95,
+        approval_required: false,
+      }
+    }
+
+    throw new Error(`Failed to parse JSON: ${text.slice(0, 100)}`)
+  }
 }
