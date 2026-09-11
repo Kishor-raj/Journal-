@@ -1,4 +1,4 @@
-import { generateContent } from './client.js'
+import { generateContent, extractAndParseJSON } from './client.js'
 
 export const REPLY_PROMPT_VERSION = '2.0'
 
@@ -60,16 +60,19 @@ Generate a professional reply using ONLY verified information from the database 
 - If database information was retrieved, use it directly and reference the submission number
 - If no database information matches, do not invent details
 - If the classification is sensitive, add a note that a team member will follow up
-- Respond in this exact JSON format:
+- Output ONLY valid JSON, with no markdown code fences, no comments, and no text outside the JSON object.
+- "approval_required" MUST be a JSON boolean (true or false). Set to true only if sensitive or uncertain.
+- "confidence" MUST be a number between 0.0 and 1.0.
 
+Respond in this exact JSON format:
 {
   "subject": "Re: <original subject>",
   "body": "<full email reply in plain text>",
-  "confidence": <0.0 to 1.0>,
-  "approval_required": <true if sensitive or uncertain>,
+  "confidence": 0.95,
+  "approval_required": false,
   "reasoning": "<brief explanation>",
-  "knowledge_sources_used": ["<list of sources used>"],
-  "database_queries_made": ["<list of tools called>"]
+  "knowledge_sources_used": [],
+  "database_queries_made": []
 }`
 }
 
@@ -88,13 +91,12 @@ export async function generateReply({
     prompt,
     temperature: 0.3,
     maxOutputTokens: 1024,
+    responseMimeType: 'application/json',
   })
 
   let parsed
   try {
-    const jsonMatch = response.text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('No JSON in response')
-    parsed = JSON.parse(jsonMatch[0])
+    parsed = extractAndParseJSON(response.text)
   } catch {
     throw new Error(`Failed to parse reply response: ${response.text.slice(0, 200)}`)
   }

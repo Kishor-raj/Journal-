@@ -61,18 +61,23 @@ ${knowledgeSection}
 - Flag as sensitive: COMPLAINT, ETHICS_OR_PLAGIARISM, PAYMENT, SECURITY, WITHDRAWAL_REQUEST
 - Determine if the email requires human approval for any reply
 
+## Rules
+- Return ONLY a valid JSON object. No explanations, no comments, no text outside the JSON.
+- "sensitive_topic" MUST be a JSON boolean (true or false). Set to true only if COMPLAINT, ETHICS_OR_PLAGIARISM, PAYMENT, SECURITY, or WITHDRAWAL_REQUEST.
+- "requires_human_approval" MUST be a JSON boolean (true or false). Set to true if sensitive or editorial decision related.
+
 Respond in this exact JSON format:
 {
-  "classification": "<CATEGORY>",
+  "classification": "MANUSCRIPT_STATUS",
   "intent": "<1-sentence summary of what the sender wants>",
-  "confidence": <0.0 to 1.0>,
-  "sensitive_topic": <true if COMPLAINT, ETHICS_OR_PLAGIARISM, PAYMENT, SECURITY, or WITHDRAWAL_REQUEST>,
-  "requires_human_approval": <true if sensitive or editorial decision related>,
+  "confidence": 0.95,
+  "sensitive_topic": false,
+  "requires_human_approval": false,
   "extracted_data": {
-    "submission_number": "<if mentioned, exact string>",
-    "manuscript_title": "<if mentioned>",
-    "person_names": ["<if any names mentioned>"],
-    "key_dates": ["<if any dates mentioned>"],
+    "submission_number": "<submission number if mentioned, e.g. IJIDCR-26-0010, otherwise null>",
+    "manuscript_title": null,
+    "person_names": [],
+    "key_dates": [],
     "action_requested": "<specific action the sender wants>"
   }
 }`

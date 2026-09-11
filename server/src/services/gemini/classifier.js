@@ -1,4 +1,4 @@
-import { generateContent } from './client.js'
+import { generateContent, extractAndParseJSON } from './client.js'
 import { buildClassificationPrompt, CLASSIFICATION_PROMPT_VERSION, VALID_CLASSIFICATIONS } from './prompts.js'
 
 export async function classifyEmail({ fromEmail, subject, bodyText, mailbox, knowledgeContext }) {
@@ -8,13 +8,12 @@ export async function classifyEmail({ fromEmail, subject, bodyText, mailbox, kno
     prompt,
     temperature: 0.1,
     maxOutputTokens: 512,
+    responseMimeType: 'application/json',
   })
 
   let parsed
   try {
-    const jsonMatch = response.text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('No JSON in response')
-    parsed = JSON.parse(jsonMatch[0])
+    parsed = extractAndParseJSON(response.text)
   } catch {
     throw new Error(`Failed to parse classification response: ${response.text.slice(0, 200)}`)
   }

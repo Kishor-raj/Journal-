@@ -419,12 +419,14 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
          SET status = 'pending', error_message = NULL,
              payload = jsonb_set(COALESCE(payload, '{}'), '{retry_count}', '0'::jsonb)
          WHERE status = 'failed' AND (
-           error_message LIKE '%ON CONFLICT%' OR
-           error_message LIKE '%unique%' OR
-           error_message LIKE '%gemini-2.0-flash%' OR
-           error_message LIKE '%404%' OR
-           error_message LIKE '%no longer available%'
-         )
+            error_message LIKE '%ON CONFLICT%' OR
+            error_message LIKE '%unique%' OR
+            error_message LIKE '%gemini-2.0-flash%' OR
+            error_message LIKE '%404%' OR
+            error_message LIKE '%no longer available%' OR
+            error_message LIKE '%parse%' OR
+            error_message LIKE '%sensitive_topic%'
+          )
          RETURNING id, event_id`
       )
       if (recovered.rows.length > 0) {

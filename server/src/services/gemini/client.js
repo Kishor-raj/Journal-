@@ -27,7 +27,7 @@ export function getGeminiConfig() {
   }
 }
 
-export async function generateContent({ prompt, systemInstruction, model, temperature = 0.3, maxOutputTokens = 2048, timeout } = {}) {
+export async function generateContent({ prompt, systemInstruction, model, temperature = 0.3, maxOutputTokens = 2048, timeout, responseMimeType } = {}) {
   const genAI = getClient()
   if (!genAI) {
     throw new Error('Gemini API key not configured')
@@ -46,6 +46,9 @@ export async function generateContent({ prompt, systemInstruction, model, temper
         const config = {
           temperature,
           maxOutputTokens,
+        }
+        if (responseMimeType) {
+          config.responseMimeType = responseMimeType
         }
         if (systemInstruction) {
           config.systemInstruction = systemInstruction
@@ -107,4 +110,35 @@ export async function generateContent({ prompt, systemInstruction, model, temper
 
 export function isConfigured() {
   return Boolean(env.GEMINI_API_KEY)
+}
+
+export function extractAndParseJSON(text) {
+  if (!text || typeof text !== 'string') throw new Error('Empty text')
+
+  let cleaned = text.trim()
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim()
+  }
+
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    // continue to cleaning
+  }
+
+  const firstBrace = cleaned.indexOf('{')
+  const lastBrace = cleaned.lastIndexOf('}')
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1)
+  }
+
+  // Remove parenthetical notes after booleans or numbers: ': false (note)' -> ': false'
+  cleaned = cleaned.replace(/:\s*(true|false)\s*\([^)]*\)/gi, ': $1')
+  cleaned = cleaned.replace(/:\s*([0-9.]+)\s*\([^)]*\)/g, ': $1')
+  // Remove single line comments // ...
+  cleaned = cleaned.replace(/\/\/.*$/gm, '')
+  // Remove trailing commas before } or ]
+  cleaned = cleaned.replace(/,\s*([}\]])/g, '$1')
+
+  return JSON.parse(cleaned)
 }
