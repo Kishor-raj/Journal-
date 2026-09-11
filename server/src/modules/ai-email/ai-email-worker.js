@@ -276,6 +276,7 @@ export async function processOneEvent() {
 
     const classification = await runClassification(emailId)
     if (classification.skipped) {
+      console.warn(`[AI_EMAIL_WORKER] Classification skipped for email ${emailId}: ${classification.reason}`)
       await client.query(`UPDATE email_webhook_events SET status = 'processed', processed_at = now() WHERE id = $1`, [event.id])
       await client.query('COMMIT')
       return { eventId: event.id, status: 'processed', emailId, classification }
