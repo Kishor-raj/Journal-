@@ -446,7 +446,9 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
             error_message LIKE '%503%' OR
             error_message LIKE '%UNAVAILABLE%' OR
             error_message LIKE '%high demand%' OR
-            error_message LIKE '%INVALID_ARGUMENT%'
+            error_message LIKE '%INVALID_ARGUMENT%' OR
+            error_message LIKE '%value too long%' OR
+            error_message LIKE '%varying(100)%'
           )
          RETURNING id, event_id`
       )
@@ -537,7 +539,22 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
     finally { running = false }
   }
 
-  recoverFailedEvents()
+  const ensureSchema = async () => {
+    try {
+      await pool.query(`
+        ALTER TABLE ai_email_processing ALTER COLUMN intent TYPE TEXT;
+        ALTER TABLE ai_email_processing ALTER COLUMN model_name TYPE TEXT;
+        ALTER TABLE ai_email_processing ALTER COLUMN prompt_version TYPE TEXT;
+        ALTER TABLE ai_email_processing ALTER COLUMN classification TYPE TEXT;
+        ALTER TABLE ai_email_replies ALTER COLUMN decision TYPE TEXT;
+      `)
+    } catch (err) {
+      console.warn('[AI_EMAIL_WORKER] Schema widening non-fatal warning:', err.message)
+    }
+  }
+
+  ensureSchema()
+    .then(() => recoverFailedEvents())
     .then(() => retryFailedReplies())
     .finally(() => {
       timer = setInterval(tick, pollIntervalMs)
