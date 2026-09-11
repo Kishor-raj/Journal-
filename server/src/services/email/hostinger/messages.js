@@ -1,13 +1,27 @@
 import { hostingerRequest, resolveMailboxResourceId } from './client.js'
 import { env } from '../../../config/env.js'
 
+function cleanEmail(addr) {
+  if (!addr) return ''
+  if (typeof addr === 'object' && addr !== null) {
+    if (addr.address) return cleanEmail(addr.address)
+    if (addr.email) return cleanEmail(addr.email)
+  }
+  const str = String(addr).trim()
+  const match = str.match(/<([^>]+)>/)
+  if (match && match[1]) return match[1].trim()
+  const emailMatch = str.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
+  if (emailMatch) return emailMatch[0].trim()
+  return str
+}
+
 export async function sendMessage(mailbox, { to, cc, bcc, subject, text, html, inReplyTo, displayName, attachments }) {
   const address = mailbox || env.HOSTINGER_MAILBOX
   const resourceId = await resolveMailboxResourceId(address)
 
-  const toList = Array.isArray(to) ? to : (to ? [to] : [])
-  const ccList = Array.isArray(cc) ? cc : (cc ? [cc] : undefined)
-  const bccList = Array.isArray(bcc) ? bcc : (bcc ? [bcc] : undefined)
+  const toList = (Array.isArray(to) ? to : (to ? [to] : [])).map(cleanEmail).filter(Boolean)
+  const ccList = (Array.isArray(cc) ? cc : (cc ? [cc] : [])).map(cleanEmail).filter(Boolean)
+  const bccList = (Array.isArray(bcc) ? bcc : (bcc ? [bcc] : [])).map(cleanEmail).filter(Boolean)
 
   const body = {
     to: toList,

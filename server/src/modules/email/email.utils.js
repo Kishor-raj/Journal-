@@ -92,3 +92,21 @@ export function createHashDigest(data) {
   if (data === null || data === undefined) return null
   return crypto.createHash('sha256').update(String(data)).digest('hex')
 }
+
+export function extractCleanEmail(input) {
+  if (!input) return ''
+  if (typeof input === 'object' && input !== null) {
+    if (input.address) return extractCleanEmail(input.address)
+    if (input.email) return extractCleanEmail(input.email)
+  }
+  const str = String(input).trim()
+  const match = str.match(/<([^>]+)>/)
+  if (match && match[1]) {
+    return match[1].trim()
+  }
+  const emailMatch = str.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
+  if (emailMatch) {
+    return emailMatch[0].trim()
+  }
+  return str
+}

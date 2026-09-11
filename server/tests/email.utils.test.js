@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderTemplate, escapeHtml, stringifyValue, buildAppUrl, hashToken, generateToken } from '../src/modules/email/email.utils.js'
+import { renderTemplate, escapeHtml, stringifyValue, buildAppUrl, hashToken, generateToken, extractCleanEmail } from '../src/modules/email/email.utils.js'
 
 describe('Email template utilities', () => {
   describe('escapeHtml', () => {
@@ -103,6 +103,29 @@ describe('Email template utilities', () => {
       const t2 = generateToken()
       expect(t1).toBeTruthy()
       expect(t1).not.toBe(t2)
+    })
+  })
+
+  describe('extractCleanEmail', () => {
+    it('extracts email from "Name <email@domain.com>" format', () => {
+      expect(extractCleanEmail('Kishor Raj <kishorshaalini2007@gmail.com>')).toBe('kishorshaalini2007@gmail.com')
+      expect(extractCleanEmail('"Kishor Raj" <kishorshaalini2007@gmail.com>')).toBe('kishorshaalini2007@gmail.com')
+      expect(extractCleanEmail('<editor@ijidcr.in>')).toBe('editor@ijidcr.in')
+    })
+
+    it('returns clean email when plain email is provided', () => {
+      expect(extractCleanEmail('kishorshaalini2007@gmail.com')).toBe('kishorshaalini2007@gmail.com')
+    })
+
+    it('extracts from object with address or email property', () => {
+      expect(extractCleanEmail({ address: 'test@example.com' })).toBe('test@example.com')
+      expect(extractCleanEmail({ email: 'test@example.com' })).toBe('test@example.com')
+    })
+
+    it('handles empty or invalid inputs gracefully', () => {
+      expect(extractCleanEmail(null)).toBe('')
+      expect(extractCleanEmail(undefined)).toBe('')
+      expect(extractCleanEmail('')).toBe('')
     })
   })
 })

@@ -1,12 +1,14 @@
 import { replyToMessage, sendMessage } from '../../services/email/hostinger/index.js'
 import { env } from '../../config/env.js'
 import { logAiEmailEvent } from '../../services/ai/audit.js'
+import { extractCleanEmail } from '../email/email.utils.js'
 
 export async function sendReplyViaHostinger({ replyId, threadId, toEmail, subject, body, providerThreadId, providerMessageId, mailbox }) {
   const targetMailbox = mailbox || env.HOSTINGER_MAILBOX
 
   try {
-    const toList = Array.isArray(toEmail) ? toEmail : [toEmail]
+    const cleanRecipient = extractCleanEmail(toEmail)
+    const toList = cleanRecipient ? [cleanRecipient] : (Array.isArray(toEmail) ? toEmail.map(extractCleanEmail) : [toEmail])
     const htmlBody = `<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">${escapeHtml(body).replace(/\n/g, '<br>')}</div>`
 
     const sendOptions = {

@@ -8,6 +8,7 @@ import { executeToolCall, logToolCall, BACKEND_TOOLS } from '../../services/ai/t
 import { logAiEmailEvent } from '../../services/ai/audit.js'
 import { sendReplyViaHostinger } from './ai-email-sender.service.js'
 import { markReplySent, markReplyFailed } from './ai-email-approval.service.js'
+import { extractCleanEmail } from '../email/email.utils.js'
 
 const MAX_RETRY_ATTEMPTS = 3
 const RETRY_BACKOFF = [0, 30_000, 120_000]
@@ -58,6 +59,9 @@ export async function fetchAndStoreEmail(event) {
   const bodyText = data?.text || data?.body_text || data?.plainBody || null
   const bodyHtml = data?.html || data?.body_html || data?.htmlBody || null
 
+  const rawFrom = data?.from || 'unknown@unknown.com'
+  const cleanFrom = extractCleanEmail(rawFrom) || rawFrom
+
   let emailResult
   try {
     emailResult = await pool.query(
@@ -67,7 +71,7 @@ export async function fetchAndStoreEmail(event) {
        RETURNING id`,
       [
         threadRecord.id, messageId, data?.message_id || data?.messageId || messageId, data?.in_reply_to || null,
-        data?.from || 'unknown@unknown.com', toArray, ccArray,
+        cleanFrom, toArray, ccArray,
         data?.subject || null, bodyText,
         bodyHtml, data?.date || data?.received_at || new Date().toISOString(),
         JSON.stringify(data),
@@ -342,10 +346,11 @@ export async function processOneEvent() {
         const threadData = threadRow.rows[0]
 
         if (emailData) {
+          const cleanRecipient = extractCleanEmail(emailData.from_email)
           const sendResult = await sendReplyViaHostinger({
             replyId: replyResult.replyId,
             threadId,
-            toEmail: emailData.from_email,
+            toEmail: cleanRecipient,
             subject: replyResult.subject || `Re: ${emailData.subject}`,
             body: replyResult.draftBody,
             providerMessageId: emailData.provider_message_id,
@@ -486,6 +491,9 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
          WHERE r.status = 'failed' AND (
             r.failure_reason LIKE '%could not be found%' OR
             r.failure_reason LIKE '%Hostinger API 404%' OR
+            r.failure_reason LIKE '%Hostinger API 422%' OR
+            r.failure_reason LIKE '%ERR_VALIDATION_FAILED%' OR
+            r.failure_reason LIKE '%valid email%' OR
             r.failure_reason LIKE '%messages%'
          )
          LIMIT 10`
@@ -493,11 +501,12 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
 
       for (const row of failedReplies.rows) {
         if (!env.AI_AUTO_REPLY_ENABLED) break
-        console.log(`[AI_EMAIL_WORKER] Retrying failed auto-reply ${row.reply_id} for email ${row.email_id} -> ${row.from_email}`)
+        const cleanRecipient = extractCleanEmail(row.from_email)
+        console.log(`[AI_EMAIL_WORKER] Retrying failed auto-reply ${row.reply_id} for email ${row.email_id} -> ${cleanRecipient}`)
         const sendResult = await sendReplyViaHostinger({
           replyId: row.reply_id,
           threadId: row.thread_id,
-          toEmail: row.from_email,
+          toEmail: cleanRecipient,
           subject: `Re: ${row.subject || 'Inquiry'}`,
           body: row.draft_body,
           providerMessageId: row.provider_message_id,
