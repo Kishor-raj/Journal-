@@ -474,6 +474,50 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
     }
   }
 
+  const retryFailedReplies = async () => {
+    try {
+      const failedReplies = await pool.query(
+        `SELECT r.id AS reply_id, r.email_id, r.thread_id, r.draft_body, r.decision,
+                e.from_email, e.to_email, e.subject, e.provider_message_id,
+                t.provider_thread_id
+         FROM ai_email_replies r
+         JOIN emails e ON e.id = r.email_id
+         JOIN email_threads t ON t.id = r.thread_id
+         WHERE r.status = 'failed' AND (
+            r.failure_reason LIKE '%could not be found%' OR
+            r.failure_reason LIKE '%Hostinger API 404%' OR
+            r.failure_reason LIKE '%messages%'
+         )
+         LIMIT 10`
+      )
+
+      for (const row of failedReplies.rows) {
+        if (!env.AI_AUTO_REPLY_ENABLED) break
+        console.log(`[AI_EMAIL_WORKER] Retrying failed auto-reply ${row.reply_id} for email ${row.email_id} -> ${row.from_email}`)
+        const sendResult = await sendReplyViaHostinger({
+          replyId: row.reply_id,
+          threadId: row.thread_id,
+          toEmail: row.from_email,
+          subject: `Re: ${row.subject || 'Inquiry'}`,
+          body: row.draft_body,
+          providerMessageId: row.provider_message_id,
+          providerThreadId: row.provider_thread_id,
+          mailbox: row.to_email || env.HOSTINGER_MAILBOX,
+        })
+
+        if (sendResult.success) {
+          await markReplySent(row.reply_id, sendResult.providerMessageId)
+          console.log(`[AI_EMAIL_WORKER] Successfully re-sent failed auto-reply for email ${row.email_id}`)
+        } else {
+          await markReplyFailed(row.reply_id, sendResult.error)
+          console.error(`[AI_EMAIL_WORKER] Retry auto-reply failed for email ${row.email_id}: ${sendResult.error}`)
+        }
+      }
+    } catch (err) {
+      console.warn('[AI_EMAIL_WORKER] Failed to retry failed replies:', err.message)
+    }
+  }
+
   const tick = async () => {
     if (running || stopFlag) return
     running = true
@@ -484,10 +528,12 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
     finally { running = false }
   }
 
-  recoverFailedEvents().finally(() => {
-    timer = setInterval(tick, pollIntervalMs)
-    tick()
-  })
+  recoverFailedEvents()
+    .then(() => retryFailedReplies())
+    .finally(() => {
+      timer = setInterval(tick, pollIntervalMs)
+      tick()
+    })
 
   return { stop() { stopFlag = true; if (timer) clearInterval(timer); console.log('[AI_EMAIL_WORKER] Stopped') } }
 }

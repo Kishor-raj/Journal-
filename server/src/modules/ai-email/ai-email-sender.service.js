@@ -6,36 +6,24 @@ export async function sendReplyViaHostinger({ replyId, threadId, toEmail, subjec
   const targetMailbox = mailbox || env.HOSTINGER_MAILBOX
 
   try {
-    let result
+    const toList = Array.isArray(toEmail) ? toEmail : [toEmail]
+    const htmlBody = `<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">${escapeHtml(body).replace(/\n/g, '<br>')}</div>`
 
-    if (providerMessageId || providerThreadId) {
-      try {
-        result = await replyToMessage(targetMailbox, providerMessageId || providerThreadId, {
-          to: toEmail,
-          subject,
-          text: body,
-          html: `<div style="font-family: Arial, sans-serif; font-size: 14px;">${escapeHtml(body).replace(/\n/g, '<br>')}</div>`,
-        })
-      } catch (replyErr) {
-        console.warn(`[AI_EMAIL_SENDER] replyToMessage failed (${replyErr.message}), falling back to sendMessage...`)
-        result = await sendMessage(targetMailbox, {
-          to: toEmail,
-          subject,
-          text: body,
-          html: `<div style="font-family: Arial, sans-serif; font-size: 14px;">${escapeHtml(body).replace(/\n/g, '<br>')}</div>`,
-          inReplyTo: providerMessageId || undefined,
-        })
-      }
-    } else {
-      result = await sendMessage(targetMailbox, {
-        to: toEmail,
-        subject,
-        text: body,
-        html: `<div style="font-family: Arial, sans-serif; font-size: 14px;">${escapeHtml(body).replace(/\n/g, '<br>')}</div>`,
-      })
+    const sendOptions = {
+      to: toList,
+      subject,
+      text: body,
+      html: htmlBody,
+      displayName: env.EMAIL_FROM_NAME || 'IJIDCR Editorial Office',
     }
 
-    const providerMessageIdResult = result?.id || result?.message_id || result?.data?.id || null
+    if (providerMessageId && Number.isInteger(Number(providerMessageId))) {
+      sendOptions.inReplyTo = { uid: Number(providerMessageId), folder: 'INBOX' }
+    }
+
+    const result = await sendMessage(targetMailbox, sendOptions)
+
+    const providerMessageIdResult = result?.id || result?.message_id || result?.data?.id || `sent-${Date.now()}`
 
     await logAiEmailEvent({
       workflowName: 'ai_email',

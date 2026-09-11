@@ -76,7 +76,7 @@ export const env = {
   HOSTINGER_MAIL_API_KEY: process.env.HOSTINGER_MAIL_API_KEY,
   HOSTINGER_MAILBOX: process.env.HOSTINGER_MAILBOX,
   HOSTINGER_WEBHOOK_SECRET: process.env.HOSTINGER_WEBHOOK_SECRET,
-  HOSTINGER_API_BASE_URL: process.env.HOSTINGER_API_BASE_URL || 'https://email.hostinger.com/api/v1',
+  HOSTINGER_API_BASE_URL: process.env.HOSTINGER_API_BASE_URL || 'https://api.mail.hostinger.com',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GEMINI_MODEL: (process.env.GEMINI_MODEL && !process.env.GEMINI_MODEL.includes('2.0') && !process.env.GEMINI_MODEL.includes('2.5')) ? process.env.GEMINI_MODEL : 'gemini-3.6-flash',
   AI_EMAIL_ENABLED: process.env.AI_EMAIL_ENABLED !== 'false',
