@@ -1,4 +1,5 @@
 import pool from '../../config/db.js'
+import { env } from '../../config/env.js'
 import { classifyEmail, generateReply, isConfigured as isGeminiConfigured } from '../../services/gemini/index.js'
 import { retrieveRelevantKnowledge, formatKnowledgeForPrompt } from '../../services/ai/knowledge.js'
 import { evaluateSafety, logSafetyDecision } from '../../services/ai/safety.js'
@@ -308,29 +309,34 @@ export async function processOneEvent() {
     })
 
     if (!replyResult.skipped && !replyResult.approvalRequired && AUTO_SEND_CATEGORIES.includes(classification.classification)) {
-      const emailRow = await pool.query(`SELECT from_email, subject FROM emails WHERE id = $1`, [emailId])
-      const threadRow = await pool.query(`SELECT provider_thread_id FROM email_threads WHERE id = $1`, [threadId])
-      const emailData = emailRow.rows[0]
-      const threadData = threadRow.rows[0]
+      if (!env.AI_AUTO_REPLY_ENABLED) {
+        console.warn(`[AI_EMAIL_WORKER] Auto-reply skipped for email ${emailId}: AI_AUTO_REPLY_ENABLED is false`)
+      } else {
+        const emailRow = await pool.query(`SELECT from_email, subject, provider_message_id FROM emails WHERE id = $1`, [emailId])
+        const threadRow = await pool.query(`SELECT provider_thread_id FROM email_threads WHERE id = $1`, [threadId])
+        const emailData = emailRow.rows[0]
+        const threadData = threadRow.rows[0]
 
-      if (emailData) {
-        const sendResult = await sendReplyViaHostinger({
-          replyId: replyResult.replyId,
-          threadId,
-          toEmail: emailData.from_email,
-          subject: replyResult.subject || `Re: ${emailData.subject}`,
-          body: replyResult.draftBody,
-          providerThreadId: threadData?.provider_thread_id,
-        })
+        if (emailData) {
+          const sendResult = await sendReplyViaHostinger({
+            replyId: replyResult.replyId,
+            threadId,
+            toEmail: emailData.from_email,
+            subject: replyResult.subject || `Re: ${emailData.subject}`,
+            body: replyResult.draftBody,
+            providerMessageId: emailData.provider_message_id,
+            providerThreadId: threadData?.provider_thread_id,
+          })
 
-        if (sendResult.success) {
-          await markReplySent(replyResult.replyId, sendResult.providerMessageId)
-          await logAiEmailEvent({ workflowName: 'ai_email', eventName: 'auto_reply_sent', status: 'success',
-            payload: { reply_id: replyResult.replyId, email_id: emailId } })
-          console.log(`[AI_EMAIL_WORKER] Auto-reply sent for email ${emailId} -> ${emailData.from_email}`)
-        } else {
-          await markReplyFailed(replyResult.replyId, sendResult.error)
-          console.error(`[AI_EMAIL_WORKER] Auto-reply send failed for email ${emailId}: ${sendResult.error}`)
+          if (sendResult.success) {
+            await markReplySent(replyResult.replyId, sendResult.providerMessageId)
+            await logAiEmailEvent({ workflowName: 'ai_email', eventName: 'auto_reply_sent', status: 'success',
+              payload: { reply_id: replyResult.replyId, email_id: emailId } })
+            console.log(`[AI_EMAIL_WORKER] Auto-reply sent for email ${emailId} -> ${emailData.from_email}`)
+          } else {
+            await markReplyFailed(replyResult.replyId, sendResult.error)
+            console.error(`[AI_EMAIL_WORKER] Auto-reply send failed for email ${emailId}: ${sendResult.error}`)
+          }
         }
       }
     } else if (replyResult.skipped) {
