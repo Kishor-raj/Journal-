@@ -12,13 +12,6 @@ export default function NewSubmissionRedirect() {
 
     async function init() {
       try {
-        const manuscripts = await getMyManuscripts()
-        const drafts = manuscripts.filter((m) => m.current_status === 'draft')
-        const emptyDraft = drafts.find((d) => !d.title || d.title.trim() === '')
-        if (emptyDraft) {
-          navigate(`/author/submit/${emptyDraft.id}`, { replace: true })
-          return
-        }
         const newDraft = await createDraft()
         navigate(`/author/submit/${newDraft.id}`, { replace: true })
       } catch {

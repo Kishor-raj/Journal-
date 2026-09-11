@@ -72,10 +72,13 @@ export default function AuthorDashboard() {
   }
 
   const handleNewSubmission = async () => {
-    const emptyDraft = drafts.find((d) => !d.title || d.title.trim() === '')
-    if (emptyDraft) { navigate(`/author/submit/${emptyDraft.id}`); return }
     setCreating(true)
-    try { const draft = await createDraft(); navigate(`/author/submit/${draft.id}`) } catch { setCreating(false) }
+    try {
+      const draft = await createDraft()
+      navigate(`/author/submit/${draft.id}`)
+    } catch {
+      setCreating(false)
+    }
   }
 
   const handleKpiClick = (key) => {
