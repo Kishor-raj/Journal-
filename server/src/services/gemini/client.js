@@ -29,7 +29,7 @@ export function getGeminiConfig() {
   }
 }
 
-export async function generateContent({ prompt, systemInstruction, model, temperature = 0.3, maxOutputTokens = 2048, timeout, responseMimeType, thinkingBudget } = {}) {
+export async function generateContent({ prompt, systemInstruction, model, temperature = 0.3, maxOutputTokens = 2048, timeout, responseMimeType } = {}) {
   const genAI = getClient()
   if (!genAI) {
     throw new Error('Gemini API key not configured')
@@ -58,9 +58,6 @@ export async function generateContent({ prompt, systemInstruction, model, temper
         }
         if (systemInstruction) {
           config.systemInstruction = systemInstruction
-        }
-        if (thinkingBudget !== undefined) {
-          config.thinkingConfig = { thinkingBudget }
         }
 
         const response = await genAI.models.generateContent({

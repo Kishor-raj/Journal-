@@ -9,7 +9,6 @@ export async function classifyEmail({ fromEmail, subject, bodyText, mailbox, kno
     temperature: 0.1,
     maxOutputTokens: 2048,
     responseMimeType: 'application/json',
-    thinkingBudget: 0,
   })
 
   let parsed

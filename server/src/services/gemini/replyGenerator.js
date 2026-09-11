@@ -92,7 +92,6 @@ export async function generateReply({
     temperature: 0.3,
     maxOutputTokens: 2048,
     responseMimeType: 'application/json',
-    thinkingBudget: 0,
   })
 
   let parsed
