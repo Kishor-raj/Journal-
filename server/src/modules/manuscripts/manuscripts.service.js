@@ -173,7 +173,14 @@ export async function getManuscriptById(id, userId) {
   )
 
   const filesResult = await pool.query(
-    `SELECT * FROM manuscript_files WHERE manuscript_id = $1 ORDER BY uploaded_at`,
+    `SELECT mf.*,
+            mv.version_number,
+            mv.version_type,
+            COALESCE(mv.is_current, false) AS is_current_version
+     FROM manuscript_files mf
+     LEFT JOIN manuscript_versions mv ON mv.id = mf.version_id
+     WHERE mf.manuscript_id = $1
+     ORDER BY COALESCE(mv.version_number, 1) DESC, mf.uploaded_at DESC`,
     [id]
   )
 
@@ -698,10 +705,12 @@ export async function getManuscriptForRole(manuscriptId, userId, role) {
   const manuscript = manuscriptResult.rows[0]
 
   const filesResult = await pool.query(
-    `SELECT id, file_type, original_filename, format, mime_type, file_size_bytes, uploaded_at
-     FROM manuscript_files
-     WHERE manuscript_id = $1
-     ORDER BY uploaded_at`,
+    `SELECT mf.id, mf.file_type, mf.original_filename, mf.format, mf.mime_type, mf.file_size_bytes, mf.uploaded_at,
+            mv.version_number, mv.version_type, COALESCE(mv.is_current, false) AS is_current_version
+     FROM manuscript_files mf
+     LEFT JOIN manuscript_versions mv ON mv.id = mf.version_id
+     WHERE mf.manuscript_id = $1
+     ORDER BY COALESCE(mv.version_number, 1) DESC, mf.uploaded_at DESC`,
     [manuscriptId]
   )
 
@@ -723,6 +732,9 @@ export async function getManuscriptForRole(manuscriptId, userId, role) {
       mime_type: f.mime_type,
       file_size_bytes: f.file_size_bytes,
       uploaded_at: f.uploaded_at,
+      version_number: f.version_number,
+      version_type: f.version_type,
+      is_current_version: f.is_current_version,
     }))
 
     return baseData

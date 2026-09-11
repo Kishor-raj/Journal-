@@ -407,6 +407,17 @@ export default function ManuscriptDetail() {
               Continue Editing
             </Button>
           )}
+          {manuscript.current_status === 'revision_requested' && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate('/author/revisions')}
+              style={{ marginLeft: 'auto' }}
+            >
+              <i className="fas fa-rotate" style={{ marginRight: '6px' }} />
+              Submit Revision
+            </Button>
+          )}
         </div>
       </div>
 
@@ -492,17 +503,53 @@ export default function ManuscriptDetail() {
           {manuscript.files && manuscript.files.length > 0 && (
             <div style={styles.section}>
               <h2 style={styles.sectionTitle}>Files</h2>
-              {manuscript.files.map((file, i) => (
-                <div key={file.id || i} style={styles.fileItem}>
-                  <div>
-                    <div style={styles.fileName}>{file.original_name || file.filename}</div>
-                    <div style={styles.fileMeta}>
-                      {file.file_type}
-                      {file.size && ` · ${formatFileSize(file.size)}`}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {manuscript.files.map((file, i) => {
+                  const versionNum = file.version_number
+                  const isLatest = file.is_current_version || (manuscript.current_version_id && file.version_id === manuscript.current_version_id) || i === 0
+                  const isRevision = versionNum && versionNum > 1
+                  return (
+                    <div key={file.id || i} style={styles.fileItem}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              background: isRevision ? '#F3E8FF' : '#EBF4FB',
+                              color: isRevision ? '#6B21A8' : '#1A4A6E',
+                            }}
+                          >
+                            {versionNum ? (versionNum === 1 ? 'Original (v1)' : `Revision ${versionNum - 1} (v${versionNum})`) : 'Original (v1)'}
+                          </span>
+                          {isLatest && (
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                background: '#E8F5EC',
+                                color: '#2B7A4B',
+                              }}
+                            >
+                              Latest Version
+                            </span>
+                          )}
+                        </div>
+                        <div style={styles.fileName}>{file.original_filename || file.original_name || file.filename || file.file_type}</div>
+                        <div style={styles.fileMeta}>
+                          {file.file_type}
+                          {file.file_size_bytes && ` · ${(file.file_size_bytes / 1024 / 1024).toFixed(2)} MB`}
+                          {file.uploaded_at && ` · Uploaded ${formatDate(file.uploaded_at)}`}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  )
+                })}
+              </div>
             </div>
           )}
         </>

@@ -21,7 +21,18 @@ export function setStoredToken(token) {
 }
 
 async function request(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`
+  let url = `${API_BASE_URL}${endpoint}`
+  if (options.params) {
+    const searchParams = new URLSearchParams()
+    Object.entries(options.params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) searchParams.append(k, v)
+    })
+    const qs = searchParams.toString()
+    if (qs) {
+      url += (url.includes('?') ? '&' : '?') + qs
+    }
+  }
+
   const token = getStoredToken()
   const headers = {
     'Content-Type': 'application/json',
@@ -52,10 +63,10 @@ async function request(endpoint, options = {}) {
 }
 
 export const apiClient = {
-  get: (endpoint) => request(endpoint),
-  post: (endpoint, body) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }),
-  patch: (endpoint, body) => request(endpoint, { method: 'PATCH', body: JSON.stringify(body) }),
-  delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
+  get: (endpoint, options = {}) => request(endpoint, { method: 'GET', ...options }),
+  post: (endpoint, body, options = {}) => request(endpoint, { method: 'POST', body: JSON.stringify(body), ...options }),
+  patch: (endpoint, body, options = {}) => request(endpoint, { method: 'PATCH', body: JSON.stringify(body), ...options }),
+  delete: (endpoint, options = {}) => request(endpoint, { method: 'DELETE', ...options }),
 }
 
 export default apiClient

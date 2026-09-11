@@ -139,6 +139,64 @@ const publishInputStyle = {
   boxSizing: 'border-box',
 }
 
+function getFileVersionInfo(file, manuscript) {
+  const versionNum = file.version_number
+  const isLatest = file.is_current_version || (manuscript.current_version_id && file.version_id === manuscript.current_version_id)
+  
+  if (versionNum === 1 || file.version_type === 'initial' || (!versionNum && !file.version_id)) {
+    return {
+      label: 'Original Manuscript (v1)',
+      shortLabel: 'Original (v1)',
+      badgeBg: '#EBF4FB',
+      badgeColor: '#1A4A6E',
+      icon: 'fa-file-lines',
+      isLatest,
+    }
+  }
+
+  if (versionNum === 2) {
+    return {
+      label: 'Revision 1 (v2) — Round 1',
+      shortLabel: 'Revision 1',
+      badgeBg: '#F3E8FF',
+      badgeColor: '#6B21A8',
+      icon: 'fa-file-pen',
+      isLatest,
+    }
+  }
+
+  if (versionNum === 3) {
+    return {
+      label: 'Revision 2 (v3) — Round 2',
+      shortLabel: 'Revision 2',
+      badgeBg: '#EDE9FE',
+      badgeColor: '#5B21B6',
+      icon: 'fa-file-pen',
+      isLatest,
+    }
+  }
+
+  if (versionNum > 1) {
+    return {
+      label: `Revision ${versionNum - 1} (v${versionNum}) — Round ${versionNum - 1}`,
+      shortLabel: `Revision ${versionNum - 1}`,
+      badgeBg: '#F3E8FF',
+      badgeColor: '#6B21A8',
+      icon: 'fa-file-pen',
+      isLatest,
+    }
+  }
+
+  return {
+    label: 'Manuscript File',
+    shortLabel: 'File',
+    badgeBg: '#F4F5F7',
+    badgeColor: '#5A5E6B',
+    icon: 'fa-file',
+    isLatest,
+  }
+}
+
 export default function ManuscriptDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -400,24 +458,216 @@ export default function ManuscriptDetail() {
 
       {manuscript.files && manuscript.files.length > 0 && (
         <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>Files</h2>
-          <ul style={styles.fileList}>
-            {manuscript.files.map((file) => (
-              <li key={file.id} style={styles.fileItem}>
-                <span style={styles.fileName}>
-                  {file.original_filename || file.file_type}
-                </span>
-                <span style={styles.fileSize}>
-                  {file.file_size_bytes ? `${(file.file_size_bytes / 1024 / 1024).toFixed(2)} MB` : '—'}
-                </span>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <Button variant="secondary" size="sm" onClick={() => openFile(file.id, 'view_url')}>View</Button>
-                  <Button variant="primary" size="sm" onClick={() => openFile(file.id, 'download_url')}>Download</Button>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+            <h2 style={{ ...styles.sectionTitle, margin: 0 }}>
+              Manuscript Files ({manuscript.files.length})
+            </h2>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+              All uploaded versions &amp; revision files
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {manuscript.files.map((file, idx) => {
+              const info = getFileVersionInfo(file, manuscript)
+              const isFirstOrLatest = idx === 0 || info.isLatest
+              return (
+                <div
+                  key={file.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '14px 16px',
+                    border: '1px solid var(--color-rule-grey)',
+                    borderRadius: 'var(--radius-md)',
+                    background: isFirstOrLatest && info.label.includes('Revision') ? '#FAF7FF' : 'var(--color-surface)',
+                    gap: '16px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '8px',
+                        background: info.badgeBg,
+                        color: info.badgeColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '15px',
+                        flexShrink: 0,
+                        marginTop: '2px',
+                      }}
+                    >
+                      <i className={`fas ${info.icon}`} />
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            background: info.badgeBg,
+                            color: info.badgeColor,
+                            letterSpacing: '0.02em',
+                          }}
+                        >
+                          {info.label}
+                        </span>
+                        {isFirstOrLatest && (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              background: '#E8F5EC',
+                              color: '#2B7A4B',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <i className="fas fa-check" style={{ fontSize: '9px' }} /> Latest Version
+                          </span>
+                        )}
+                        {file.file_type && file.file_type !== 'manuscript' && (
+                          <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', textTransform: 'capitalize' }}>
+                            ({file.file_type.replace(/_/g, ' ')})
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 'var(--text-sm)',
+                          color: 'var(--color-ink-black)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {file.original_filename || file.file_type}
+                      </div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                        {file.file_size_bytes ? `${(file.file_size_bytes / 1024 / 1024).toFixed(2)} MB` : '—'}
+                        {file.uploaded_at && ` · Uploaded ${formatDate(file.uploaded_at)}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                    <Button variant="secondary" size="sm" onClick={() => openFile(file.id, 'view_url')}>
+                      <i className="fas fa-eye" style={{ marginRight: '6px' }} /> View
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={() => openFile(file.id, 'download_url')}>
+                      <i className="fas fa-download" style={{ marginRight: '6px' }} /> Download
+                    </Button>
+                  </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+              )
+            })}
+          </div>
           {fileError && <p style={{ marginTop: '12px', color: 'var(--color-danger)', fontSize: 'var(--text-sm)' }}>{fileError}</p>}
+        </div>
+      )}
+
+      {manuscript.revisions && manuscript.revisions.length > 0 && (
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Revision History &amp; Responses</h2>
+          {manuscript.revisions.map((rev) => (
+            <div
+              key={rev.id}
+              style={{
+                border: '1px solid var(--color-rule-grey)',
+                borderRadius: 'var(--radius-md)',
+                padding: '18px',
+                marginBottom: '16px',
+                background: rev.response_status === 'submitted' ? '#F8FAFC' : '#FFFDF5',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-ink-navy)' }}>
+                    Round {rev.round_number}
+                  </span>
+                  <StatusBadge status={rev.request_type === 'major' ? 'major_revision' : 'minor_revision'} />
+                  {rev.response_status === 'submitted' ? (
+                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#E8F5EC', color: '#2B7A4B' }}>
+                      <i className="fas fa-check-circle" style={{ marginRight: '4px' }} />
+                      Resubmitted {formatDate(rev.response_submitted_at)}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#FEF7E8', color: '#C48B1E' }}>
+                      <i className="fas fa-clock" style={{ marginRight: '4px' }} />
+                      Awaiting Author Response
+                    </span>
+                  )}
+                </div>
+                {rev.due_at && (
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+                    Due: {formatDate(rev.due_at)}
+                  </span>
+                )}
+              </div>
+
+              {rev.instructions && (
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    Editor Instructions
+                  </div>
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-black)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    {rev.instructions}
+                  </div>
+                </div>
+              )}
+
+              {rev.cover_letter && (
+                <div style={{ marginBottom: '12px', padding: '12px', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-rule-grey)' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    Author Cover Letter
+                  </div>
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-black)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    {rev.cover_letter}
+                  </div>
+                </div>
+              )}
+
+              {rev.response_summary && (
+                <div style={{ marginBottom: '12px', padding: '12px', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-rule-grey)' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    Author Response Summary
+                  </div>
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-black)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    {rev.response_summary}
+                  </div>
+                </div>
+              )}
+
+              {rev.reviewer_responses && rev.reviewer_responses.length > 0 && (
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>
+                    Point-by-Point Author Responses ({rev.reviewer_responses.length})
+                  </div>
+                  {rev.reviewer_responses.map((resp, idx) => (
+                    <div key={resp.id || idx} style={{ padding: '10px 12px', background: 'var(--color-surface)', borderRadius: '6px', border: '1px solid var(--color-rule-grey)', marginBottom: '6px', fontSize: 'var(--text-sm)' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--color-ink-navy)', marginBottom: '4px' }}>
+                        Response to Reviewer {idx + 1}
+                      </div>
+                      <div style={{ color: 'var(--color-ink-black)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                        {resp.author_response}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

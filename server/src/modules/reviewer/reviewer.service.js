@@ -20,8 +20,7 @@ export async function getInvitations(reviewerId) {
      WHERE ri.reviewer_id = $1 AND ri.response IS NULL
        AND NOT EXISTS (
          SELECT 1 FROM reviews r
-         WHERE r.manuscript_id = ri.manuscript_id
-           AND r.reviewer_id = $1
+         WHERE r.assignment_id = ri.assignment_id
            AND r.is_complete = true
        )
      ORDER BY ri.sent_at DESC`,
@@ -125,15 +124,15 @@ export async function respondToInvitation(invitationId, reviewerId, response, su
       throw new AppError('Response must be accepted or declined', 400)
     }
 
-    if (response === 'accepted') {
+    if (response === 'accepted' && invitation.assignment_id) {
       const priorReview = await client.query(
         `SELECT 1 FROM reviews
-         WHERE manuscript_id = $1 AND reviewer_id = $2 AND is_complete = true
+         WHERE assignment_id = $1 AND is_complete = true
          LIMIT 1`,
-        [invitation.manuscript_id, reviewerId]
+        [invitation.assignment_id]
       )
       if (priorReview.rowCount > 0) {
-        throw new AppError('You have already reviewed this manuscript', 400)
+        throw new AppError('You have already reviewed this assignment', 400)
       }
     }
 
@@ -310,12 +309,12 @@ export async function submitReview(assignmentId, reviewerId, reviewData) {
 
     const priorReview = await client.query(
       `SELECT 1 FROM reviews
-       WHERE manuscript_id = $1 AND reviewer_id = $2 AND is_complete = true
+       WHERE assignment_id = $1 AND is_complete = true
        LIMIT 1`,
-      [assignment.manuscript_id, reviewerId]
+      [assignmentId]
     )
     if (priorReview.rowCount > 0) {
-      throw new AppError('You have already reviewed this manuscript', 400)
+      throw new AppError('You have already submitted a review for this assignment', 400)
     }
 
     const reviewResult = await client.query(

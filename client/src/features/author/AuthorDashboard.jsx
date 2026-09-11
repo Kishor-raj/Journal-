@@ -78,8 +78,16 @@ export default function AuthorDashboard() {
     try { const draft = await createDraft(); navigate(`/author/submit/${draft.id}`) } catch { setCreating(false) }
   }
 
+  const handleKpiClick = (key) => {
+    if (key === 'revisionNeeded') navigate('/author/revisions')
+    else if (key === 'underReview') navigate('/author/track')
+    else if (key === 'drafts') navigate('/author/manuscripts')
+    else if (key === 'accepted') navigate('/author/manuscripts')
+  }
+
   const handleRowClick = (manuscript) => {
     if (manuscript.current_status === 'draft') navigate(`/author/submit/${manuscript.id}`)
+    else if (manuscript.current_status === 'revision_requested') navigate('/author/revisions')
     else navigate(`/author/manuscripts/${manuscript.id}`)
   }
 
@@ -106,6 +114,7 @@ export default function AuthorDashboard() {
         {KPI_CONFIG.map((kpi) => (
           <div
             key={kpi.key}
+            onClick={() => handleKpiClick(kpi.key)}
             onMouseEnter={() => setHoveredKpi(kpi.key)}
             onMouseLeave={() => setHoveredKpi(null)}
             style={{
@@ -115,7 +124,7 @@ export default function AuthorDashboard() {
               padding: '24px',
               position: 'relative',
               overflow: 'hidden',
-              cursor: 'default',
+              cursor: 'pointer',
               transition: 'box-shadow 150ms ease, transform 150ms ease',
               boxShadow: hoveredKpi === kpi.key ? 'var(--dash-shadow-md)' : 'var(--dash-shadow-sm)',
               transform: hoveredKpi === kpi.key ? 'translateY(-1px)' : 'none',
