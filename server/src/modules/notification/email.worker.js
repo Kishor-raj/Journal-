@@ -49,7 +49,24 @@ export async function processFailedEmails(limit = 25) {
   return { total: result.rows.length, processed }
 }
 
+export async function cancelOrphanedNotifications() {
+  // Cancel notifications whose manuscript was deleted — stops infinite FK-violation retry spam
+  const result = await pool.query(
+    `UPDATE email_notifications
+     SET status = 'cancelled', last_error = 'manuscript deleted'
+     WHERE status IN ('queued', 'failed', 'retrying')
+       AND manuscript_id IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM manuscripts WHERE id = email_notifications.manuscript_id)
+     RETURNING id`
+  )
+  if (result.rows.length > 0) {
+    console.warn(`[EMAIL_WORKER] Cancelled ${result.rows.length} orphaned notification(s) for deleted manuscripts`)
+  }
+  return result.rows.length
+}
+
 export async function processQueuedEmails(limit = 25) {
+  await cancelOrphanedNotifications()
   const result = await pool.query(
     `SELECT *
      FROM email_notifications

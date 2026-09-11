@@ -51,9 +51,7 @@ export async function markWebhookFailed(id, errorMessage) {
 }
 
 export async function queueEmailForProcessing(webhookEventId, payload) {
-  await pool.query(
-    `INSERT INTO workflow_logs (workflow_name, event_name, source, status, payload)
-     VALUES ('ai_email', 'webhook_received', 'hostinger', 'pending', $1)`,
-    [JSON.stringify({ webhook_event_id: webhookEventId, ...payload })]
-  )
+  // No-op: the AI email worker polls email_webhook_events directly via startAiEmailWorker().
+  // The event was already stored in email_webhook_events by storeWebhookEvent() above.
+  // Writing a duplicate entry into workflow_logs here serves no purpose.
 }
