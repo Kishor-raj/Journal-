@@ -277,7 +277,6 @@ function ArticleItem({ article, highlight, openAuthors }) {
 export default function CurrentIssue() {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
-  const [downloadHovered, setDownloadHovered] = useState(false)
   const location = useLocation()
 
   // Fetch real published articles
@@ -338,8 +337,9 @@ export default function CurrentIssue() {
         alignItems: 'start',
       }}>
         {/* Cover + Info Aside */}
-        <aside style={{ position: 'sticky', top: '116px', alignSelf: 'start' }}>
-          <div style={{ border: '1px solid #E6E1D6', padding: '10px', background: '#FFFFFF', boxShadow: '0 2px 10px rgba(11,27,58,0.04)' }}>
+        <aside style={{ position: 'sticky', top: '116px', alignSelf: 'start', display: 'flex', flexDirection: 'column' }}>
+          {/* Cover Image Box */}
+          <div style={{ border: '1px solid #E6E1D6', borderBottom: 'none', padding: '10px', background: '#FFFFFF', boxShadow: '0 2px 10px rgba(11,27,58,0.04)' }}>
             <img
               src="/cover-front.jpeg"
               alt="Current issue cover"
@@ -347,31 +347,12 @@ export default function CurrentIssue() {
             />
           </div>
 
-          <button
-            type="button"
-            onMouseEnter={() => setDownloadHovered(true)}
-            onMouseLeave={() => setDownloadHovered(false)}
-            onClick={() => alert('Downloading complete issue PDF...')}
-            style={{
-              fontFamily: 'Jost, sans-serif', fontSize: '13px',
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              border: '1px solid #0B1B3A',
-              color: downloadHovered ? '#FFFFFF' : '#0B1B3A',
-              background: downloadHovered ? '#0B1B3A' : 'transparent',
-              padding: '14px', textAlign: 'center',
-              marginTop: '16px', cursor: 'pointer', width: '100%',
-              fontWeight: 600, transition: 'background 0.15s, color 0.15s',
-            }}
-          >
-            Download Full Issue (PDF)
-          </button>
-
-          {/* Journal Metadata */}
-          <div style={{ marginTop: '24px', background: '#FFFFFF', border: '1px solid #E6E1D6', padding: '20px 22px' }}>
-            <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23', marginBottom: '12px', borderBottom: '1px solid #E6E1D6', paddingBottom: '8px' }}>
+          {/* Journal Metadata (Flush with Book Image, Zero Gap) */}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E6E1D6', padding: '24px 22px 28px', boxShadow: '0 2px 10px rgba(11,27,58,0.04)' }}>
+            <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23', marginBottom: '14px', borderBottom: '1px solid #E6E1D6', paddingBottom: '10px', fontWeight: 600 }}>
               Journal Information
             </div>
-            <div style={{ fontSize: '14px', color: '#3A4157', display: 'grid', gap: '8px' }}>
+            <div style={{ fontSize: '14px', color: '#3A4157', display: 'grid', gap: '10px', lineHeight: 1.5 }}>
               <div><strong>Journal:</strong> {JOURNAL_INFO.shortName}</div>
               <div><strong>Volume / Issue:</strong> {JOURNAL_INFO.volume}, {JOURNAL_INFO.issue}</div>
               <div><strong>Frequency:</strong> {JOURNAL_INFO.frequency}</div>

@@ -380,37 +380,33 @@ export default function Archives() {
         }}
       >
         
-        {/* Search & Filter Bar */}
+        {/* Search Bar (Full Width, No Filter Button) */}
         <div
           style={{
-            display: 'flex',
-            gap: '12px',
-            alignItems: 'stretch',
             marginBottom: '28px',
-            flexWrap: 'wrap',
             width: '100%',
           }}
         >
-          <div style={{ flex: '1 1 260px', position: 'relative', minWidth: '240px' }}>
+          <div style={{ width: '100%', position: 'relative' }}>
             <i
               className="fa-solid fa-magnifying-glass"
               style={{
                 position: 'absolute',
-                left: '16px',
+                left: '18px',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 color: '#6B7288',
-                fontSize: '14px',
+                fontSize: '15px',
               }}
             />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by title, author, keyword, code..."
+              placeholder="Search by title, author name, keyword, code..."
               style={{
                 width: '100%',
-                padding: '13px 16px 13px 44px',
+                padding: '14px 18px 14px 48px',
                 border: '1px solid #E6E1D6',
                 background: '#FFFFFF',
                 fontSize: '15px',
@@ -424,33 +420,6 @@ export default function Archives() {
               onBlur={e => { e.currentTarget.style.borderColor = '#E6E1D6' }}
             />
           </div>
-          <button
-            type="button"
-            onClick={() => {}}
-            style={{
-              background: '#0B1B3A',
-              color: '#FFFFFF',
-              fontFamily: 'Jost, sans-serif',
-              fontSize: '13px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              fontWeight: 600,
-              padding: '0 24px',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'background 0.15s',
-              height: '46px',
-              flexShrink: 0,
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#071228' }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#0B1B3A' }}
-          >
-            <i className="fa-solid fa-filter" /> Filter
-          </button>
         </div>
 
         {/* Volume Cards Listing */}
