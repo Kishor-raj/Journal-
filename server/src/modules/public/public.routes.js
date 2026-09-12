@@ -29,6 +29,16 @@ router.get('/published/:id/authors', async (req, res) => {
   res.json(authors)
 })
 
+// GET /api/public/published/:id/download — download original manuscript file
+router.get('/published/:id/download', async (req, res) => {
+  const articles = await publicService.getPublishedArticles()
+  const found = articles.find(a => String(a.id) === String(req.params.id))
+  if (found && found.download_url) {
+    return res.redirect(found.download_url)
+  }
+  res.status(404).json({ error: 'Manuscript file not found' })
+})
+
 // GET /api/public/verify/:token  — public certificate verification (no auth)
 router.get('/verify/:token', async (req, res) => {
   const verification = await getCertificateVerification(req.params.token)
