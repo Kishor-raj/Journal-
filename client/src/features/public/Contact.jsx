@@ -2,8 +2,8 @@ import { useState } from 'react'
 
 const CONTACTS = [
   { k: 'Publication', v: 'Asgard Research Publication' },
-  { k: 'Email', v: 'editor@asgardpublication.com', href: 'mailto:editor@asgardpublication.com' },
-  { k: 'Support Email', v: 'support@asgardpublication.com', href: 'mailto:support@asgardpublication.com' },
+  { k: 'Email', v: 'ceo@ijidcr-asgard.in', href: 'mailto:ceo@ijidcr-asgard.in' },
+  { k: 'Support Email', v: 'support@ijidcr-asgard.in', href: 'mailto:support@ijidcr-asgard.in' },
   { k: 'Website', v: 'www.asgardpublication.com', href: 'https://www.asgardpublication.com' },
 ]
 

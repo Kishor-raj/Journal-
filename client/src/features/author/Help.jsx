@@ -78,8 +78,8 @@ const LIFECYCLE_STEPS = [
 ]
 
 const CONTACT_INFO = [
-  { icon: 'fa-envelope',  label: 'General Inquiries', value: 'editorial@asgardpublications.com' },
-  { icon: 'fa-headset',   label: 'Technical Support',  value: 'support@asgardpublications.com' },
+  { icon: 'fa-envelope',  label: 'General Inquiries', value: 'ceo@ijidcr-asgard.in' },
+  { icon: 'fa-headset',   label: 'Technical Support',  value: 'support@ijidcr-asgard.in' },
   { icon: 'fa-clock',     label: 'Response Time',      value: '1–3 business days' },
   { icon: 'fa-calendar',  label: 'Office Hours',       value: 'Mon–Fri, 09:00–17:00 GMT' },
 ]

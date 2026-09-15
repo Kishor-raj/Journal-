@@ -92,7 +92,7 @@ export default function PublicLayout() {
             {!isCompact && <span>Peer-reviewed &amp; Open Access</span>}
           </div>
           <div style={{ display: 'flex', gap: '6px 26px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>editorial@asgardpublications.com</span>
+            <span>ceo@ijidcr-asgard.in</span>
             {!isCompact && <span style={{ color: '#C4A24C' }}>Indexed in 14 databases</span>}
           </div>
         </div>
