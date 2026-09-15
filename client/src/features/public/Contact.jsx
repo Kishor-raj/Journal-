@@ -4,7 +4,7 @@ import { contactService } from '../../services/contactService'
 const CONTACTS = [
   { k: 'Publication', v: 'Asgard Research Publication' },
   { k: 'Email', v: 'ceo@ijidcr-asgard.in', href: 'mailto:ceo@ijidcr-asgard.in' },
-  { k: 'Support Email', v: 'support@ijidcr-asgard.in', href: 'mailto:support@asgardpublication.com' },
+  { k: 'Support Email', v: 'support@ijidcr-asgard.in', href: 'mailto:support@ijidcr-asgard.in' },
   { k: 'Website', v: 'www.ijidcr-asgard.in', href: 'https://www.ijidcr-asgard.in' },
 ]
 
