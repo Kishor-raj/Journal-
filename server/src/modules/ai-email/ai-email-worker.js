@@ -14,6 +14,52 @@ const MAX_RETRY_ATTEMPTS = 3
 const RETRY_BACKOFF = [0, 30_000, 120_000]
 const AUTO_SEND_CATEGORIES = ['SUBMISSION_GUIDELINES', 'JOURNAL_INFORMATION', 'GENERAL_QUESTION', 'MANUSCRIPT_STATUS', 'REVISION_STATUS', 'REVIEW_STATUS']
 
+function extractReplyTo(data) {
+  if (!data || typeof data !== 'object') return null
+
+  const candidates = [
+    data?.reply_to,
+    data?.replyTo,
+    data?.reply_to_email,
+    data?.replyToEmail,
+    data?.headers?.['reply-to'],
+    data?.headers?.['Reply-To'],
+    data?.headers?.['reply_to'],
+  ].filter((v) => v !== null && v !== undefined)
+
+  for (const candidate of candidates) {
+    const email = extractCleanEmail(candidate)
+    if (email) return email
+  }
+
+  return null
+}
+
+function getAiReplyRecipient(emailData) {
+  if (!emailData || typeof emailData !== 'object') return null
+  return (
+    extractCleanEmail(emailData.reply_to_email) ||
+    extractCleanEmail(emailData.from_email) ||
+    null
+  )
+}
+
+function isJournalOwnMailbox(email) {
+  if (!email) return false
+  const cleaned = String(email).trim().toLowerCase()
+  const ownAddresses = [
+    env.CONTACT_RECIPIENT_EMAIL,
+    env.CONTACT_FROM_EMAIL,
+    env.EMAIL_FROM_ADDRESS,
+    env.EMAIL_REPLY_TO,
+    env.HOSTINGER_MAILBOX,
+  ]
+    .filter(Boolean)
+    .map((a) => extractCleanEmail(a).toLowerCase())
+
+  return ownAddresses.includes(cleaned)
+}
+
 export async function fetchAndStoreEmail(event) {
   const payload = event.payload
   const data = payload?.data || payload
@@ -62,16 +108,19 @@ export async function fetchAndStoreEmail(event) {
   const rawFrom = data?.from || 'unknown@unknown.com'
   const cleanFrom = extractCleanEmail(rawFrom) || rawFrom
 
+  const replyToEmail = extractReplyTo(data)
+
   let emailResult
   try {
     emailResult = await pool.query(
-      `INSERT INTO emails (thread_id, provider_message_id, message_id, in_reply_to, from_email, to_email, cc_email, subject, body_text, body_html, received_at, direction, raw_metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'inbound', $12)
+      `INSERT INTO emails (thread_id, provider_message_id, message_id, in_reply_to, from_email, reply_to_email, to_email, cc_email, subject, body_text, body_html, received_at, direction, raw_metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'inbound', $13)
        ON CONFLICT (provider_message_id) WHERE provider_message_id IS NOT NULL DO NOTHING
        RETURNING id`,
       [
         threadRecord.id, messageId, data?.message_id || data?.messageId || messageId, data?.in_reply_to || null,
-        cleanFrom, toArray, ccArray,
+        cleanFrom, replyToEmail,
+        toArray, ccArray,
         data?.subject || null, bodyText,
         bodyHtml, data?.date || data?.received_at || new Date().toISOString(),
         JSON.stringify(data),
@@ -340,13 +389,30 @@ export async function processOneEvent() {
       if (!env.AI_AUTO_REPLY_ENABLED) {
         console.warn(`[AI_EMAIL_WORKER] Auto-reply skipped for email ${emailId}: AI_AUTO_REPLY_ENABLED is false`)
       } else {
-        const emailRow = await pool.query(`SELECT from_email, to_email, subject, provider_message_id FROM emails WHERE id = $1`, [emailId])
+        const emailRow = await pool.query(`SELECT from_email, reply_to_email, to_email, subject, provider_message_id FROM emails WHERE id = $1`, [emailId])
         const threadRow = await pool.query(`SELECT provider_thread_id FROM email_threads WHERE id = $1`, [threadId])
         const emailData = emailRow.rows[0]
         const threadData = threadRow.rows[0]
 
         if (emailData) {
-          const cleanRecipient = extractCleanEmail(emailData.from_email)
+          const cleanRecipient = getAiReplyRecipient(emailData)
+          if (cleanRecipient && isJournalOwnMailbox(cleanRecipient)) {
+            await logAiEmailEvent({
+              workflowName: 'ai_email',
+              eventName: 'auto_reply_skipped',
+              source: 'hostinger',
+              status: 'skipped',
+              payload: {
+                email_id: emailId,
+                reason: 'reply_recipient_is_journal_mailbox',
+                recipient: cleanRecipient,
+              },
+            })
+            await client.query(`UPDATE email_webhook_events SET status = 'processed', processed_at = now() WHERE id = $1`, [event.id])
+            await client.query('COMMIT')
+            return { eventId: event.id, status: 'skipped', emailId, reason: 'reply_recipient_is_journal_mailbox' }
+          }
+
           const sendResult = await sendReplyViaHostinger({
             replyId: replyResult.replyId,
             threadId,
@@ -491,7 +557,7 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
     try {
       const failedReplies = await pool.query(
         `SELECT r.id AS reply_id, r.email_id, r.thread_id, r.draft_body, r.decision,
-                e.from_email, e.to_email, e.subject, e.provider_message_id,
+                e.from_email, e.reply_to_email, e.to_email, e.subject, e.provider_message_id,
                 t.provider_thread_id
          FROM ai_email_replies r
          JOIN emails e ON e.id = r.email_id
@@ -509,7 +575,12 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
 
       for (const row of failedReplies.rows) {
         if (!env.AI_AUTO_REPLY_ENABLED) break
-        const cleanRecipient = extractCleanEmail(row.from_email)
+        const cleanRecipient = getAiReplyRecipient(row)
+        if (cleanRecipient && isJournalOwnMailbox(cleanRecipient)) {
+          console.warn(`[AI_EMAIL_WORKER] Skipping retry for email ${row.email_id}: recipient ${cleanRecipient} is journal mailbox`)
+          await markReplyFailed(row.reply_id, 'Recipient is journal mailbox — skip')
+          continue
+        }
         console.log(`[AI_EMAIL_WORKER] Retrying failed auto-reply ${row.reply_id} for email ${row.email_id} -> ${cleanRecipient}`)
         const sendResult = await sendReplyViaHostinger({
           replyId: row.reply_id,
