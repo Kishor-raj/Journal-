@@ -96,7 +96,7 @@ export async function getSecurityLogs(filters = {}) {
   let query = `
     SELECT sl.*, u.display_name as actor_name
     FROM security_logs sl
-    LEFT JOIN users u ON u.id = sl.actor_user_id
+    LEFT JOIN users u ON u.id = sl.user_id
     WHERE 1=1
   `
   const params = []
@@ -108,7 +108,7 @@ export async function getSecurityLogs(filters = {}) {
   }
 
   if (actor_user_id) {
-    query += ` AND sl.actor_user_id = $${paramIndex++}`
+    query += ` AND sl.user_id = $${paramIndex++}`
     params.push(actor_user_id)
   }
 
@@ -136,7 +136,7 @@ export async function getSecurityLogs(filters = {}) {
     countParams.push(severity)
   }
   if (actor_user_id) {
-    countQuery += ` AND sl.actor_user_id = $${countParamIndex++}`
+    countQuery += ` AND sl.user_id = $${countParamIndex++}`
     countParams.push(actor_user_id)
   }
   const countResult = await pool.query(countQuery, countParams)

@@ -15,7 +15,7 @@ const testEmailLimiter = rateLimit({
   limit: 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Too many test emails sent, please try again later.', code: 'RATE_LIMITED' },
+  message: { error: 'Too many test emails sent, please try again in 15 minutes.', code: 'RATE_LIMITED' },
 })
 
 const resendNotificationLimiter = rateLimit({
@@ -23,7 +23,7 @@ const resendNotificationLimiter = rateLimit({
   limit: 20,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Too many resend attempts, please try again later.', code: 'RATE_LIMITED' },
+  message: { error: 'Too many resend attempts, please try again in 15 minutes.', code: 'RATE_LIMITED' },
 })
 
 async function writeAdminAudit({ actorId, action, entityType, entityId, oldValues, newValues, ip }) {
