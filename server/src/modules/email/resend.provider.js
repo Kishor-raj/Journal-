@@ -41,7 +41,7 @@ function normalizeProviderError(err, providerResultError) {
   return { errorMessage, isPermanent }
 }
 
-export async function sendViaResend({ to, subject, html, text, replyTo }) {
+export async function sendViaResend({ to, subject, html, text, replyTo, from, headers }) {
   const client = getClient()
 
   if (!client) {
@@ -55,12 +55,13 @@ export async function sendViaResend({ to, subject, html, text, replyTo }) {
 
   try {
     const result = await client.emails.send({
-      from: `${env.EMAIL_FROM_NAME} <${env.EMAIL_FROM_ADDRESS}>`,
+      from: from || `${env.EMAIL_FROM_NAME} <${env.EMAIL_FROM_ADDRESS}>`,
       to: Array.isArray(to) ? to : [to],
       subject,
       html: html || undefined,
       text: text || undefined,
       ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(headers && typeof headers === 'object' ? { headers } : {}),
     })
 
     if (result?.error) {

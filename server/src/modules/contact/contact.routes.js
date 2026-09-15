@@ -91,6 +91,7 @@ router.post('/',
 
     try {
       const recipient = env.CONTACT_RECIPIENT_EMAIL || env.EMAIL_REPLY_TO || env.EMAIL_FROM_ADDRESS
+      const fromEmail = env.CONTACT_FROM_EMAIL || env.EMAIL_FROM_ADDRESS
       if (recipient) {
         const { html, text } = buildNotificationEmail({ ...inquiry, institution: validation.data.institution, country: validation.data.country, message: validation.data.message })
         const result = await sendEmail({
@@ -99,6 +100,11 @@ router.post('/',
           html,
           text,
           replyTo: validation.data.email,
+          from: `${env.EMAIL_FROM_NAME || 'Asgard Publications'} <${fromEmail}>`,
+          headers: {
+            'X-Journal-Source': 'contact-form',
+            'X-Visitor-Email': validation.data.email,
+          },
           metadata: { contact_inquiry_id: inquiry.id },
         })
 

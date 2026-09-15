@@ -12,7 +12,7 @@ export class EmailValidationError extends Error {
   }
 }
 
-export async function sendEmail({ to, subject, html, text, replyTo, metadata }) {
+export async function sendEmail({ to, subject, html, text, replyTo, metadata, from, headers }) {
   if (!to || (Array.isArray(to) && to.length === 0)) {
     throw new EmailValidationError('Missing recipient')
   }
@@ -47,6 +47,8 @@ export async function sendEmail({ to, subject, html, text, replyTo, metadata }) 
     html,
     text,
     replyTo: replyTo || env.EMAIL_REPLY_TO || undefined,
+    from,
+    headers,
   })
 
   return {
