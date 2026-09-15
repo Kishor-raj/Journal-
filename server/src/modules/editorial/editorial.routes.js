@@ -11,7 +11,7 @@ const resendInvitationLimiter = rateLimit({
   limit: 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Too many resend attempts, please try again later.', code: 'RATE_LIMITED' },
+  message: { error: 'Too many resend attempts, please try again in 15 minutes.', code: 'RATE_LIMITED' },
 })
 
 router.get('/dashboard', authenticate, requireRole('editor'), async (req, res) => {
