@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { contactService } from '../../services/contactService'
 
 const CONTACTS = [
   { k: 'Publication', v: 'Asgard Research Publication' },
@@ -22,10 +23,11 @@ const ADDRESS_LINES = [
 const SUBJECTS = [
   'Manuscript Submission',
   'Editorial Inquiry',
-  'Reviewer Inquiry',
-  'Publication Ethics',
+  'Peer Review',
+  'Publication',
   'Technical Support',
   'General Inquiry',
+  'Other',
 ]
 
 const AUDIENCE_SECTIONS = [
@@ -137,18 +139,80 @@ export default function Contact() {
     subject: '',
     category: SUBJECTS[0],
     message: '',
+    website: '',
   })
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
   const [sendHovered, setSendHovered] = useState(false)
+
+  const TRIM_LIMITS = {
+    name: 200,
+    email: 254,
+    institution: 300,
+    country: 100,
+    subject: 300,
+    message: 5000,
+  }
 
   function handleChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    // In a real implementation, POST to the API
-    setSubmitted(true)
+    if (submitting) return
+
+    const requestBody = {
+      fullName: form.name.trim(),
+      email: form.email.trim(),
+      institution: form.institution.trim(),
+      country: form.country.trim(),
+      subject: form.subject.trim(),
+      category: form.category,
+      message: form.message.trim(),
+      website: form.website,
+    }
+
+    if (!requestBody.fullName || !requestBody.email || !requestBody.subject || !requestBody.category || !requestBody.message) {
+      setError('Please fill in all required fields.')
+      return
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(requestBody.email)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+    if (requestBody.message.length > TRIM_LIMITS.message) {
+      setError(`Message must not exceed ${TRIM_LIMITS.message} characters.`)
+      return
+    }
+
+    setSubmitting(true)
+    setError('')
+    try {
+      await contactService.submitInquiry(requestBody)
+      setSubmitted(true)
+      setForm({
+        name: '',
+        email: '',
+        institution: '',
+        country: '',
+        subject: '',
+        category: SUBJECTS[0],
+        message: '',
+        website: '',
+      })
+    } catch (err) {
+      const serverErrors = err?.response?.data?.error
+      if (Array.isArray(serverErrors) && serverErrors.length > 0) {
+        setError(serverErrors[0])
+      } else {
+        setError('Unable to submit your inquiry. Please try again later.')
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -198,33 +262,47 @@ export default function Contact() {
           {submitted ? (
             <div style={{ padding: '32px 0', textAlign: 'center' }}>
               <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '28px', color: '#0B1B3A', marginBottom: '14px' }}>
-                Inquiry submitted
+                ✓ Your inquiry has been submitted successfully.
               </div>
               <p style={{ fontSize: '16.5px', color: '#3A4157', lineHeight: 1.7 }}>
-                Thank you for getting in touch. We aim to respond to all inquiries within 2-5 business days.
+                Our Editorial Office will respond as soon as possible.
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
+              {error && (
+                <div role="alert" style={{
+                  background: '#FDEDEC',
+                  border: '1px solid #E6B3AD',
+                  color: '#A23B32',
+                  padding: '12px 16px',
+                  fontSize: '14.5px',
+                  lineHeight: 1.5,
+                  marginBottom: '22px',
+                }}>
+                  {error}
+                </div>
+              )}
+
               <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#0B1B3A', margin: '0 0 16px' }}>
                 Personal Information
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '22px', marginBottom: '22px' }}>
                 <div>
-                  <FieldLabel>Full name</FieldLabel>
-                  <StyledInput name="name" value={form.name} onChange={handleChange} required autoComplete="name" />
+                  <FieldLabel>Full name *</FieldLabel>
+                  <StyledInput name="name" value={form.name} onChange={handleChange} required autoComplete="name" maxLength={200} />
                 </div>
                 <div>
-                  <FieldLabel>Email</FieldLabel>
-                  <StyledInput type="email" name="email" value={form.email} onChange={handleChange} required autoComplete="email" />
+                  <FieldLabel>Email *</FieldLabel>
+                  <StyledInput type="email" name="email" value={form.email} onChange={handleChange} required autoComplete="email" maxLength={254} />
                 </div>
                 <div>
                   <FieldLabel>Institution / Organization</FieldLabel>
-                  <StyledInput name="institution" value={form.institution} onChange={handleChange} autoComplete="organization" />
+                  <StyledInput name="institution" value={form.institution} onChange={handleChange} autoComplete="organization" maxLength={300} />
                 </div>
                 <div>
                   <FieldLabel>Country</FieldLabel>
-                  <StyledInput name="country" value={form.country} onChange={handleChange} autoComplete="country-name" />
+                  <StyledInput name="country" value={form.country} onChange={handleChange} autoComplete="country-name" maxLength={100} />
                 </div>
               </div>
 
@@ -233,11 +311,11 @@ export default function Contact() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '22px', marginBottom: '22px' }}>
                 <div>
-                  <FieldLabel>Subject</FieldLabel>
-                  <StyledInput name="subject" value={form.subject} onChange={handleChange} required />
+                  <FieldLabel>Subject *</FieldLabel>
+                  <StyledInput name="subject" value={form.subject} onChange={handleChange} required maxLength={300} />
                 </div>
                 <div>
-                  <FieldLabel>Category</FieldLabel>
+                  <FieldLabel>Category *</FieldLabel>
                   <StyledSelect name="category" value={form.category} onChange={handleChange}>
                     {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
                   </StyledSelect>
@@ -245,12 +323,18 @@ export default function Contact() {
               </div>
 
               <div style={{ marginBottom: '28px' }}>
-                <FieldLabel>Message</FieldLabel>
-                <StyledTextarea name="message" rows={7} value={form.message} onChange={handleChange} required />
+                <FieldLabel>Message *</FieldLabel>
+                <StyledTextarea name="message" rows={7} value={form.message} onChange={handleChange} required maxLength={5000} />
+              </div>
+
+              <div style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }} aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input type="text" name="website" id="website" value={form.website} onChange={handleChange} tabIndex={-1} autoComplete="off" />
               </div>
 
               <button
                 type="submit"
+                disabled={submitting}
                 onMouseEnter={() => setSendHovered(true)}
                 onMouseLeave={() => setSendHovered(false)}
                 style={{
@@ -262,11 +346,12 @@ export default function Contact() {
                   color: '#FFFFFF',
                   padding: '17px 36px',
                   border: 'none',
-                  cursor: 'pointer',
+                  cursor: submitting ? 'wait' : 'pointer',
+                  opacity: submitting ? 0.7 : 1,
                   transition: 'background 0.15s',
                 }}
               >
-                Submit inquiry
+                {submitting ? 'SUBMITTING...' : 'Submit inquiry'}
               </button>
             </form>
           )}
