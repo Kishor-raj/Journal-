@@ -214,13 +214,16 @@ export async function getDashboardStats(editorId) {
      JOIN editorial_assignments ea ON ea.manuscript_id = m.id
      WHERE ea.editor_id = $1
        AND ea.completed_at IS NULL
-       AND m.current_status = 'under_review'
+       AND m.current_status IN ('under_review', 'resubmitted')
        AND NOT EXISTS (
-         SELECT 1 FROM editorial_decisions ed WHERE ed.manuscript_id = m.id
+         SELECT 1 FROM revision_requests rr
+         WHERE rr.manuscript_id = m.id AND rr.round_number = m.revision_round
        )
        AND EXISTS (
          SELECT 1 FROM reviews r
-         WHERE r.manuscript_id = m.id AND r.is_complete = true
+         WHERE r.manuscript_id = m.id
+           AND r.round_number = m.revision_round
+           AND r.is_complete = true
        )
      ORDER BY m.submitted_at ASC`,
     [editorId]
@@ -378,9 +381,10 @@ export async function getPendingDecisions(editorId) {
      JOIN editorial_assignments ea ON ea.manuscript_id = m.id
      WHERE ea.editor_id = $1
        AND ea.completed_at IS NULL
-       AND m.current_status = 'under_review'
+       AND m.current_status IN ('under_review', 'resubmitted')
        AND NOT EXISTS (
-         SELECT 1 FROM editorial_decisions ed WHERE ed.manuscript_id = m.id
+         SELECT 1 FROM revision_requests rr
+         WHERE rr.manuscript_id = m.id AND rr.round_number = m.revision_round
        )
        AND EXISTS (
          SELECT 1 FROM reviews r
@@ -500,7 +504,14 @@ export async function getManuscript(manuscriptId) {
   )
 
   const filesResult = await pool.query(
-    `SELECT * FROM manuscript_files WHERE manuscript_id = $1 ORDER BY uploaded_at`,
+    `SELECT mf.*,
+            mv.version_number,
+            mv.version_type,
+            COALESCE(mv.is_current, false) AS is_current_version
+     FROM manuscript_files mf
+     LEFT JOIN manuscript_versions mv ON mv.id = mf.version_id
+     WHERE mf.manuscript_id = $1
+     ORDER BY COALESCE(mv.version_number, 1) DESC, mf.uploaded_at DESC`,
     [manuscriptId]
   )
 
@@ -509,7 +520,34 @@ export async function getManuscript(manuscriptId) {
      FROM reviews r
      LEFT JOIN users u ON u.id = r.reviewer_id
      WHERE r.manuscript_id = $1
-     ORDER BY r.submitted_at`,
+     ORDER BY r.round_number ASC, r.submitted_at ASC`,
+    [manuscriptId]
+  )
+
+  const revisionsResult = await pool.query(
+    `SELECT rr.*, ed.decision, ed.comments_to_author AS decision_letter,
+            rr_resp.id AS response_id, rr_resp.cover_letter, rr_resp.response_summary,
+            rr_resp.submitted_at AS response_submitted_at, rr_resp.status AS response_status,
+            rr_resp.manuscript_version_id
+     FROM revision_requests rr
+     LEFT JOIN editorial_decisions ed ON ed.id = rr.editorial_decision_id
+     LEFT JOIN revision_responses rr_resp ON rr_resp.revision_request_id = rr.id
+     WHERE rr.manuscript_id = $1
+     ORDER BY rr.round_number ASC`,
+    [manuscriptId]
+  )
+
+  const commentResponsesResult = await pool.query(
+    `SELECT rcr.*, rr_resp.revision_request_id
+     FROM reviewer_comment_responses rcr
+     JOIN revision_responses rr_resp ON rr_resp.id = rcr.revision_response_id
+     JOIN revision_requests rr ON rr.id = rr_resp.revision_request_id
+     WHERE rr.manuscript_id = $1`,
+    [manuscriptId]
+  )
+
+  const versionsResult = await pool.query(
+    `SELECT * FROM manuscript_versions WHERE manuscript_id = $1 ORDER BY version_number ASC`,
     [manuscriptId]
   )
 
@@ -518,6 +556,11 @@ export async function getManuscript(manuscriptId) {
     authors: authorsResult.rows,
     files: filesResult.rows,
     reviews: reviewsResult.rows,
+    revisions: revisionsResult.rows.map((rev) => ({
+      ...rev,
+      reviewer_responses: commentResponsesResult.rows.filter((cr) => cr.revision_request_id === rev.id),
+    })),
+    versions: versionsResult.rows,
   }
 }
 
@@ -605,7 +648,9 @@ export async function getEligibleReviewers(manuscriptId) {
        )
        AND NOT EXISTS (
          SELECT 1 FROM reviewer_assignments ra
+         JOIN manuscripts m ON m.id = ra.manuscript_id
          WHERE ra.manuscript_id = $2 AND ra.reviewer_id = u.id
+           AND ra.round_number = m.revision_round
            AND ra.assignment_status IN ('invited', 'accepted', 'completed')
        )
      ORDER BY proficiency_level DESC, name ASC`,
@@ -669,9 +714,11 @@ export async function inviteReviewer(manuscriptId, editorId, reviewerId, deadlin
     }
 
     const existingInvitation = await client.query(
-      `SELECT 1 FROM reviewer_invitations
-       WHERE manuscript_id = $1 AND reviewer_id = $2 AND response IS NULL`,
-      [manuscriptId, reviewerId]
+      `SELECT 1 FROM reviewer_invitations ri
+       JOIN reviewer_assignments ra ON ra.id = ri.assignment_id
+       WHERE ri.manuscript_id = $1 AND ri.reviewer_id = $2 AND ri.response IS NULL
+         AND ra.round_number = $3`,
+      [manuscriptId, reviewerId, currentRound]
     )
 
     if (existingInvitation.rowCount > 0) {

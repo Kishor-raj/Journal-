@@ -208,6 +208,40 @@ export default function DecisionPanel() {
         subtitle={`#${manuscript.submission_number} — ${manuscript.title || 'Untitled'}`}
       />
 
+      {manuscript.revisions && manuscript.revisions.length > 0 && (
+        <div style={{ ...styles.reviewCard, marginBottom: '24px', background: '#F8FAFC' }}>
+          <h3 style={{ ...styles.reviewerName, fontSize: '15px', marginBottom: '12px' }}>
+            <i className="fas fa-file-pen" style={{ marginRight: '8px', color: 'var(--color-info, #2E6B9E)' }} />
+            Author Revision Responses
+          </h3>
+          {manuscript.revisions.map((rev) => (
+            <div key={rev.id} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--color-rule-grey)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <strong>Round {rev.round_number}</strong>
+                <StatusBadge status={rev.request_type === 'major' ? 'major_revision' : 'minor_revision'} />
+                {rev.response_status === 'submitted' && (
+                  <span style={{ fontSize: '11px', color: '#2B7A4B', fontWeight: 600 }}>
+                    (Resubmitted {formatDate(rev.response_submitted_at)})
+                  </span>
+                )}
+              </div>
+              {rev.cover_letter && (
+                <div style={{ fontSize: '13px', marginBottom: '4px' }}>
+                  <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Cover Letter: </span>
+                  {rev.cover_letter}
+                </div>
+              )}
+              {rev.response_summary && (
+                <div style={{ fontSize: '13px' }}>
+                  <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>Response Summary: </span>
+                  {rev.response_summary}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div style={styles.reviewsGrid}>
         {reviews.length === 0 ? (
           <div style={{ ...styles.reviewCard, gridColumn: '1 / -1' }}>
@@ -217,9 +251,16 @@ export default function DecisionPanel() {
           reviews.map((review, idx) => (
             <div key={review.id || idx} style={styles.reviewCard}>
               <div style={styles.reviewHeader}>
-                <h3 style={styles.reviewerName}>
-                  Reviewer {idx + 1}
-                </h3>
+                <div>
+                  <h3 style={styles.reviewerName}>
+                    Reviewer {idx + 1}
+                  </h3>
+                  {review.round_number && (
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                      Round {review.round_number}
+                    </span>
+                  )}
+                </div>
                 <span style={styles.reviewDate}>
                   {formatDate(review.submitted_at)}
                 </span>

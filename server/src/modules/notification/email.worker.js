@@ -2,6 +2,8 @@ import pool from '../../config/db.js'
 import { enqueueNotification, getNotificationTemplates } from './notification.service.js'
 import { processDraftReminders } from './manuscript-notification.service.js'
 import { MAX_RETRY_ATTEMPTS, RETRY_BACKOFF } from './notification.events.js'
+import { processPendingWebhooks } from '../ai-email/ai-email.controller.js'
+import { startAiEmailWorker } from '../ai-email/ai-email-worker.js'
 
 const DEFAULT_POLL_INTERVAL_MS = 30 * 1000
 
@@ -47,7 +49,24 @@ export async function processFailedEmails(limit = 25) {
   return { total: result.rows.length, processed }
 }
 
+export async function cancelOrphanedNotifications() {
+  // Cancel notifications whose manuscript was deleted — stops infinite FK-violation retry spam
+  const result = await pool.query(
+    `UPDATE email_notifications
+     SET status = 'cancelled', last_error = 'manuscript deleted'
+     WHERE status IN ('queued', 'failed', 'retrying')
+       AND manuscript_id IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM manuscripts WHERE id = email_notifications.manuscript_id)
+     RETURNING id`
+  )
+  if (result.rows.length > 0) {
+    console.warn(`[EMAIL_WORKER] Cancelled ${result.rows.length} orphaned notification(s) for deleted manuscripts`)
+  }
+  return result.rows.length
+}
+
 export async function processQueuedEmails(limit = 25) {
+  await cancelOrphanedNotifications()
   const result = await pool.query(
     `SELECT *
      FROM email_notifications
@@ -132,7 +151,7 @@ export async function validateEmailTemplates() {
   return { total_templates: templates.length, issues }
 }
 
-export async function startDraftReminderScheduler({ intervalMs = 6 * 60 * 60 * 1000, reminderAfterDays = 3, cooldownDays = 7, enabled = true } = {}) {
+export function startDraftReminderScheduler({ intervalMs = 6 * 60 * 60 * 1000, reminderAfterDays = 3, cooldownDays = 7, enabled = true } = {}) {
   if (!enabled) {
     console.log('[DRAFT_REMINDER] Disabled')
     return null
@@ -170,12 +189,53 @@ export async function startDraftReminderScheduler({ intervalMs = 6 * 60 * 60 * 1
 export function startBackgroundJobs(options = {}) {
   const emailWorker = startEmailWorker(options.emailWorker)
   const draftScheduler = startDraftReminderScheduler(options.draftReminder)
+  const webhookWorker = startWebhookEventWorker({ ...options.webhookEvent, enabled: false })
+  const aiEmailWorker = startAiEmailWorker(options.aiEmail)
 
   return {
     stop() {
       if (emailWorker) emailWorker.stop()
       if (draftScheduler) draftScheduler.stop()
+      if (webhookWorker) webhookWorker.stop()
+      if (aiEmailWorker) aiEmailWorker.stop()
       console.log('[BACKGROUND_JOBS] All background jobs stopped')
+    },
+  }
+}
+
+export function startWebhookEventWorker({ pollIntervalMs = 15_000, enabled = true } = {}) {
+  if (!enabled) {
+    console.log('[WEBHOOK_EVENT_WORKER] Disabled')
+    return null
+  }
+
+  let running = false
+  let stopFlag = false
+  let timer = null
+
+  const tick = async () => {
+    if (running || stopFlag) return
+    running = true
+    try {
+      const result = await processPendingWebhooks(10)
+      if (result.total > 0) {
+        console.log(`[WEBHOOK_EVENT_WORKER] Processed ${result.total} pending webhook events`)
+      }
+    } catch (err) {
+      console.error('[WEBHOOK_EVENT_WORKER] Tick error:', err.message)
+    } finally {
+      running = false
+    }
+  }
+
+  timer = setInterval(tick, pollIntervalMs)
+  tick()
+
+  return {
+    stop() {
+      stopFlag = true
+      if (timer) clearInterval(timer)
+      console.log('[WEBHOOK_EVENT_WORKER] Stopped')
     },
   }
 }

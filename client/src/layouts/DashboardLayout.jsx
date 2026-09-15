@@ -21,6 +21,7 @@ const NAV = {
         label: 'Management',
         items: [
           { to: '/admin/users', label: 'Users', icon: 'fa-users' },
+          { to: '/admin/contact-inquiries', label: 'Contact Inquiries', icon: 'fa-envelope-open-text' },
         ],
       },
       {

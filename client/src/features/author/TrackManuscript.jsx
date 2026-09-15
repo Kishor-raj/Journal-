@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { getMyManuscripts, getStatusHistory } from './services/manuscriptService'
 
 /* ─── Workflow pipeline stages ───────────────────────────────────────────── */
@@ -46,7 +46,7 @@ const PIPELINE = [
     label: 'Final Decision',
     sublabel: 'Editor reviewing all reports',
     icon: 'fa-gavel',
-    statuses: ['revision_requested', 'resubmitted'],
+    statuses: ['revision_requested'],
     color: '#7C3AED',
     bg: '#F3E8FF',
   },
@@ -67,8 +67,9 @@ const TERMINAL_STATUSES = ['accepted', 'published', 'rejected', 'desk_rejected',
 function resolveActiveStep(status) {
   if (['draft'].includes(status)) return -1           // not submitted
   if (status === 'submitted') return 1                // at Moderator step
+  if (status === 'resubmitted') return 2              // at Editor step (revision received)
   if (status === 'under_review') return 3             // at Reviewer step
-  if (['revision_requested', 'resubmitted'].includes(status)) return 4  // Final Decision
+  if (status === 'revision_requested') return 2       // at Editor / Revision step
   if (TERMINAL_STATUSES.includes(status)) return 5   // Outcome
   return 2                                            // default: Editor
 }
@@ -94,8 +95,8 @@ function humanStatus(s) {
 }
 
 /* ─── Single manuscript tracker card ─────────────────────────────────────── */
-function ManuscriptTracker({ manuscript }) {
-  const [expanded, setExpanded] = useState(false)
+function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const [history, setHistory]   = useState(null)
   const [loadingHistory, setLoadingHistory] = useState(false)
   const navigate = useNavigate()
@@ -116,6 +117,13 @@ function ManuscriptTracker({ manuscript }) {
       setLoadingHistory(false)
     }
   }, [manuscript.id, history, loadingHistory])
+
+  useEffect(() => {
+    if (defaultExpanded) {
+      setExpanded(true)
+      loadHistory()
+    }
+  }, [defaultExpanded, loadHistory])
 
   const handleToggle = () => {
     const next = !expanded
@@ -294,14 +302,39 @@ function ManuscriptTracker({ manuscript }) {
             }}>
               <i className={`fas ${PIPELINE[activeStep]?.icon || 'fa-circle-info'}`}
                 style={{ color: PIPELINE[activeStep]?.color || '#1565C0', fontSize: '18px' }} />
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: PIPELINE[activeStep]?.color || '#1565C0' }}>
-                  Currently at: {PIPELINE[activeStep]?.label}
+                  {manuscript.current_status === 'resubmitted'
+                    ? `Revision Received (Round ${manuscript.revision_round ? Math.max(1, manuscript.revision_round - 1) : 1})`
+                    : `Currently at: ${PIPELINE[activeStep]?.label}`}
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--dash-text-muted)', marginTop: '2px' }}>
-                  {PIPELINE[activeStep]?.sublabel}
+                  {manuscript.current_status === 'resubmitted'
+                    ? 'Your revision response and files have been received. Editorial evaluation is in progress.'
+                    : PIPELINE[activeStep]?.sublabel}
                 </div>
               </div>
+              {manuscript.current_status === 'revision_requested' && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigate('/author/revisions') }}
+                  style={{
+                    background: '#7C3AED',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 14px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <i className="fas fa-rotate" /> Submit Revision
+                </button>
+              )}
             </div>
           )}
 
@@ -392,9 +425,10 @@ function ManuscriptTracker({ manuscript }) {
 
 /* ─── Main Page ───────────────────────────────────────────────────────────── */
 export default function TrackManuscript() {
+  const { id: targetId } = useParams()
   const [manuscripts, setManuscripts] = useState([])
   const [loading, setLoading]         = useState(true)
-  const [filter, setFilter]           = useState('active')   // 'all' | 'active' | 'terminal'
+  const [filter, setFilter]           = useState(targetId ? 'all' : 'active')   // 'all' | 'active' | 'terminal'
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -407,6 +441,7 @@ export default function TrackManuscript() {
   const submitted = manuscripts.filter((m) => m.current_status !== 'draft')
 
   const filtered = submitted.filter((m) => {
+    if (targetId && m.id === targetId) return true
     if (filter === 'active')   return !TERMINAL_STATUSES.includes(m.current_status)
     if (filter === 'terminal') return TERMINAL_STATUSES.includes(m.current_status)
     return true
@@ -530,7 +565,11 @@ export default function TrackManuscript() {
       )}
 
       {!loading && filtered.map((m) => (
-        <ManuscriptTracker key={m.id} manuscript={m} />
+        <ManuscriptTracker
+          key={m.id}
+          manuscript={m}
+          defaultExpanded={m.id === targetId}
+        />
       ))}
     </div>
   )
