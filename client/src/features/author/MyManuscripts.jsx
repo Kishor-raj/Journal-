@@ -126,13 +126,6 @@ export default function MyManuscripts() {
   }
 
   const handleNewSubmission = async () => {
-    const drafts = manuscripts.filter((m) => m.current_status === 'draft')
-    const emptyDraft = drafts.find((d) => !d.title || d.title.trim() === '')
-    if (emptyDraft) {
-      navigate(`/author/submit/${emptyDraft.id}`)
-      return
-    }
-
     setCreating(true)
     try {
       const draft = await createDraft()

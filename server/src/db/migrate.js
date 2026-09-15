@@ -12,10 +12,13 @@ const MIGRATIONS_DIR = path.resolve(import.meta.dirname, 'migrations')
 async function ensureSchemaMigrations() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
-      version VARCHAR(10) PRIMARY KEY,
+      version VARCHAR(255) PRIMARY KEY,
       applied_at TIMESTAMPTZ DEFAULT now()
     )
   `)
+  await pool.query(`
+    ALTER TABLE schema_migrations ALTER COLUMN version TYPE VARCHAR(255);
+  `).catch(() => {})
 }
 
 async function getAppliedMigrations() {
@@ -35,8 +38,18 @@ async function migrate() {
   const files = getMigrationFiles()
 
   for (const file of files) {
-    const version = file.split('_')[0]
-    if (applied.includes(version)) continue
+    const key = file.replace(/\.sql$/, '')
+    const shortVersion = file.split('_')[0]
+
+    if (applied.includes(key) || applied.includes(file)) {
+      continue
+    }
+
+    // Check if applied under legacy shortVersion when only one migration had that prefix
+    const matchingShort = files.filter(f => f.startsWith(`${shortVersion}_`))
+    if (matchingShort.length === 1 && applied.includes(shortVersion)) {
+      continue
+    }
 
     console.log(`Applying migration: ${file}`)
     const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8')
@@ -44,7 +57,10 @@ async function migrate() {
     await pool.query('BEGIN')
     try {
       await pool.query(sql)
-      await pool.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version])
+      await pool.query(
+        'INSERT INTO schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING',
+        [key]
+      )
       await pool.query('COMMIT')
       console.log(`  ✓ Applied ${file}`)
     } catch (err) {

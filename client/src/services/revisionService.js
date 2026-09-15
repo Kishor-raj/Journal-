@@ -1,7 +1,7 @@
 import apiClient from './apiClient'
 
-export function getMyRevisions() {
-  return apiClient.get('/revisions/mine')
+export function getMyRevisions(status = 'pending') {
+  return apiClient.get(`/revisions/mine?status=${encodeURIComponent(status)}`)
 }
 
 export function getRevisionRequest(requestId) {
