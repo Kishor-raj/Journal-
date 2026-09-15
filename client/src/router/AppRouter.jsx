@@ -29,6 +29,7 @@ import AdminDashboard from '../features/admin/AdminDashboard'
 import UserManagement from '../features/admin/UserManagement'
 import AuditLogs from '../features/admin/AuditLogs'
 import JournalSettings from '../features/admin/JournalSettings'
+import ContactInquiries from '../features/admin/ContactInquiries'
 
 import NotificationHistory from '../features/admin/notifications/NotificationHistory'
 import NotificationDetail from '../features/admin/notifications/NotificationDetail'
@@ -108,6 +109,8 @@ function AppRouter() {
         <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>} />
         <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRoles={['admin']}><AuditLogs /></ProtectedRoute>} />
+        <Route path="/admin/contact-inquiries" element={<ProtectedRoute allowedRoles={['admin']}><ContactInquiries /></ProtectedRoute>} />
+        <Route path="/admin/contact-inquiries/:id" element={<ProtectedRoute allowedRoles={['admin']}><ContactInquiries /></ProtectedRoute>} />
         <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={['admin']}><NotificationHistory /></ProtectedRoute>} />
         <Route path="/admin/notifications/:id" element={<ProtectedRoute allowedRoles={['admin']}><NotificationDetail /></ProtectedRoute>} />
         <Route path="/admin/email-templates" element={<ProtectedRoute allowedRoles={['admin']}><EmailTemplates /></ProtectedRoute>} />
