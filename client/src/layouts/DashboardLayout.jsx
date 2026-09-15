@@ -216,6 +216,7 @@ function NavItem({ item, collapsed }) {
   return (
     <NavLink
       to={item.to}
+      viewTransition
       end
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -288,8 +289,9 @@ function SectionLabel({ label, collapsed }) {
    DASHBOARD LAYOUT
    ═══════════════════════════════════════════════════════════════════════════ */
 export default function DashboardLayout() {
-  const { user, logout } = useAuth()
+  const { user, logout, loading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -305,7 +307,9 @@ export default function DashboardLayout() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  const cfg = user ? (NAV[user.role] ?? null) : null
+  // Predict role from URL if user is not loaded yet, to avoid sidebar flash
+  const predictedRole = user?.role || location.pathname.split('/')[1]
+  const cfg = NAV[predictedRole] ?? NAV[user?.role] ?? null
   const isCollapsed = !isMobile && collapsed
 
   async function handleLogout() {
@@ -464,7 +468,19 @@ export default function DashboardLayout() {
           {/* Right */}
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px', minWidth: 0 }}>
             {/* Bell */}
-            <button type="button" aria-label="Notifications" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D9A94A', position: 'relative', padding: '4px', display: 'flex' }}>
+            <button 
+              type="button" 
+              className="bell-shake"
+              aria-label="Notifications" 
+              onClick={() => {
+                if (predictedRole) {
+                  const notifyPath = predictedRole === 'reviewer' ? '/reviewer/dashboard' : `/${predictedRole}/notifications`;
+                  // We add viewTransition inside navigate for react-router v7 if we want smooth transition, but global viewTransition is often on links.
+                  navigate(notifyPath, { viewTransition: true });
+                }
+              }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D9A94A', position: 'relative', padding: '4px', display: 'flex' }}
+            >
               <i className="fas fa-bell" style={{ fontSize: '18px' }} />
               <span style={{ width: '8px', height: '8px', background: '#F59E0B', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px', border: '1.5px solid #1B2A4A' }} />
             </button>
@@ -488,8 +504,18 @@ export default function DashboardLayout() {
         </header>
 
         {/* Page outlet */}
-        <main style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <Outlet />
+        <main style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', viewTransitionName: 'dashboard-main' }}>
+          {loading ? (
+            <div style={{ height: '100%', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid rgba(196,146,46,0.2)', borderTopColor: '#C4922E', animation: 'auth-spin 0.8s linear infinite' }} />
+            </div>
+          ) : !user ? (
+            <Navigate to="/login" replace />
+          ) : (
+            <div style={{ animation: 'fade-in 0.3s ease-out' }}>
+              <Outlet />
+            </div>
+          )}
         </main>
       </div>
     </div>
