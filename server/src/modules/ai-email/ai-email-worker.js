@@ -428,7 +428,7 @@ export async function processOneEvent() {
             await markReplySent(replyResult.replyId, sendResult.providerMessageId)
             await logAiEmailEvent({ workflowName: 'ai_email', eventName: 'auto_reply_sent', status: 'success',
               payload: { reply_id: replyResult.replyId, email_id: emailId } })
-            console.log(`[AI_EMAIL_WORKER] Auto-reply sent for email ${emailId} -> ${emailData.from_email}`)
+            console.log(`[AI_EMAIL_WORKER] Auto-reply sent for email ${emailId} -> ${cleanRecipient}`)
           } else {
             await markReplyFailed(replyResult.replyId, sendResult.error)
             console.error(`[AI_EMAIL_WORKER] Auto-reply send failed for email ${emailId}: ${sendResult.error}`)
