@@ -35,13 +35,65 @@ function extractReplyTo(data) {
   return null
 }
 
+const CONTACT_EMAIL_PATTERN = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
+
+function extractContactInquiryEmail({ subject, bodyText }) {
+  const text = String(bodyText || '')
+  const subj = String(subject || '')
+
+  const isContactInquiry =
+    subj.toLowerCase().includes('new contact inquiry') ||
+    text.toLowerCase().includes('new contact inquiry')
+
+  if (!isContactInquiry) return null
+
+  const match = text.match(
+    /^Email:\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\s*$/im
+  )
+
+  return match ? extractCleanEmail(match[1]) : null
+}
+
+function extractReplyToFromMetadata(rawMetadata) {
+  if (!rawMetadata || typeof rawMetadata !== 'object') return null
+
+  const candidates = [
+    rawMetadata.reply_to,
+    rawMetadata.replyTo,
+    rawMetadata.reply_to_email,
+    rawMetadata.replyToEmail,
+    rawMetadata.headers?.['reply-to'],
+    rawMetadata.headers?.['Reply-To'],
+    rawMetadata.headers?.['reply_to'],
+  ]
+
+  for (const candidate of candidates) {
+    const email = extractCleanEmail(candidate)
+    if (email && CONTACT_EMAIL_PATTERN.test(email)) return email
+  }
+
+  return null
+}
+
 function getAiReplyRecipient(emailData) {
   if (!emailData || typeof emailData !== 'object') return null
-  return (
-    extractCleanEmail(emailData.reply_to_email) ||
-    extractCleanEmail(emailData.from_email) ||
-    null
-  )
+
+  const contactInquiryEmail = extractContactInquiryEmail({
+    subject: emailData.subject,
+    bodyText: emailData.body_text,
+  })
+  if (contactInquiryEmail && CONTACT_EMAIL_PATTERN.test(contactInquiryEmail)) return contactInquiryEmail
+
+  const storedReplyTo = extractCleanEmail(emailData.reply_to_email)
+  if (storedReplyTo && CONTACT_EMAIL_PATTERN.test(storedReplyTo)) return storedReplyTo
+
+  const metadataReplyTo = extractReplyToFromMetadata(emailData.raw_metadata)
+  if (metadataReplyTo) return metadataReplyTo
+
+  const originalSender = extractCleanEmail(emailData.from_email)
+  if (originalSender && CONTACT_EMAIL_PATTERN.test(originalSender)) return originalSender
+
+  return null
 }
 
 function isJournalOwnMailbox(email) {
@@ -69,6 +121,9 @@ export async function fetchAndStoreEmail(event) {
   const messageId = data?.message_id || data?.messageId || data?.id
   const threadId = data?.thread_id
   const mailbox = data?.mailbox || data?.mailboxAddress || process.env.HOSTINGER_MAILBOX
+
+  const eventType = String(event.event_type || '').toLowerCase()
+  const isOutboundEvent = eventType === 'message.sent' || eventType === 'message.created'
 
   if (!messageId) throw new Error('No message_id in webhook payload')
 
@@ -114,7 +169,7 @@ export async function fetchAndStoreEmail(event) {
   try {
     emailResult = await pool.query(
       `INSERT INTO emails (thread_id, provider_message_id, message_id, in_reply_to, from_email, reply_to_email, to_email, cc_email, subject, body_text, body_html, received_at, direction, raw_metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'inbound', $13)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        ON CONFLICT (provider_message_id) WHERE provider_message_id IS NOT NULL DO NOTHING
        RETURNING id`,
       [
@@ -123,6 +178,7 @@ export async function fetchAndStoreEmail(event) {
         toArray, ccArray,
         data?.subject || null, bodyText,
         bodyHtml, data?.date || data?.received_at || new Date().toISOString(),
+        isOutboundEvent ? 'outbound' : 'inbound',
         JSON.stringify(data),
       ]
     )
@@ -348,6 +404,14 @@ export async function processOneEvent() {
       return { eventId: event.id, status: 'duplicate', emailId }
     }
 
+    const eventType = String(event.event_type || '').toLowerCase()
+    const isOutboundEvent = eventType === 'message.sent' || eventType === 'message.created'
+    if (isOutboundEvent) {
+      await client.query(`UPDATE email_webhook_events SET status = 'processed', processed_at = now() WHERE id = $1`, [event.id])
+      await client.query('COMMIT')
+      return { eventId: event.id, status: 'outbound_skipped', emailId }
+    }
+
     await logAiEmailEvent({ workflowName: 'ai_email', eventName: 'email_stored', status: 'success', payload: { email_id: emailId } })
 
     const classification = await runClassification(emailId)
@@ -389,13 +453,20 @@ export async function processOneEvent() {
       if (!env.AI_AUTO_REPLY_ENABLED) {
         console.warn(`[AI_EMAIL_WORKER] Auto-reply skipped for email ${emailId}: AI_AUTO_REPLY_ENABLED is false`)
       } else {
-        const emailRow = await pool.query(`SELECT from_email, reply_to_email, to_email, subject, provider_message_id FROM emails WHERE id = $1`, [emailId])
+        const emailRow = await pool.query(`SELECT from_email, reply_to_email, to_email, subject, body_text, raw_metadata, provider_message_id FROM emails WHERE id = $1`, [emailId])
         const threadRow = await pool.query(`SELECT provider_thread_id FROM email_threads WHERE id = $1`, [threadId])
         const emailData = emailRow.rows[0]
         const threadData = threadRow.rows[0]
 
         if (emailData) {
           const cleanRecipient = getAiReplyRecipient(emailData)
+          console.log('[AI_EMAIL_WORKER] Reply recipient resolution:', {
+            emailId,
+            fromEmail: emailData.from_email,
+            replyToEmail: emailData.reply_to_email,
+            resolvedRecipient: cleanRecipient,
+            subject: emailData.subject,
+          })
           if (cleanRecipient && isJournalOwnMailbox(cleanRecipient)) {
             await logAiEmailEvent({
               workflowName: 'ai_email',
@@ -557,7 +628,7 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
     try {
       const failedReplies = await pool.query(
         `SELECT r.id AS reply_id, r.email_id, r.thread_id, r.draft_body, r.decision,
-                e.from_email, e.reply_to_email, e.to_email, e.subject, e.provider_message_id,
+                e.from_email, e.reply_to_email, e.to_email, e.subject, e.body_text, e.raw_metadata, e.provider_message_id,
                 t.provider_thread_id
          FROM ai_email_replies r
          JOIN emails e ON e.id = r.email_id
