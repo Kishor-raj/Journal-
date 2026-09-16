@@ -205,12 +205,12 @@ export default function EditorialBoard() {
         background: '#0B1B3A',
         backgroundImage: 'repeating-linear-gradient(135deg, rgba(196,162,76,0.07) 0 2px, transparent 2px 10px)',
         color: '#FFFFFF',
-        minHeight: '48vh',
+        minHeight: 'auto',
         display: 'flex',
         alignItems: 'center',
         borderBottom: '2px solid #C4A24C',
       }}>
-        <div style={{ width: '100%', maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(56px, 8vw, 92px) var(--layout-pad) clamp(52px, 8vw, 88px)' }}>
+        <div style={{ width: '100%', maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(28px, 3.5vw, 42px) var(--layout-pad)' }}>
           <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '16px' }}>
             Governance &amp; Leadership
           </div>
@@ -224,7 +224,7 @@ export default function EditorialBoard() {
       </div>
 
       {/* Board body */}
-      <div style={{ maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(40px, 6vw, 72px) var(--layout-pad) clamp(56px, 8vw, 90px)' }}>
+      <div style={{ maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(24px, 4vw, 40px) var(--layout-pad) clamp(56px, 8vw, 90px)' }}>
         
         {/* Intro */}
         <p style={{ fontSize: 'clamp(16px, 1.5vw, 17.5px)', lineHeight: 1.8, color: '#3A4157', maxWidth: '820px', margin: '0 0 44px' }}>

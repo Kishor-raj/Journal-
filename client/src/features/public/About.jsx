@@ -106,12 +106,12 @@ export default function About() {
         background: '#0B1B3A',
         backgroundImage: 'repeating-linear-gradient(135deg, rgba(196,162,76,0.07) 0 2px, transparent 2px 10px)',
         color: '#FFFFFF',
-        minHeight: '48vh',
+        minHeight: 'auto',
         display: 'flex',
         alignItems: 'center',
         borderBottom: '2px solid #C4A24C',
       }}>
-        <div style={{ width: '100%', maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(56px, 8vw, 92px) var(--layout-pad) clamp(52px, 8vw, 88px)' }}>
+        <div style={{ width: '100%', maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(28px, 3.5vw, 42px) var(--layout-pad)' }}>
           <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '16px' }}>
             Asgard Research Publication
           </div>
@@ -128,7 +128,7 @@ export default function About() {
       <div style={{
         maxWidth: 'var(--layout-max)',
         margin: '0 auto',
-        padding: 'clamp(40px, 6vw, 72px) var(--layout-pad) clamp(56px, 8vw, 90px)',
+        padding: 'clamp(24px, 4vw, 40px) var(--layout-pad) clamp(56px, 8vw, 90px)',
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
         gap: '48px 72px',
