@@ -23,6 +23,7 @@ import publicRoutes from './modules/public/public.routes.js'
 import publicationRoutes from './modules/publications/publication.routes.js'
 import aiEmailRoutes from './modules/ai-email/ai-email.routes.js'
 import contactRoutes from './modules/contact/contact.routes.js'
+import analyticsRoutes from './modules/analytics/analytics.routes.js'
 import { env } from './config/env.js'
 
 const app = express()
@@ -108,6 +109,7 @@ app.use('/api/public', publicRoutes)
 app.use('/api/publications', publicationRoutes)
 app.use('/api/email', aiEmailRoutes)
 app.use('/api/contact', contactRoutes)
+app.use('/api/analytics', analyticsRoutes)
 
 app.use(errorHandler)
 
