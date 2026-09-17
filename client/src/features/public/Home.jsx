@@ -4,7 +4,7 @@ import { publicService } from '../../services/publicService.js'
 
 /* ─── Static data ──────────────────────────────────────────────────────── */
 const METRICS = [
-  { value: '12', label: 'Volumes published' },
+  { value: '1', label: 'Volumes published' },
   { value: '8–12', label: 'Weeks to first decision' },
   { value: '18%', label: 'Acceptance rate' },
   { value: '64', label: 'Countries represented' },
@@ -15,8 +15,8 @@ const FACTS = [
   { k: 'Review model', v: 'Double-blind' },
   { k: 'Access', v: 'Fully open' },
   { k: 'Licence', v: 'CC BY 4.0' },
-  { k: 'APC', v: 'None' },
-  { k: 'Founded', v: '2015' },
+  { k: 'APC', v: 'Yes' },
+  { k: 'Founded', v: '2026' },
 ]
 
 const INDEXES = ['Scopus', 'Web of Science', 'DOAJ', 'ERIC', 'JSTOR']
@@ -377,7 +377,7 @@ export default function Home() {
                 textTransform: 'uppercase',
                 color: '#E3CB86',
               }}>
-                ASGARD PUBLICATIONS · VOLUME 12, NUMBER 1
+                ASGARD PUBLICATIONS · VOLUME 1, NUMBER 1
               </span>
             </div>
 
@@ -414,7 +414,7 @@ export default function Home() {
               margin: '0 0 36px',
               fontWeight: 400,
             }}>
-              Advancing scholarly discourse through rigorous double-blind peer review in the humanities, social sciences, and interdisciplinary studies.
+              Advancing scholarly discourse through rigorous double-blind peer review in Artificial Intelligence, Cyber Security, Cloud Computing.
             </p>
 
             {/* Hero Buttons */}
@@ -510,7 +510,7 @@ export default function Home() {
                   fontWeight: 800,
                 }}>✓</span>
                 <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '13px', color: '#C3CBDC', letterSpacing: '0.01em' }}>
-                  No APC Charges
+                  APC Charges
                 </span>
               </div>
             </div>
@@ -570,7 +570,7 @@ export default function Home() {
             We publish original research articles, review essays, and critical commentaries that advance understanding in their respective fields. Our editorial process holds the highest standards of academic integrity while providing constructive, timely feedback to authors.
           </p>
           <p style={{ fontSize: 'clamp(16px, 1.5vw, 17.5px)', lineHeight: 1.78, color: '#3A4157', margin: '0 0 30px' }}>
-            Submissions are welcome across political science, sociology, anthropology, history, philosophy, economics, and education — with particular encouragement for work that bridges fields or applies innovative methodology.
+            Submissions are welcome across Computer Science &amp; Information Technology, Artificial Intelligence, Cyber Security, Data Science, Digital Computing — with particular encouragement for work that bridges fields or applies innovative methodology.
           </p>
           <TextLink to="/about">More about the journal</TextLink>
         </div>
