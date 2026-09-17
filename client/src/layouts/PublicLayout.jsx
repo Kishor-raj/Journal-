@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom'
+import { useVisitorCount } from '../shared/hooks/useVisitorCount'
+import { formatVisitorCount } from '../shared/utils/formatVisitorCount'
+import AnalyticsConsentBanner from '../shared/components/AnalyticsConsentBanner'
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/' },
@@ -43,11 +46,18 @@ const FOOTER_COLS = [
       { label: 'Most cited', to: '/archives' },
     ],
   },
+  {
+    title: 'Legal',
+    links: [
+      { label: 'Privacy policy', to: '/privacy' },
+    ],
+  },
 ]
 
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [isCompact, setIsCompact] = useState(false)
+  const { visitorCount } = useVisitorCount()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -66,6 +76,8 @@ export default function PublicLayout() {
 
   return (
     <div className="public-layout">
+
+      <AnalyticsConsentBanner />
 
       {/* ── Top bar ───────────────────────────────────────────────────────── */}
       <div style={{
@@ -95,6 +107,10 @@ export default function PublicLayout() {
             {!isCompact && <span>Peer-reviewed &amp; Open Access</span>}
           </div>
           <div style={{ display: 'flex', gap: '6px 26px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap' }}>
+              <span style={{ color: '#C4A24C', fontSize: '11px', lineHeight: 1 }}>◉</span>
+              {visitorCount === null ? '—' : formatVisitorCount(visitorCount)} Visitors
+            </span>
             <span>ceo@ijidcr-asgard.in</span>
           </div>
         </div>
