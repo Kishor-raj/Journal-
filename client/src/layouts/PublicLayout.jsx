@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { label: 'Home', to: '/' },
   { label: 'About', to: '/about' },
   { label: 'Editorial Board', to: '/board' },
+  { label: 'Call for Papers', to: '/call-for-papers' },
   { label: 'Guidelines', to: '/guidelines' },
   { label: 'Current Issue', to: '/current-issue' },
   { label: 'Archives', to: '/archives' },
@@ -18,6 +19,7 @@ const FOOTER_COLS = [
     links: [
       { label: 'About', to: '/about' },
       { label: 'Editorial board', to: '/board' },
+      { label: 'Call for papers', to: '/call-for-papers' },
       { label: 'Publication ethics', to: '/ethics' },
       { label: 'Open access policy', to: '/about' },
     ],
@@ -25,6 +27,7 @@ const FOOTER_COLS = [
   {
     title: 'Authors',
     links: [
+      { label: 'Call for papers', to: '/call-for-papers' },
       { label: 'Submission guidelines', to: '/guidelines' },
       { label: 'Manuscript template', to: '/guidelines' },
       { label: 'Author portal', to: '/login' },
