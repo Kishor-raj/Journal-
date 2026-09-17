@@ -11,7 +11,6 @@ const ipLoginLimiter = rateLimit({
   limit: 5,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  keyGenerator: (req) => req.ip,
   handler: async (req, res, next, options) => {
     await logSecurityEvent({
       eventType: 'brute_force_ip_sweeping',
@@ -29,6 +28,7 @@ const emailLoginLimiter = rateLimit({
   limit: 5,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => req.body?.email || 'unknown',
   handler: async (req, res, next, options) => {
     await logSecurityEvent({
