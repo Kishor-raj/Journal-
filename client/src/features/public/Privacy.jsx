@@ -71,9 +71,9 @@ export default function Privacy() {
         <section style={{ marginBottom: '52px', background: '#F8F9FB', border: '1px solid #EAECEF', borderLeft: '4px solid #C4A24C', padding: 'clamp(24px, 4vw, 36px)', borderRadius: '0 4px 4px 0' }}>
           <SectionHeading>Website Analytics</SectionHeading>
           <p style={{ fontSize: '15.5px', lineHeight: 1.75, color: '#3A4157', margin: 0 }}>
-            We use an anonymous first-party visitor identifier to estimate unique website
-            visitors and display aggregated visitor statistics. The identifier is not
-            intended to identify individual users and is not used for advertising or
+            We use a persistent anonymous browser identifier to maintain accurate
+            aggregated visitor statistics. The identifier is not intended to
+            identify individual users and is not used for advertising or
             profiling.
           </p>
         </section>
@@ -84,7 +84,7 @@ export default function Privacy() {
             <PolicyCard
               title="Anonymous Visitor Identifier"
               paragraphs={[
-                'When you accept analytics, a randomly generated identifier (a UUID) is created and stored in a first-party cookie named visitor_id on your browser.',
+                'On your first visit, a randomly generated identifier (a UUID) is created and stored in your browser. It is kept in browser storage and mirrored to a first-party cookie named visitor_id.',
                 'This identifier is used solely to recognize that a browser has visited before, so aggregated visitor counts are not inflated by page refreshes or navigation between pages.',
               ]}
               items={[
@@ -114,9 +114,10 @@ export default function Privacy() {
           <SectionHeading>Cookies &amp; Consent</SectionHeading>
           <p style={{ fontSize: '15.5px', lineHeight: 1.75, color: '#555E75', margin: '0 0 24px' }}>
             The only analytics-related cookie used on this site is the anonymous visitor_id
-            cookie described above. It is set only after you accept analytics and lasts for
-            approximately one year. You may accept, reject, or change your choice at any time;
-            rejecting analytics does not affect the rest of the website.
+            cookie described above. It lasts for approximately one year. The cookie/banner
+            notice presents an Accept or Continue choice; either choice is treated as consent
+            to proceed, and anonymous visitor counting continues in both cases because the
+            identifier is anonymous and used only for aggregated statistics.
           </p>
           <p style={{ fontSize: '15.5px', lineHeight: 1.75, color: '#3A4157', margin: '0 0 40px' }}>
             Please review the applicable cookie and privacy requirements in your jurisdiction

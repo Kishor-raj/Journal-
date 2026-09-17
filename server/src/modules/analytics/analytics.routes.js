@@ -4,6 +4,7 @@ import {
   registerVisit,
   getTotalVisitors,
   isLikelyBot,
+  isValidVisitorId,
 } from './analytics.service.js'
 
 const router = Router()
@@ -59,14 +60,23 @@ router.get('/stats', visitorStatsLimiter, async (req, res) => {
 })
 
 router.post('/visit', visitLimiter, async (req, res) => {
+  res.set('Cache-Control', 'private, no-store, max-age=0')
+
   const userAgent = req.get('user-agent')
   if (isLikelyBot(userAgent)) {
     const total = await getTotalVisitors()
     return res.json({ totalVisitors: total })
   }
 
-  const cookieVisitorId = req.cookies?.visitor_id || null
-  const result = await registerVisit(cookieVisitorId)
+  const requestId = isValidVisitorId(req.body?.visitorId)
+    ? req.body.visitorId
+    : null
+  const cookieId = isValidVisitorId(req.cookies?.visitor_id)
+    ? req.cookies.visitor_id
+    : null
+  const resolvedId = requestId || cookieId
+
+  const result = await registerVisit(resolvedId)
 
   res.cookie(VISITOR_COOKIE_NAME, result.visitorId, getVisitorCookieOptions())
 

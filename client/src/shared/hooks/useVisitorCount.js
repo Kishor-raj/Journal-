@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { analyticsService } from '../../services/analyticsService.js'
+import { getOrCreateVisitorId } from '../../services/visitorIdentity.js'
 
 export function useVisitorCount() {
   const [visitorCount, setVisitorCount] = useState(null)
@@ -11,11 +12,12 @@ export function useVisitorCount() {
     recordedRef.current = true
 
     let active = true
+    const visitorId = getOrCreateVisitorId()
 
     async function track() {
       setLoading(true)
       try {
-        const data = await analyticsService.recordVisit()
+        const data = await analyticsService.recordVisit(visitorId)
         if (!active) return
         setVisitorCount(
           typeof data?.totalVisitors === 'number' ? data.totalVisitors : null
