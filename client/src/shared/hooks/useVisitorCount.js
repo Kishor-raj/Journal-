@@ -1,25 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { analyticsService } from '../../services/analyticsService.js'
-import {
-  CONSENT_VALUES,
-  CONSENT_CHANGE_EVENT,
-  getAnalyticsConsent,
-} from '../../services/analyticsConsent.js'
 
 export function useVisitorCount() {
   const [visitorCount, setVisitorCount] = useState(null)
   const [loading, setLoading] = useState(false)
-  const lastConsentRef = useRef(null)
+  const recordedRef = useRef(false)
 
   useEffect(() => {
+    if (recordedRef.current) return
+    recordedRef.current = true
+
     let active = true
 
     async function track() {
-      const consent = getAnalyticsConsent()
-      if (consent !== CONSENT_VALUES.ACCEPTED) return
-      if (lastConsentRef.current === consent) return
-      lastConsentRef.current = consent
-
       setLoading(true)
       try {
         const data = await analyticsService.recordVisit()
@@ -35,11 +28,9 @@ export function useVisitorCount() {
     }
 
     track()
-    window.addEventListener(CONSENT_CHANGE_EVENT, track)
 
     return () => {
       active = false
-      window.removeEventListener(CONSENT_CHANGE_EVENT, track)
     }
   }, [])
 
