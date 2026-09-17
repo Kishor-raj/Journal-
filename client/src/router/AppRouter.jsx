@@ -7,6 +7,7 @@ import ProtectedRoute from '../shared/components/ProtectedRoute'
 
 import Home from '../features/public/Home'
 import About from '../features/public/About'
+import CallForPapers from '../features/public/CallForPapers'
 import EditorialBoard from '../features/public/EditorialBoard'
 import SubmissionGuidelines from '../features/public/SubmissionGuidelines'
 import CurrentIssue from '../features/public/CurrentIssue'
@@ -80,6 +81,8 @@ function AppRouter() {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
+        <Route path="/call-for-papers" element={<CallForPapers />} />
+        <Route path="/call-for-paper" element={<Navigate to="/call-for-papers" replace />} />
         <Route path="/board" element={<EditorialBoard />} />
         <Route path="/guidelines" element={<SubmissionGuidelines />} />
         <Route path="/current-issue" element={<CurrentIssue />} />
