@@ -186,18 +186,24 @@ function DutyCard({ title, paragraphs, items }) {
   )
 }
 
-function PolicyCard({ title, paragraphs }) {
+function PolicyCard({ title, paragraphs, items, footer }) {
   return (
-    <article style={{ background: '#FFFFFF', border: '1px solid #E6E1D6', padding: '26px 24px' }}>
+    <article style={{ background: '#FFFFFF', border: '1px solid #E6E1D6', padding: '26px 24px', display: 'flex', flexDirection: 'column' }}>
       <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: '22px', color: '#0B1B3A', margin: '0 0 8px' }}>
         {title}
       </h3>
       <div style={{ width: '40px', height: '2px', background: '#C4A24C', marginBottom: '16px' }} />
-      {paragraphs.map(paragraph => (
+      {paragraphs?.map(paragraph => (
         <p key={paragraph} style={{ fontSize: '15px', lineHeight: 1.75, color: '#3A4157', margin: '0 0 12px' }}>
           {paragraph}
         </p>
       ))}
+      {items && <BulletList items={items} />}
+      {footer && (
+        <p style={{ fontSize: '14.5px', lineHeight: 1.65, color: '#6B7288', margin: '18px 0 0', marginTop: 'auto', paddingTop: '10px' }}>
+          {footer}
+        </p>
+      )}
     </article>
   )
 }
@@ -280,54 +286,34 @@ export default function PublicationEthics() {
           </section>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '32px', marginBottom: '56px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '28px', marginBottom: '56px' }}>
           <PolicyCard
             title="Plagiarism Policy"
             paragraphs={[
               'All submitted manuscripts are screened for originality before peer review.',
               'The following are considered unacceptable:',
             ]}
+            items={PLAGIARISM_ITEMS}
+            footer="Manuscripts found to violate these standards may be rejected or, if already published, corrected or retracted."
           />
-          <div style={{ background: '#FFFFFF', border: '1px solid #E6E1D6', padding: '26px 24px' }}>
-            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: '22px', color: '#0B1B3A', margin: '0 0 8px' }}>
-              Unacceptable Practices
-            </h3>
-            <div style={{ width: '40px', height: '2px', background: '#C4A24C', marginBottom: '16px' }} />
-            <BulletList items={PLAGIARISM_ITEMS} />
-            <p style={{ fontSize: '14.5px', lineHeight: 1.65, color: '#6B7288', margin: '18px 0 0' }}>
-              Manuscripts found to violate these standards may be rejected or, if already published, corrected or retracted.
-            </p>
-          </div>
-        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '32px', marginBottom: '56px' }}>
-          <div style={{ background: '#FFFFFF', border: '1px solid #E6E1D6', padding: '30px 28px' }}>
-            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: '22px', color: '#0B1B3A', margin: '0 0 8px' }}>
-              Research Misconduct
-            </h3>
-            <div style={{ width: '40px', height: '2px', background: '#C4A24C', marginBottom: '16px' }} />
-            <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#3A4157', marginBottom: '16px' }}>
-              The following practices constitute research misconduct:
-            </p>
-            <BulletList items={MISCONDUCT_ITEMS} />
-            <p style={{ fontSize: '14.5px', color: '#6B7288', lineHeight: 1.6, margin: '18px 0 0' }}>
-              Appropriate editorial action will be taken in accordance with the journal&apos;s policies.
-            </p>
-          </div>
+          <PolicyCard
+            title="Research Misconduct"
+            paragraphs={[
+              'The following practices constitute research misconduct:',
+            ]}
+            items={MISCONDUCT_ITEMS}
+            footer="Appropriate editorial action will be taken in accordance with the journal's policies."
+          />
 
-          <div style={{ background: '#FFFFFF', border: '1px solid #E6E1D6', padding: '30px 28px' }}>
-            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: '22px', color: '#0B1B3A', margin: '0 0 8px' }}>
-              Corrections and Retractions
-            </h3>
-            <div style={{ width: '40px', height: '2px', background: '#C4A24C', marginBottom: '16px' }} />
-            <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#3A4157', marginBottom: '16px' }}>
-              If significant errors or ethical issues are identified after publication, the journal may:
-            </p>
-            <BulletList items={CORRECTION_ITEMS} />
-            <p style={{ fontSize: '14.5px', color: '#6B7288', lineHeight: 1.6, margin: '18px 0 0' }}>
-              All actions will be taken transparently and documented appropriately.
-            </p>
-          </div>
+          <PolicyCard
+            title="Corrections and Retractions"
+            paragraphs={[
+              'If significant errors or ethical issues are identified after publication, the journal may:',
+            ]}
+            items={CORRECTION_ITEMS}
+            footer="All actions will be taken transparently and documented appropriately."
+          />
         </div>
 
         <section style={{ marginBottom: '56px' }}>
