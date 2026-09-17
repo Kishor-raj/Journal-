@@ -42,6 +42,22 @@ const visitLimiter = rateLimit({
   },
 })
 
+const visitorStatsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    error: 'Too many requests. Please try again later.',
+    code: 'RATE_LIMITED',
+  },
+})
+
+router.get('/stats', visitorStatsLimiter, async (req, res) => {
+  const totalVisitors = await getTotalVisitors()
+  return res.json({ totalVisitors })
+})
+
 router.post('/visit', visitLimiter, async (req, res) => {
   const userAgent = req.get('user-agent')
   if (isLikelyBot(userAgent)) {

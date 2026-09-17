@@ -109,7 +109,7 @@ export default function PublicLayout() {
           <div style={{ display: 'flex', gap: '6px 26px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap' }}>
               <span style={{ color: '#C4A24C', fontSize: '11px', lineHeight: 1 }}>◉</span>
-              {visitorCount === null ? '—' : formatVisitorCount(visitorCount)} Visitors
+              {formatVisitorCount(visitorCount) ?? '—'} Visitors
             </span>
             <span>ceo@ijidcr-asgard.in</span>
           </div>

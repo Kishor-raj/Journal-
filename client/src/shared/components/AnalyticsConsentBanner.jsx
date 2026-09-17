@@ -18,9 +18,9 @@ export default function AnalyticsConsentBanner() {
     setConsent(CONSENT_VALUES.ACCEPTED)
   }
 
-  const handleReject = () => {
-    setAnalyticsConsent(CONSENT_VALUES.REJECTED)
-    setConsent(CONSENT_VALUES.REJECTED)
+  const handleContinue = () => {
+    setAnalyticsConsent(CONSENT_VALUES.CONTINUED)
+    setConsent(CONSENT_VALUES.CONTINUED)
   }
 
   return (
@@ -53,8 +53,8 @@ export default function AnalyticsConsentBanner() {
         justifyContent: 'space-between',
       }}>
         <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '13px', lineHeight: 1.6, letterSpacing: '0.02em', margin: 0, maxWidth: '440px', color: '#C3CBDC' }}>
-          This site uses an anonymous first-party visitor identifier to estimate
-          unique visitors and display aggregated statistics.
+          This site uses an anonymous visitor identifier to maintain
+          accurate aggregated visitor statistics.
         </p>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
@@ -75,11 +75,11 @@ export default function AnalyticsConsentBanner() {
               whiteSpace: 'nowrap',
             }}
           >
-            Accept Analytics
+            Accept
           </button>
           <button
             type="button"
-            onClick={handleReject}
+            onClick={handleContinue}
             style={{
               fontFamily: 'Jost, sans-serif',
               fontSize: '12.5px',
@@ -95,7 +95,7 @@ export default function AnalyticsConsentBanner() {
               whiteSpace: 'nowrap',
             }}
           >
-            Reject
+            Continue
           </button>
           <Link
             to="/privacy"

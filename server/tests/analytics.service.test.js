@@ -4,6 +4,7 @@ import {
   isLikelyBot,
   generateVisitorId,
   registerVisit,
+  getTotalVisitors,
 } from '../src/modules/analytics/analytics.service.js'
 
 vi.mock('../src/config/db.js', () => ({
@@ -79,6 +80,20 @@ describe('anonymous visitor counter (Phase 2–8)', () => {
       expect(isLikelyBot(null)).toBe(true)
       expect(isLikelyBot(undefined)).toBe(true)
       expect(isLikelyBot('')).toBe(true)
+    })
+  })
+
+  describe('Phase 8 — read-only stats', () => {
+    it('returns only the total visitors without modifying the database', async () => {
+      pool.query.mockResolvedValue({ rows: [{ total: '12548' }] })
+
+      const total = await getTotalVisitors()
+
+      expect(total).toBe(12548)
+      expect(pool.query).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT COALESCE(total_visitors, 0)'),
+        [1]
+      )
     })
   })
 

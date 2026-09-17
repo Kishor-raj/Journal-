@@ -3,7 +3,7 @@ const CONSENT_KEY = 'analytics_consent'
 export const CONSENT_VALUES = {
   NOT_DECIDED: 'not_decided',
   ACCEPTED: 'accepted',
-  REJECTED: 'rejected',
+  CONTINUED: 'continued',
 }
 
 export const CONSENT_CHANGE_EVENT = 'analytics-consent-change'
@@ -17,7 +17,7 @@ export function getAnalyticsConsent() {
 }
 
 export function setAnalyticsConsent(value) {
-  if (value !== CONSENT_VALUES.ACCEPTED && value !== CONSENT_VALUES.REJECTED) {
+  if (value !== CONSENT_VALUES.ACCEPTED && value !== CONSENT_VALUES.CONTINUED) {
     return
   }
   try {
@@ -26,6 +26,6 @@ export function setAnalyticsConsent(value) {
     // Storage unavailable — fail silently
   }
   window.dispatchEvent(
-    new CustomEvent(CONSENT_CHANGE_EVENT, { detail: { consent: value } })
+    new CustomEvent(CONSENT_CHANGE_EVENT, { detail: { choice: value } })
   )
 }
