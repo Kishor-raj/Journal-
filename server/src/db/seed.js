@@ -2,16 +2,95 @@ import pg from 'pg'
 import dotenv from 'dotenv'
 import path from 'path'
 import bcrypt from 'bcryptjs'
+import { fileURLToPath } from 'url'
 
 dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env') })
+dotenv.config()
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
 
-const ADMIN_EMAIL = 'admin@jar-journal.org'
-const ADMIN_PASSWORD = process.env.ADMIN_SEED_PASSWORD || 'Admin@123'
+const ADMIN_EMAIL = process.env.ADMIN_SEED_EMAIL
+const ADMIN_PASSWORD = process.env.ADMIN_SEED_PASSWORD
 
-async function seed() {
-  const client = await pool.connect()
+export async function seedAdminUser(client, { adminEmail = ADMIN_EMAIL, adminPassword = ADMIN_PASSWORD } = {}) {
+  if (!adminEmail) {
+    throw new Error('ADMIN_SEED_EMAIL is required')
+  }
+
+  if (!adminPassword) {
+    throw new Error('ADMIN_SEED_PASSWORD is required')
+  }
+
+  const adminRoleRes = await client.query(`SELECT id FROM roles WHERE name = 'admin'`)
+  const adminRoleId = adminRoleRes.rows[0]?.id
+  if (!adminRoleId) {
+    throw new Error('Admin role not found in database')
+  }
+
+  // Check if admin user already exists
+  const existingUserRes = await client.query(
+    `SELECT id FROM users WHERE email = $1`,
+    [adminEmail]
+  )
+  let userId = existingUserRes.rows[0]?.id
+
+  if (!userId) {
+    const insertRes = await client.query(
+      `INSERT INTO users (role_id, email, first_name, last_name, display_name, is_email_verified, account_status)
+       VALUES ($1, $2, 'System', 'Admin', 'System Admin', true, 'active')
+       RETURNING id`,
+      [adminRoleId, adminEmail]
+    )
+    userId = insertRes.rows[0]?.id
+  } else {
+    // Ensure email is verified and account is active
+    await client.query(
+      `UPDATE users SET is_email_verified = true, account_status = 'active' WHERE id = $1`,
+      [userId]
+    )
+  }
+
+  // Assign ONLY the 'admin' role in user_roles
+  await client.query(
+    `INSERT INTO user_roles (user_id, role_id)
+     VALUES ($1, $2)
+     ON CONFLICT (user_id, role_id) DO NOTHING`,
+    [userId, adminRoleId]
+  )
+
+  // Only create password credential if one does not already exist
+  const credCheck = await client.query(
+    `SELECT id FROM user_password_credentials WHERE user_id = $1`,
+    [userId]
+  )
+  if (credCheck.rows.length === 0) {
+    const adminPasswordHash = await bcrypt.hash(adminPassword, 12)
+    await client.query(
+      `INSERT INTO user_password_credentials (user_id, password_hash, failed_login_attempts)
+       VALUES ($1, $2, 0)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [userId, adminPasswordHash]
+    )
+    console.log('✓ Admin user seeded with initial password credential')
+  } else {
+    console.log('✓ Admin user password credential already exists (existing credentials preserved)')
+  }
+}
+
+export async function seed(poolOverride, options = {}) {
+  const activePool = poolOverride || pool
+  const adminEmail = options.adminEmail !== undefined ? options.adminEmail : ADMIN_EMAIL
+  const adminPassword = options.adminPassword !== undefined ? options.adminPassword : ADMIN_PASSWORD
+
+  if (!adminEmail) {
+    throw new Error('ADMIN_SEED_EMAIL is required')
+  }
+
+  if (!adminPassword) {
+    throw new Error('ADMIN_SEED_PASSWORD is required')
+  }
+
+  const client = await activePool.connect()
   try {
     await client.query('BEGIN')
 
@@ -27,6 +106,7 @@ async function seed() {
     console.log('✓ Roles seeded')
 
     // Seed journal
+    const contactEmail = process.env.CONTACT_RECIPIENT_EMAIL || process.env.EMAIL_FROM_ADDRESS || adminEmail
     await client.query(
       `INSERT INTO journals (name, short_name, description, publisher_name, contact_email)
        VALUES ($1, $2, $3, $4, $5)
@@ -36,7 +116,7 @@ async function seed() {
         'JAR',
         'A peer-reviewed journal dedicated to publishing high-quality research across multiple disciplines.',
         'Academic Publishing House',
-        'editorial@jar-journal.org',
+        contactEmail,
       ]
     )
     console.log('✓ Journal seeded')
@@ -155,46 +235,27 @@ async function seed() {
     }
     console.log('✓ Email templates seeded')
 
-    // Seed admin user (with a password credential so password login works)
-    const adminRoleId = (await client.query(`SELECT id FROM roles WHERE name = 'admin'`)).rows[0]?.id
-    if (adminRoleId) {
-      await client.query(
-        `INSERT INTO users (role_id, email, first_name, last_name, display_name, is_email_verified, account_status)
-         VALUES ($1, $2, 'System', 'Admin', 'System Admin', true, 'active')
-         ON CONFLICT (email) DO NOTHING`,
-        [adminRoleId, ADMIN_EMAIL]
-      )
-      await client.query(
-        `UPDATE users SET is_email_verified = true, account_status = 'active' WHERE email = $1`,
-        [ADMIN_EMAIL]
-      )
-      await client.query(
-        `INSERT INTO user_roles (user_id, role_id)
-         SELECT u.id, r.id FROM users u CROSS JOIN roles r
-         WHERE u.email = $1
-         ON CONFLICT (user_id, role_id) DO NOTHING`,
-        [ADMIN_EMAIL]
-      )
-      const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 12)
-      await client.query(
-        `INSERT INTO user_password_credentials (user_id, password_hash, failed_login_attempts)
-         SELECT id, $1, 0 FROM users WHERE email = $2
-         ON CONFLICT (user_id) DO UPDATE SET password_hash = EXCLUDED.password_hash, failed_login_attempts = 0, updated_at = now()`,
-        [adminPasswordHash, ADMIN_EMAIL]
-      )
-      console.log('✓ Admin user seeded with password credential')
-    }
+    // Seed admin user
+    await seedAdminUser(client, { adminEmail, adminPassword })
 
     await client.query('COMMIT')
     console.log('Seed completed successfully')
   } catch (err) {
     await client.query('ROLLBACK')
-    console.error('Seed failed:', err)
+    console.error('Seed failed:', err.message || err)
     throw err
   } finally {
     client.release()
-    await pool.end()
+    if (!poolOverride) {
+      await pool.end()
+    }
   }
 }
 
-seed()
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
+if (isMain) {
+  seed().catch(() => {
+    process.exit(1)
+  })
+}
+
