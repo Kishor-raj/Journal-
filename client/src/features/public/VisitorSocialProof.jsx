@@ -49,7 +49,9 @@ function ensureKeyframes() {
     .sp-text {
       font-family: Jost, sans-serif;
       font-size: 13px;
-      letter-spacing: 0.5px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       color: #aeb9cb;
       display: flex;
       align-items: center;
@@ -78,9 +80,6 @@ function ensureKeyframes() {
  * Props:
  *  - totalVisits    {number|null}  Total visit count (null → show "—", no animation)
  *  - totalCountries {number|null}  Country count     (null → show "—", no animation)
- *
- * Data fetching is intentionally NOT done here — use `useJournalStats()`
- * in the parent and pass the values as props.
  */
 export default function VisitorSocialProof({ totalVisits, totalCountries }) {
   ensureKeyframes()
@@ -111,45 +110,17 @@ export default function VisitorSocialProof({ totalVisits, totalCountries }) {
     ? `${totalVisits.toLocaleString('en-US')} total visits, readers from ${totalCountries} countries`
     : 'Visit statistics loading'
 
-  /* ── Styles (inline, matching Home.jsx conventions) ── */
-  const pillStyle = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginTop: '26px',
-    padding: '12px 22px',
-    border: '1px solid rgba(255,255,255,0.12)',
-    borderRadius: '9999px',
-    background: 'rgba(255,255,255,0.04)',
-    // Reserve height to avoid CLS even while loading
-    minHeight: '44px',
-    boxSizing: 'border-box',
-  }
-
-  const textStyle = {
-    fontFamily: 'Jost, sans-serif',
-    fontSize: '13px',
-    letterSpacing: '0.5px',
-    color: '#aeb9cb',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    flexWrap: 'wrap',
-    // Prevent digit jitter during count-up
-    fontVariantNumeric: 'tabular-nums',
-  }
-
   const countVisitsStyle = {
     color: '#ffffff',
     fontWeight: 700,
-    fontSize: '15px',
+    fontSize: '13px',
     fontVariantNumeric: 'tabular-nums',
   }
 
   const countCountriesStyle = {
     color: '#d4af37',
     fontWeight: 700,
-    fontSize: '15px',
+    fontSize: '13px',
     fontVariantNumeric: 'tabular-nums',
   }
 
@@ -171,13 +142,13 @@ export default function VisitorSocialProof({ totalVisits, totalCountries }) {
       <p className="sp-text">
         {/* Visit count — aria-hidden so screen readers use the container aria-label */}
         <span aria-hidden="true" style={countVisitsStyle}>{displayVisits}</span>
-        <span aria-hidden="true">total visits</span>
+        <span aria-hidden="true">TOTAL VISITS</span>
 
         <span aria-hidden="true" style={dividerStyle}>|</span>
 
-        <span aria-hidden="true">readers from</span>
+        <span aria-hidden="true">READERS FROM</span>
         <span aria-hidden="true" style={countCountriesStyle}>{displayCountries}</span>
-        <span aria-hidden="true">countries</span>
+        <span aria-hidden="true">COUNTRIES</span>
       </p>
     </div>
   )
