@@ -198,37 +198,74 @@ export async function renderCertificatePdf(context) {
       characterSpacing: 0.8,
     })
 
-    // ── Article Title (centered, ~Y 354 -> 410) ────────────────────────
-    drawCenteredSlot(doc, articleTitle, 354, 410, {
-      font: 'Times-Bold',
-      size: 13.5,
-      color: NAVY,
-      maxWidth: 540,
-      minSize: 8.5,
-      maxLines: 3,
-      lineHeightFactor: 1.15,
-      verticalPadding: 2,
-      characterSpacing: 0.6,
+    // ── 1 Single Ruled Notebook Line for Title (fixed position below title) ──
+    // Match the width of the gold underline below the author name.
+    const titleLineLeft = 194
+    const titleLineRight = 648
+    doc.save()
+      .lineWidth(0.9)
+      .strokeColor(GOLD) // gold underline matching author area
+      .moveTo(titleLineLeft, 396).lineTo(titleLineRight, 396).stroke()
+      .restore()
+
+    // ── Article Title (Prominent, naturally wraps to 2 lines) ──────────────
+    const titleWords = String(articleTitle ?? '').trim().split(/\s+/).filter(Boolean)
+    // Keep title text well inside the clear white centre panel.  This is
+    // intentionally narrower than the fixed underline so neither line can
+    // approach the gold decorations at either side.
+    const maxTitleWidth = 470
+    
+    let titleFontSize = 14
+    let titleLines = []
+
+    // Automatically choose the largest font size that fits safely within the central title area
+    for (let s = 14; s >= 6; s -= 0.5) {
+      doc.font('Times-Bold').fontSize(s)
+      const testLines = wrapLines(doc, titleWords, maxTitleWidth, 0.4)
+      if (testLines.length <= 2) {
+        titleFontSize = s
+        titleLines = testLines
+        break
+      }
+    }
+
+    if (titleLines.length === 0) {
+      titleFontSize = 6
+      doc.font('Times-Bold').fontSize(6)
+      titleLines = wrapLines(doc, titleWords, maxTitleWidth, 0.4).slice(0, 2)
+    }
+
+    doc.font('Times-Bold').fontSize(titleFontSize).fillColor(NAVY)
+    
+    // Centre the entire one- or two-line title block in the fixed title area.
+    // This keeps a short title away from the underline while retaining the
+    // same visual centre for a longer title.
+    const lineSpacing = titleFontSize * 1.3
+    const titleCentreY = 365
+    const titleStartY = titleCentreY - ((titleLines.length - 1) * lineSpacing) / 2
+
+    titleLines.forEach((line, idx) => {
+      const lineY = titleStartY + idx * lineSpacing
+      const w = doc.widthOfString(line, { characterSpacing: 0.4 })
+      doc.text(line, (PAGE_W - w) / 2, lineY, { lineBreak: false, characterSpacing: 0.4 })
     })
 
     // ── Volume / Issue / Year (render with underlined value slots) ──────
-    const volFontSize = 11
-    const lineThickness = 0.75
-    const slotWidth = 55          // width of each underline slot
-    const slotPad = 3             // padding between label text and slot
-    const baseY = 418             // text baseline Y
-    const underlineY = baseY + volFontSize + 2  // underline sits just below text
+    const volFontSize = 11          // uniform 11pt matching reference refertitleine.jpeg
+    const lineThickness = 0.85      // crisp underline matching reference
+    const slotWidth = 60            // width of underline slot
+    const baseY = 418               // fixed metadata baseline
+    const underlineY = baseY + 12   // underline position just below baseline
 
-    doc.font('Times-Roman').fontSize(volFontSize).fillColor(NAVY)
-
-    // Build segments: "in Volume" ___1___ ", Issue" ___1___ ", Year" ___2026___
+    // Build segments matching reference: "in Volume" ___1___ ", Issue" ___1___ ", Year" ___2026___
     const segments = [
       { label: 'in Volume ', value: String(volume) },
       { label: ', Issue ',   value: String(issue) },
       { label: ', Year ',    value: String(year) },
     ]
 
-    // Calculate total width for centering
+    // Calculate total width for centering (using Times-Bold 11pt for both labels and values)
+    doc.font('Times-Bold').fontSize(volFontSize)
     let totalWidth = 0
     for (const seg of segments) {
       totalWidth += doc.widthOfString(seg.label) + slotWidth
@@ -237,12 +274,13 @@ export async function renderCertificatePdf(context) {
     let cursorX = (PAGE_W - totalWidth) / 2
 
     for (const seg of segments) {
-      // Draw label text
+      // Draw label text in Times-Bold 11pt
+      doc.font('Times-Bold').fontSize(volFontSize).fillColor(NAVY)
       const labelW = doc.widthOfString(seg.label)
       doc.text(seg.label, cursorX, baseY, { lineBreak: false })
       cursorX += labelW
 
-      // Draw underline
+      // Draw underline stroke
       doc.save()
         .lineWidth(lineThickness)
         .strokeColor(NAVY)
@@ -251,7 +289,8 @@ export async function renderCertificatePdf(context) {
         .stroke()
         .restore()
 
-      // Draw value centered within the slot
+      // Draw value centered within slot in Times-Bold 11pt (same size as label)
+      doc.font('Times-Bold').fontSize(volFontSize).fillColor(NAVY)
       const valW = doc.widthOfString(seg.value)
       doc.text(seg.value, cursorX + (slotWidth - valW) / 2, baseY, { lineBreak: false })
       cursorX += slotWidth
@@ -273,4 +312,3 @@ export async function renderCertificatePdf(context) {
     doc.end()
   })
 }
-
