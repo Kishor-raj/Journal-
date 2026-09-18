@@ -4,7 +4,7 @@ import { getOrCreateVisitorId } from '../../services/visitorIdentity.js'
 
 export function useVisitorCount() {
   const [visitorCount, setVisitorCount] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const recordedRef = useRef(false)
 
   useEffect(() => {

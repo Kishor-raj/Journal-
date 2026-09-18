@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 import { publicService } from '../../services/publicService.js'
 import VisitorSocialProof from './VisitorSocialProof.jsx'
-import { useJournalStats } from '../../shared/hooks/useJournalStats.js'
 
 /* ─── Static data ──────────────────────────────────────────────────────── */
 const METRICS = [
@@ -308,9 +307,10 @@ export default function Home() {
   const [featured, setFeatured] = useState([])
   const [loadingFeatured, setLoadingFeatured] = useState(true)
 
-  // Journal stats for the social-proof line (visitor count + country count)
-  const { totalVisits, totalCountries } = useJournalStats()
-  // On error both stay null — VisitorSocialProof handles null gracefully.
+  // Use visitor count directly from PublicLayout (top of page), sharing the single live fetch
+  const outletContext = useOutletContext()
+  const visitorCount = outletContext?.visitorCount ?? null
+  const visitorLoading = outletContext?.visitorLoading ?? false
 
   useEffect(() => {
     publicService.getFeaturedArticles(6)
@@ -457,13 +457,13 @@ export default function Home() {
               </OutlineLink>
             </div>
 
-            {/* Social-proof: visit count + reader countries
-                Hidden entirely when both values are null (fetch error).
-                Shows "—" placeholders while loading. */}
-            {(totalVisits !== null || totalCountries !== null) && (
+            {/* Social-proof: live visit count (from existing visitor hook) +
+                fixed country count (64). Shows "—" while loading; hidden
+                entirely if the visit-tracking fetch fails. */}
+            {(visitorLoading || visitorCount !== null) && (
               <VisitorSocialProof
-                totalVisits={totalVisits}
-                totalCountries={totalCountries}
+                totalVisits={visitorCount}
+                totalCountries={64}
               />
             )}
 

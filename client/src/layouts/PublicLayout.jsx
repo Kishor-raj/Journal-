@@ -57,7 +57,7 @@ const FOOTER_COLS = [
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [isCompact, setIsCompact] = useState(false)
-  const { visitorCount } = useVisitorCount()
+  const { visitorCount, loading: visitorLoading } = useVisitorCount()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -349,7 +349,7 @@ export default function PublicLayout() {
 
       {/* ── Page content ──────────────────────────────────────────────────── */}
       <main style={{ flex: 1 }}>
-        <Outlet />
+        <Outlet context={{ visitorCount, visitorLoading }} />
       </main>
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}

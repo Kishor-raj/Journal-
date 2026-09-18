@@ -23,7 +23,7 @@ function EyeIcon({ pulse }) {
   )
 }
 
-/* ─── Keyframe injection (once) ────────────────────────────────────────── */
+/* ─── Keyframe and responsive styles injection (once) ──────────────────── */
 let keyframesInjected = false
 function ensureKeyframes() {
   if (keyframesInjected || typeof document === 'undefined') return
@@ -33,6 +33,38 @@ function ensureKeyframes() {
     @keyframes sp-eye-pulse {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0.45; }
+    }
+    .sp-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 26px;
+      padding: 12px 22px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.04);
+      min-height: 44px;
+      box-sizing: border-box;
+    }
+    .sp-text {
+      font-family: Jost, sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      color: #aeb9cb;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-variant-numeric: tabular-nums;
+      margin: 0;
+    }
+    @media (max-width: 640px) {
+      .sp-pill {
+        padding: 10px 16px;
+      }
+      .sp-text {
+        font-size: 12px;
+      }
     }
   `
   document.head.appendChild(style)
@@ -132,11 +164,11 @@ export default function VisitorSocialProof({ totalVisits, totalCountries }) {
       ref={containerRef}
       role="text"
       aria-label={ariaLabel}
-      style={pillStyle}
+      className="sp-pill"
     >
       <EyeIcon pulse={!prefersReduced && dataReady} />
 
-      <p style={{ ...textStyle, margin: 0 }}>
+      <p className="sp-text">
         {/* Visit count — aria-hidden so screen readers use the container aria-label */}
         <span aria-hidden="true" style={countVisitsStyle}>{displayVisits}</span>
         <span aria-hidden="true">total visits</span>
