@@ -60,7 +60,7 @@ export default function PublicLayout() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const handleResize = () => setIsCompact(window.innerWidth < 1180)
+    const handleResize = () => setIsCompact(window.innerWidth < 1280)
     handleResize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -120,19 +120,19 @@ export default function PublicLayout() {
         boxShadow: '0 2px 10px rgba(196, 162, 76, 0.08), 0 1px 3px rgba(11, 27, 58, 0.04)',
         width: '100%',
         boxSizing: 'border-box',
-        paddingBottom: isCompact ? '10px' : 'clamp(10px, 1.5vw, 20px)',
+        paddingBottom: isCompact ? '8px' : 'clamp(6px, 1vw, 12px)',
       }}>
         <div style={{
           width: '100%',
           maxWidth: '100%',
           margin: '0 auto',
-          padding: '16px clamp(18px, 2.8vw, 44px) 8px',
+          padding: '12px clamp(16px, 2.5vw, 36px) 6px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 'clamp(14px, 1.8vw, 30px)',
+          gap: 'clamp(10px, 1.5vw, 24px)',
           flexWrap: isCompact ? 'wrap' : 'nowrap',
-          minHeight: '88px',
+          minHeight: isCompact ? '64px' : '76px',
           boxSizing: 'border-box',
         }}>
           {/* Left section: Logo + Journal Title */}
@@ -141,21 +141,21 @@ export default function PublicLayout() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'clamp(10px, 1.2vw, 16px)',
+              gap: 'clamp(8px, 1vw, 14px)',
               cursor: 'pointer',
-              flex: isCompact ? '1 1 100%' : '0 0 auto',
+              flex: isCompact ? '1 1 auto' : '0 0 auto',
               minWidth: 0,
             }}
           >
             <img
               src="/asgard-logo.jpg"
               alt="Asgard Publications"
-              style={{ height: isCompact ? '56px' : 'clamp(75px, 7vw, 95px)', width: 'auto', mixBlendMode: 'multiply', flexShrink: 0 }}
+              style={{ height: isCompact ? '48px' : 'clamp(54px, 4.5vw, 70px)', width: 'auto', mixBlendMode: 'multiply', flexShrink: 0 }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: isCompact ? 'flex-start' : 'center', minWidth: 0 }}>
               <span style={{
                 fontFamily: 'Jost, sans-serif',
-                fontSize: isCompact ? '12px' : 'clamp(13px, 1vw, 16px)',
+                fontSize: isCompact ? '11px' : 'clamp(11px, 0.8vw, 13.5px)',
                 fontWeight: 700,
                 color: '#0B1B3A',
                 letterSpacing: '0.04em',
@@ -167,7 +167,7 @@ export default function PublicLayout() {
               </span>
               <span style={{
                 fontFamily: 'Jost, sans-serif',
-                fontSize: isCompact ? '12px' : 'clamp(13px, 1vw, 16px)',
+                fontSize: isCompact ? '11px' : 'clamp(11px, 0.8vw, 13.5px)',
                 fontWeight: 700,
                 color: '#C4A24C',
                 letterSpacing: '0.04em',
@@ -188,9 +188,9 @@ export default function PublicLayout() {
               aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               style={{
                 marginLeft: 'auto',
-                width: '44px',
-                height: '44px',
-                borderRadius: '10px',
+                width: '40px',
+                height: '40px',
+                borderRadius: '8px',
                 border: '1px solid rgba(11, 27, 58, 0.12)',
                 background: '#FFFFFF',
                 color: '#0B1B3A',
@@ -209,7 +209,7 @@ export default function PublicLayout() {
             <nav style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'clamp(3px, 0.4vw, 10px)',
+              gap: 'clamp(2px, 0.35vw, 8px)',
               flexWrap: 'nowrap',
               justifyContent: 'flex-end',
               marginLeft: 'auto',
@@ -222,11 +222,11 @@ export default function PublicLayout() {
                   end={to === '/'}
                   style={({ isActive }) => ({
                     fontFamily: 'Jost, sans-serif',
-                    fontSize: 'clamp(14px, 1.1vw, 16px)',
+                    fontSize: 'clamp(12px, 0.82vw, 14px)',
                     letterSpacing: '0.01em',
                     whiteSpace: 'nowrap',
                     color: isActive ? '#0B1B3A' : '#4B5468',
-                    padding: '6px clamp(3px, 0.4vw, 6px)',
+                    padding: '5px clamp(3px, 0.35vw, 6px)',
                     cursor: 'pointer',
                     borderBottom: isActive ? '2.5px solid #C4A24C' : '2.5px solid transparent',
                     fontWeight: isActive ? 700 : 600,
@@ -241,19 +241,19 @@ export default function PublicLayout() {
                 to="/login"
                 style={{
                   fontFamily: 'Jost, sans-serif',
-                  fontSize: 'clamp(14px, 1.1vw, 16px)',
+                  fontSize: 'clamp(12px, 0.8vw, 13.5px)',
                   fontWeight: 700,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                   color: '#FFFFFF',
                   background: 'linear-gradient(180deg, #D4AF37 0%, #C4A24C 60%, #B38E2F 100%)',
-                  padding: 'clamp(6px, 0.6vw, 8px) clamp(14px, 1.2vw, 20px)',
+                  padding: 'clamp(5px, 0.5vw, 7px) clamp(12px, 0.9vw, 18px)',
                   borderRadius: '9999px',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   textDecoration: 'none',
                   flexShrink: 0,
-                  marginLeft: 'clamp(4px, 0.5vw, 10px)',
+                  marginLeft: 'clamp(3px, 0.4vw, 8px)',
                   border: 'none',
                   boxShadow: '0 2px 6px rgba(196, 162, 76, 0.35)',
                   transition: 'all 0.2s ease',
@@ -283,6 +283,8 @@ export default function PublicLayout() {
             borderTop: '1px solid #E6E1D6',
             background: '#FFFFFF',
             boxShadow: '0 10px 24px rgba(11, 27, 58, 0.08)',
+            maxHeight: 'calc(100vh - 75px)',
+            overflowY: 'auto',
           }}>
             <div style={{
               maxWidth: 'var(--layout-max)',

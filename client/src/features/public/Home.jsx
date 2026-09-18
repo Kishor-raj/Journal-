@@ -347,14 +347,14 @@ export default function Home() {
           padding: '0 var(--layout-pad)',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
-          minHeight: 'calc(100vh - 148px)',
+          minHeight: 'clamp(480px, calc(100vh - 120px), 780px)',
           alignItems: 'center',
-          gap: 'clamp(32px, 4vw, 64px)',
+          gap: 'clamp(24px, 3.5vw, 56px)',
           position: 'relative',
           zIndex: 1,
         }}>
           {/* Left Column: Hero Content */}
-          <div style={{ padding: 'clamp(44px, 6vw, 76px) 0' }}>
+          <div style={{ padding: 'clamp(24px, 3.5vw, 56px) 0' }}>
             {/* Journal Badge */}
             <div style={{
               display: 'inline-flex',
