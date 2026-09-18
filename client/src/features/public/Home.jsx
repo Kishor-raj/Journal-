@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { publicService } from '../../services/publicService.js'
+import VisitorSocialProof from './VisitorSocialProof.jsx'
+import { useJournalStats } from '../../shared/hooks/useJournalStats.js'
 
 /* ─── Static data ──────────────────────────────────────────────────────── */
 const METRICS = [
@@ -306,6 +308,10 @@ export default function Home() {
   const [featured, setFeatured] = useState([])
   const [loadingFeatured, setLoadingFeatured] = useState(true)
 
+  // Journal stats for the social-proof line (visitor count + country count)
+  const { totalVisits, totalCountries } = useJournalStats()
+  // On error both stay null — VisitorSocialProof handles null gracefully.
+
   useEffect(() => {
     publicService.getFeaturedArticles(6)
       .then(data => setFeatured((data || []).map(toCard)))
@@ -418,7 +424,7 @@ export default function Home() {
             </p>
 
             {/* Hero Buttons */}
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '44px' }}>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
               <HoverLink
                 to="/guidelines"
                 bg="linear-gradient(135deg, #D4AF37 0%, #C4A24C 50%, #B38E2F 100%)"
@@ -451,12 +457,23 @@ export default function Home() {
               </OutlineLink>
             </div>
 
+            {/* Social-proof: visit count + reader countries
+                Hidden entirely when both values are null (fetch error).
+                Shows "—" placeholders while loading. */}
+            {(totalVisits !== null || totalCountries !== null) && (
+              <VisitorSocialProof
+                totalVisits={totalVisits}
+                totalCountries={totalCountries}
+              />
+            )}
+
             {/* Trust / Journal Features */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: 'clamp(14px, 2vw, 24px)',
               flexWrap: 'wrap',
+              marginTop: '24px',
               paddingTop: '20px',
               borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             }}>

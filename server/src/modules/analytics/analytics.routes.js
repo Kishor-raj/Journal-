@@ -56,7 +56,10 @@ const visitorStatsLimiter = rateLimit({
 
 router.get('/stats', visitorStatsLimiter, async (req, res) => {
   const totalVisitors = await getTotalVisitors()
-  return res.json({ totalVisitors })
+  // TODO: replace with a real DB query when country-level tracking is implemented.
+  // For now this mirrors the static "64 countries" figure shown in the homepage metrics.
+  const totalCountries = 64
+  return res.json({ totalVisitors, totalCountries })
 })
 
 router.post('/visit', visitLimiter, async (req, res) => {
