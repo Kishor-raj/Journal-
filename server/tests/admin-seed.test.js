@@ -32,9 +32,9 @@ describe('Admin Seed Security and Idempotency', () => {
         }
 
         // Mock credential check
-        if (typeof sql === 'string' && sql.includes('SELECT id FROM user_password_credentials WHERE user_id = $1')) {
+        if (typeof sql === 'string' && sql.includes('FROM user_password_credentials WHERE user_id = $1')) {
           if (params && params[0] === 'user-admin-exist') {
-            return Promise.resolve({ rows: [{ id: 'cred-123' }] })
+            return Promise.resolve({ rows: [{ user_id: 'user-admin-exist' }] })
           }
           return Promise.resolve({ rows: [] })
         }
