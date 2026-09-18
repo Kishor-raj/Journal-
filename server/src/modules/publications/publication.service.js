@@ -547,8 +547,8 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
     user?.role_name === 'editor' ||
     user?.account_role_name === 'admin' ||
     user?.account_role_name === 'editor' ||
-    user?.assigned_roles?.includes('admin') ||
-    user?.assigned_roles?.includes('editor')
+    user?.role === 'admin' ||
+    user?.role === 'editor'
 
   // Validate manuscript and author access
   let manuscriptRes

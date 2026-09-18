@@ -244,7 +244,7 @@ export default function Login() {
         if (returnTo) {
           navigate(returnTo, { replace: true })
         } else if (userData) {
-          navigate('/auth/select-role', { replace: true })
+          navigate('/dashboard', { replace: true })
         } else {
           navigate('/', { replace: true })
         }

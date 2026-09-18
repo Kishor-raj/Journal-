@@ -4,9 +4,6 @@ import {
   findOrCreateUser,
   createSession,
   destroySession,
-  findSession,
-  getAssignedRoles,
-  selectRoleForSession,
   registerUser,
   loginWithPassword,
   verifyEmailToken,
@@ -17,6 +14,7 @@ import {
 } from './auth.service.js'
 import crypto from 'crypto'
 import { env } from '../../config/env.js'
+
 
 function sha256(str) {
   return crypto.createHash('sha256').update(str).digest('hex')
@@ -87,35 +85,6 @@ export async function googleCallback(req, res) {
   }
 }
 
-const VALID_ROLES = ['admin', 'author', 'editor', 'moderator', 'reviewer']
-
-export async function selectRole(req, res) {
-  const { role } = req.body
-
-  if (!VALID_ROLES.includes(role)) {
-    return res.status(400).json({ error: 'Invalid role' })
-  }
-
-  const assignedRoles = await getAssignedRoles(req.user.uid)
-  if (!assignedRoles.includes(role)) {
-    return res.status(403).json({ error: 'You are not assigned to this role' })
-  }
-
-  // `authenticate` has already validated and loaded the exact session. Use
-  // that session's id for the update so cookie and bearer-token handling
-  // cannot cause a valid session to be looked up a second time differently.
-  const updated = await selectRoleForSession(req.user.id, role)
-
-  if (!updated) {
-    return res.status(404).json({ error: 'Session not found' })
-  }
-
-  res.json({
-    message: 'Role selected',
-    role: updated,
-  })
-}
-
 export async function logout(req, res) {
   const rawToken = req.token || req.cookies?.session_token
   if (rawToken) {
@@ -139,10 +108,6 @@ export async function getMe(req, res) {
   const cleanLastName = (user.last_name && user.last_name !== 'undefined') ? user.last_name : null
   const cleanName = rawDisplayName || [cleanFirstName, cleanLastName].filter(Boolean).join(' ') || (user.email ? user.email.split('@')[0] : 'User')
 
-  const availableRoles = (user.assigned_roles && user.assigned_roles.length > 0)
-    ? user.assigned_roles
-    : (user.role_name ? [user.role_name] : ['admin', 'author', 'moderator', 'editor', 'reviewer'])
-
   res.json({
     id: user.uid,
     email: user.email,
@@ -150,8 +115,7 @@ export async function getMe(req, res) {
     last_name: cleanLastName,
     display_name: cleanName,
     name: cleanName,
-    role: user.role_name || availableRoles[0] || 'author',
-    available_roles: availableRoles,
+    role: user.role_name || user.account_role_name || 'author',
     account_status: user.account_status,
     institution: user.institution,
     college: user.college,
@@ -163,6 +127,7 @@ export async function getMe(req, res) {
     profile_complete: !!profileComplete,
   })
 }
+
 
 export async function register(req, res) {
   const { email, password, first_name, last_name, role } = req.body || {}

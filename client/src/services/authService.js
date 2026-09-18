@@ -4,10 +4,6 @@ export function getMe() {
   return apiClient.get('/auth/me')
 }
 
-export function selectRole(role) {
-  return apiClient.post('/auth/role', { role })
-}
-
 export function register(payload) {
   return apiClient.post('/auth/register', payload)
 }

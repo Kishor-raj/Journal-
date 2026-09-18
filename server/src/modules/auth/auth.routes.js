@@ -1,10 +1,11 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
-import { googleAuth, googleCallback, logout, getMe, selectRole, register, login, verifyEmail, resendVerification, forgotPassword, validateResetPasswordToken, resetPassword } from './auth.controller.js'
+import { googleAuth, googleCallback, logout, getMe, register, login, verifyEmail, resendVerification, forgotPassword, validateResetPasswordToken, resetPassword } from './auth.controller.js'
 import { authenticate } from '../../middleware/authenticate.js'
 import { logSecurityEvent } from '../security/security.service.js'
 
 const router = Router()
+
 
 const ipLoginLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -93,8 +94,6 @@ router.get('/reset-password/validate', resetPasswordLimiter, validateResetPasswo
 router.post('/reset-password', resetPasswordLimiter, resetPassword)
 router.post('/logout', authenticate, logout)
 router.get('/me', authenticate, getMe)
-// Selecting the effective role changes the permissions for this session, so it
-// must be subject to the same session validation as every protected endpoint.
-router.post('/role', authenticate, selectRole)
 
 export default router
+

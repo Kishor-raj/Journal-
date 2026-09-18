@@ -8,7 +8,6 @@ const AUTH_CHECK_EXACT_PATHS = new Set([
   '/dashboard',
   '/profile',
   '/profile/complete',
-  '/auth/select-role',
 ])
 
 const AUTH_CHECK_PREFIXES = [
