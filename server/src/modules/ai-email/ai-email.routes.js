@@ -6,7 +6,7 @@ import { authenticate } from '../../middleware/authenticate.js'
 import { requireRole } from '../../middleware/authorize.js'
 import { getAiEmailMetrics, getProcessingTimeline } from '../../services/ai/audit.js'
 import { getReplyConfig } from '../../services/ai/autoReplyRules.js'
-import { getGeminiConfig } from '../../services/gemini/index.js'
+import { getAiConfig } from '../../services/groq/index.js'
 import { isConfigured as isHostingerConfigured } from '../../services/email/hostinger/index.js'
 import { createWebhookPayloadGuard } from '../../services/ai/security.js'
 import { getAiEmailConfig, updateAiEmailConfig, getAiEmailConfigPublic } from './ai-email-config.service.js'
@@ -74,7 +74,7 @@ router.get(
     const metrics = await getAiEmailMetrics()
 
     const config = {
-      gemini: getGeminiConfig(),
+      groq: getAiConfig(),
       hostinger: {
         configured: isHostingerConfigured(),
       },

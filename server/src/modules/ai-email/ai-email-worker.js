@@ -1,6 +1,6 @@
 import pool from '../../config/db.js'
 import { env } from '../../config/env.js'
-import { classifyEmail, generateReply, isConfigured as isGeminiConfigured } from '../../services/gemini/index.js'
+import { classifyEmail, generateReply, isConfigured as isGroqConfigured } from '../../services/groq/index.js'
 import { retrieveRelevantKnowledge, formatKnowledgeForPrompt } from '../../services/ai/knowledge.js'
 import { evaluateSafety, logSafetyDecision } from '../../services/ai/safety.js'
 import { evaluateAutoReply } from '../../services/ai/autoReplyRules.js'
@@ -206,7 +206,7 @@ export async function fetchAndStoreEmail(event) {
 }
 
 export async function runClassification(emailId) {
-  if (!isGeminiConfigured()) return { skipped: true, reason: 'gemini_not_configured' }
+  if (!isGroqConfigured()) return { skipped: true, reason: 'groq_not_configured' }
 
   const emailResult = await pool.query(`SELECT * FROM emails WHERE id = $1`, [emailId])
   if (emailResult.rows.length === 0) throw new Error(`Email ${emailId} not found`)
@@ -304,9 +304,9 @@ export async function runToolCalls(emailId, classification, extractedData) {
 }
 
 export async function runReplyGeneration(emailId, threadId, classification, intent, opts = {}) {
-  if (!isGeminiConfigured()) {
-    console.warn(`[AI_EMAIL_WORKER] Reply generation skipped for email ${emailId}: gemini not configured`)
-    return { skipped: true, reason: 'gemini_not_configured' }
+  if (!isGroqConfigured()) {
+    console.warn(`[AI_EMAIL_WORKER] Reply generation skipped for email ${emailId}: groq not configured`)
+    return { skipped: true, reason: 'groq_not_configured' }
   }
 
   const skipClassifications = ['SPAM', 'OTHER']
@@ -575,7 +575,6 @@ export function startAiEmailWorker({ pollIntervalMs = 20_000, enabled = true } =
          WHERE status = 'failed' AND (
             error_message LIKE '%ON CONFLICT%' OR
             error_message LIKE '%unique%' OR
-            error_message LIKE '%gemini-2.0-flash%' OR
             error_message LIKE '%404%' OR
             error_message LIKE '%no longer available%' OR
             error_message LIKE '%parse%' OR

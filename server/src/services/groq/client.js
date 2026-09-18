@@ -1,31 +1,12 @@
-import { GoogleGenAI } from '@google/genai'
 import { env } from '../../config/env.js'
-
-let client = null
 
 const DEFAULT_TIMEOUT_MS = 60_000
 const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 2_000
 
-function getClient() {
-  if (!client && env.GEMINI_API_KEY) {
-    client = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY })
-  }
-  return client
-}
-
 function maskKey(key) {
   if (!key) return '<not set>'
   return key.slice(0, 6) + '...' + key.slice(-4)
-}
-
-export function getActiveProvider() {
-  const explicit = (env.AI_PROVIDER || '').toLowerCase()
-  if (explicit === 'groq') return 'groq'
-  if (explicit === 'gemini') return 'gemini'
-  if (env.GROQ_API_KEY) return 'groq'
-  if (env.GEMINI_API_KEY) return 'gemini'
-  return 'groq'
 }
 
 let cachedWorkingGroqModel = null
@@ -79,27 +60,16 @@ async function discoverWorkingGroqModel(apiKey) {
   return 'openai/gpt-oss-120b'
 }
 
-export function getGeminiConfig() {
-  const provider = getActiveProvider()
-  if (provider === 'groq') {
-    return {
-      provider: 'groq',
-      model: cachedWorkingGroqModel || env.GROQ_MODEL || 'openai/gpt-oss-120b',
-      configured: Boolean(env.GROQ_API_KEY),
-      keyPreview: maskKey(env.GROQ_API_KEY),
-    }
-  }
-  const configuredModel = env.GEMINI_MODEL || 'gemini-3.6-flash'
-  const model = (configuredModel.includes('2.0') || configuredModel.includes('2.5')) ? 'gemini-3.6-flash' : configuredModel
+export function getAiConfig() {
   return {
-    provider: 'gemini',
-    model,
-    configured: Boolean(env.GEMINI_API_KEY),
-    keyPreview: maskKey(env.GEMINI_API_KEY),
+    provider: 'groq',
+    model: cachedWorkingGroqModel || env.GROQ_MODEL || 'openai/gpt-oss-120b',
+    configured: Boolean(env.GROQ_API_KEY),
+    keyPreview: maskKey(env.GROQ_API_KEY),
   }
 }
 
-export const getAiConfig = getGeminiConfig
+export const getGroqConfig = getAiConfig
 
 async function generateGroqContent({ prompt, systemInstruction, model, temperature = 0.2, maxOutputTokens = 2048, timeoutMs, responseMimeType }) {
   const apiKey = env.GROQ_API_KEY
@@ -217,70 +187,13 @@ async function generateGroqContent({ prompt, systemInstruction, model, temperatu
   }
 }
 
-async function generateGeminiContent({ prompt, systemInstruction, model, temperature = 0.3, maxOutputTokens = 2048, timeoutMs, responseMimeType }) {
-  const genAI = getClient()
-  if (!genAI) {
-    throw new Error('Gemini API key not configured')
-  }
-
-  let primaryModel = model || env.GEMINI_MODEL || 'gemini-3.6-flash'
-  if (primaryModel.includes('2.0') || primaryModel.includes('2.5')) {
-    primaryModel = 'gemini-3.6-flash'
-  }
-  const activeModel = primaryModel
-
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-
-  try {
-    const config = {
-      temperature,
-      maxOutputTokens,
-    }
-    if (responseMimeType) {
-      config.responseMimeType = responseMimeType
-    }
-    if (systemInstruction) {
-      config.systemInstruction = systemInstruction
-    }
-
-    const response = await genAI.models.generateContent({
-      model: activeModel,
-      contents: prompt,
-      config,
-    }, { signal: controller.signal })
-
-    const text = response.text
-    if (!text) {
-      throw new Error('Empty response from Gemini')
-    }
-
-    return {
-      text,
-      model: activeModel,
-      usage: {
-        promptTokenCount: response.usageMetadata?.promptTokenCount || 0,
-        candidatesTokenCount: response.usageMetadata?.candidatesTokenCount || 0,
-        totalTokenCount: response.usageMetadata?.totalTokenCount || 0,
-      },
-    }
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
 export async function generateContent({ prompt, systemInstruction, model, temperature = 0.3, maxOutputTokens = 2048, timeout, responseMimeType } = {}) {
-  const provider = getActiveProvider()
   const timeoutMs = timeout || DEFAULT_TIMEOUT_MS
 
   let lastError = null
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      if (provider === 'groq') {
-        return await generateGroqContent({ prompt, systemInstruction, model, temperature, maxOutputTokens, timeoutMs, responseMimeType })
-      } else {
-        return await generateGeminiContent({ prompt, systemInstruction, model, temperature, maxOutputTokens, timeoutMs, responseMimeType })
-      }
+      return await generateGroqContent({ prompt, systemInstruction, model, temperature, maxOutputTokens, timeoutMs, responseMimeType })
     } catch (err) {
       lastError = err
       const isRetryable = err?.name === 'AbortError' ||
@@ -294,12 +207,12 @@ export async function generateContent({ prompt, systemInstruction, model, temper
 
       if (isRetryable && attempt < MAX_RETRIES) {
         const delay = RETRY_DELAY_MS * Math.pow(2, attempt)
-        console.warn(`[AI_CLIENT] Retryable error (${provider}) (attempt ${attempt + 1}/${MAX_RETRIES}): ${err.message}. Retrying in ${delay}ms...`)
+        console.warn(`[AI_CLIENT] Retryable error (groq) (attempt ${attempt + 1}/${MAX_RETRIES}): ${err.message}. Retrying in ${delay}ms...`)
         await new Promise((resolve) => setTimeout(resolve, delay))
         continue
       }
 
-      console.error(`[AI_CLIENT] Error (${provider}): ${err.message}`)
+      console.error(`[AI_CLIENT] Error (groq): ${err.message}`)
       throw err
     }
   }
@@ -308,7 +221,7 @@ export async function generateContent({ prompt, systemInstruction, model, temper
 }
 
 export function isConfigured() {
-  return Boolean(env.GROQ_API_KEY || env.GEMINI_API_KEY)
+  return Boolean(env.GROQ_API_KEY)
 }
 
 export function extractAndParseJSON(text) {
