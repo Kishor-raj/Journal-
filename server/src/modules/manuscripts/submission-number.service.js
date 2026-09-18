@@ -1,19 +1,19 @@
 const JOURNAL_PREFIX = 'IJIDCR'
 
 /**
- * Format a submission number in the IJIDCR-YY-NNNN pattern.
+ * Format a submission number in the IJIDCR-YY-NNNNN pattern.
  * @param {number} year e.g. 2026
  * @param {number} seq  e.g. 1
- * @returns {string} e.g. "IJIDCR-26-0001"
+ * @returns {string} e.g. "IJIDCR-26-00001"
  */
 export function formatSubmissionNumber(year, seq) {
   const yy = String(year).slice(-2).padStart(2, '0')
-  const nnnn = String(seq).padStart(4, '0')
-  return `${JOURNAL_PREFIX}-${yy}-${nnnn}`
+  const nnnnn = String(seq).padStart(5, '0')
+  return `${JOURNAL_PREFIX}-${yy}-${nnnnn}`
 }
 
 /**
- * Generate the next sequential submission number in format IJIDCR-YY-NNNN.
+ * Generate the next sequential submission number in format IJIDCR-YY-NNNNN.
  * Must be called within a transaction (passes the pg Client).
  *
  * Uses the submission_counters table for concurrency-safe, year-scoped sequencing.

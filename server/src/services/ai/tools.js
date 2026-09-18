@@ -138,7 +138,7 @@ export const BACKEND_TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        submission_number: { type: 'string', description: 'The manuscript submission number (e.g. IJIDCR-26-0001)' },
+        submission_number: { type: 'string', description: 'The manuscript submission number (e.g. IJIDCR-26-00001)' },
       },
       required: ['submission_number'],
     },

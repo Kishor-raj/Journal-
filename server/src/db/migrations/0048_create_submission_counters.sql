@@ -1,5 +1,5 @@
 -- Submission counters table for generating sequential submission numbers
--- Format: IJIDCR-YY-NNNN (e.g., IJIDCR-26-0001)
+-- Format: IJIDCR-YY-NNNNN (e.g., IJIDCR-26-00001)
 -- One row per year, tracks the last used sequence number
 
 CREATE TABLE IF NOT EXISTS submission_counters (
@@ -50,7 +50,7 @@ BEGIN
      RETURNING last_number INTO seq_no;
 
     sub_yy := lpad((rec.yr % 100)::text, 2, '0');
-    new_no := 'IJIDCR-' || sub_yy || '-' || lpad(seq_no::text, 4, '0');
+    new_no := 'IJIDCR-' || sub_yy || '-' || lpad(seq_no::text, 5, '0');
 
     UPDATE manuscripts
        SET submission_number = new_no
