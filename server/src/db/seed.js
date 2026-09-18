@@ -60,7 +60,7 @@ export async function seedAdminUser(client, { adminEmail = ADMIN_EMAIL, adminPas
 
   // Only create password credential if one does not already exist
   const credCheck = await client.query(
-    `SELECT id FROM user_password_credentials WHERE user_id = $1`,
+    `SELECT user_id FROM user_password_credentials WHERE user_id = $1`,
     [userId]
   )
   if (credCheck.rows.length === 0) {
