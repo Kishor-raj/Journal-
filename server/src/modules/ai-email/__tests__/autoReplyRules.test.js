@@ -34,7 +34,7 @@ describe('evaluateAutoReply', () => {
       confidence: 0.9,
       sensitiveTopic: false,
       requiresHumanApproval: false,
-      extractedData: { submission_number: 'IJIDCR-26-0001' },
+      extractedData: { submission_number: 'IJIDCR-26-00001' },
     })
     expect(result.decision).toBe('auto_reply')
     expect(result.autoReplyAllowed).toBe(true)

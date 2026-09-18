@@ -13,7 +13,7 @@ describe('generateSubmissionNumber (with mocked DB client)', () => {
     const result = await generateSubmissionNumber(client)
 
     expect(client.query).toHaveBeenCalledTimes(2)
-    expect(result).toMatch(/^IJIDCR-\d{2}-0007$/)
+    expect(result).toMatch(/^IJIDCR-\d{2}-00007$/)
   })
 
   it('returns distinct numbers for consecutive calls', async () => {
@@ -24,29 +24,29 @@ describe('generateSubmissionNumber (with mocked DB client)', () => {
 })
 
 describe('formatSubmissionNumber', () => {
-  it('formats the first submission of a year as IJIDCR-26-0001', () => {
-    expect(formatSubmissionNumber(2026, 1)).toBe('IJIDCR-26-0001')
+  it('formats the first submission of a year as IJIDCR-26-00001', () => {
+    expect(formatSubmissionNumber(2026, 1)).toBe('IJIDCR-26-00001')
   })
 
   it('increments subsequent submissions correctly', () => {
-    expect(formatSubmissionNumber(2026, 2)).toBe('IJIDCR-26-0002')
-    expect(formatSubmissionNumber(2026, 3)).toBe('IJIDCR-26-0003')
-    expect(formatSubmissionNumber(2026, 123)).toBe('IJIDCR-26-0123')
-    expect(formatSubmissionNumber(2026, 10000)).toBe('IJIDCR-26-10000')
+    expect(formatSubmissionNumber(2026, 2)).toBe('IJIDCR-26-00002')
+    expect(formatSubmissionNumber(2026, 3)).toBe('IJIDCR-26-00003')
+    expect(formatSubmissionNumber(2026, 123)).toBe('IJIDCR-26-00123')
+    expect(formatSubmissionNumber(2026, 100000)).toBe('IJIDCR-26-100000')
   })
 
-  it('rolls over to a new year with the first submission as IJIDCR-27-0001', () => {
-    expect(formatSubmissionNumber(2027, 1)).toBe('IJIDCR-27-0001')
+  it('rolls over to a new year with the first submission as IJIDCR-27-00001', () => {
+    expect(formatSubmissionNumber(2027, 1)).toBe('IJIDCR-27-00001')
   })
 
   it('pads the year to two digits', () => {
-    expect(formatSubmissionNumber(2000, 1)).toBe('IJIDCR-00-0001')
-    expect(formatSubmissionNumber(2005, 1)).toBe('IJIDCR-05-0001')
-    expect(formatSubmissionNumber(2030, 1)).toBe('IJIDCR-30-0001')
+    expect(formatSubmissionNumber(2000, 1)).toBe('IJIDCR-00-00001')
+    expect(formatSubmissionNumber(2005, 1)).toBe('IJIDCR-05-00001')
+    expect(formatSubmissionNumber(2030, 1)).toBe('IJIDCR-30-00001')
   })
 
-  it('always zero-pads the sequence to at least 4 digits', () => {
-    expect(formatSubmissionNumber(2026, 0)).toBe('IJIDCR-26-0000')
-    expect(formatSubmissionNumber(2026, 42)).toBe('IJIDCR-26-0042')
+  it('always zero-pads the sequence to at least 5 digits', () => {
+    expect(formatSubmissionNumber(2026, 0)).toBe('IJIDCR-26-00000')
+    expect(formatSubmissionNumber(2026, 42)).toBe('IJIDCR-26-00042')
   })
 })

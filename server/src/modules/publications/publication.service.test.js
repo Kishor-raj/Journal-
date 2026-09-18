@@ -3,16 +3,16 @@ import { buildCertificateNumber, validatePublicationMetadata, resolveCertificate
 
 describe('buildCertificateNumber', () => {
   it('builds ARFI-YY-ARTICLE_NO reusing the manuscript submission number', () => {
-    expect(buildCertificateNumber('IJIDCR-26-0001', 2026)).toBe('ARFI-26-IJIDCR-26-0001')
+    expect(buildCertificateNumber('IJIDCR-26-00001', 2026)).toBe('ARFI-26-IJIDCR-26-00001')
   })
 
   it('uses the publication year (not the article year) for the ARFI prefix', () => {
-    expect(buildCertificateNumber('IJIDCR-25-0042', 2026)).toBe('ARFI-26-IJIDCR-25-0042')
+    expect(buildCertificateNumber('IJIDCR-25-00042', 2026)).toBe('ARFI-26-IJIDCR-25-00042')
   })
 
   it('zero-pads the year to two digits', () => {
-    expect(buildCertificateNumber('IJIDCR-05-0001', 2005)).toBe('ARFI-05-IJIDCR-05-0001')
-    expect(buildCertificateNumber('IJIDCR-00-0001', 2000)).toBe('ARFI-00-IJIDCR-00-0001')
+    expect(buildCertificateNumber('IJIDCR-05-00001', 2005)).toBe('ARFI-05-IJIDCR-05-00001')
+    expect(buildCertificateNumber('IJIDCR-00-00001', 2000)).toBe('ARFI-00-IJIDCR-00-00001')
   })
 
   it('rejects a missing submission number', () => {

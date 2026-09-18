@@ -139,8 +139,8 @@ export function formatCertificateName(value) {
 
 /* ─── main export ──────────────────────────────────────────────────────── */
 export async function renderCertificatePdf(context) {
-  // Generate QR code with exact scanner verification domain
-  const qrTargetUrl = 'https://ijidcr-asgard.in/'
+  // Generate QR code with the unique per-certificate verification URL
+  const qrTargetUrl = context.verificationUrl || 'https://ijidcr-asgard.in/'
   const qrBuffer = await QRCode.toBuffer(qrTargetUrl, {
     type: 'png',
     width: 200,
@@ -158,12 +158,10 @@ export async function renderCertificatePdf(context) {
     // ── extract context fields ──────────────────────────────────────────
     const authorName     = formatCertificateName(context.authorName || 'Author Name')
     const rawTitle       = String(context.articleTitle || 'Untitled Article').trim()
+    // Strip any existing quotation marks (straight or curly) from the title
     let articleTitle     = rawTitle
-    if (articleTitle && !articleTitle.startsWith('“') && !articleTitle.startsWith('"') && !articleTitle.startsWith("'")) {
-      articleTitle = `“${articleTitle}”`
-    } else if (articleTitle.startsWith('"') && articleTitle.endsWith('"') && articleTitle.length > 1) {
-      articleTitle = `“${articleTitle.slice(1, -1)}”`
-    }
+      .replace(/^[\u201c\u201d"']+/, '')
+      .replace(/[\u201c\u201d"']+$/, '')
     articleTitle = articleTitle.toUpperCase()
 
     const volume         = context.volume ?? 1
@@ -182,87 +180,97 @@ export async function renderCertificatePdf(context) {
 
     // ── Step 2: Overlay dynamic data with matched typography ────────────
 
-    // ── Author Name (Slot 1: Y 290.6 -> 325.1) ───────────────────────────
-    drawCenteredSlot(doc, authorName, 290.6, 325.1, {
-      font: 'Times-Bold',
-      size: 21,
-      color: NAVY,
-      maxWidth: 560,
-      minSize: 12,
-      maxLines: 1,
-      verticalPadding: 3.5,
-      yOffset: 2,
-      characterSpacing: 1.2,
-    })
+    // ── Certificate Number (top-left, next to "CERTIFICATE NO:" label) ──
+    if (certNo && certNo !== '-') {
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(NAVY)
+      doc.text(certNo, 118, 32.5, { lineBreak: false })
+    }
 
-    // ── Article Title (Slot 2: Y 353.7 -> 378.1) ──────────────────────────
-    drawCenteredSlot(doc, articleTitle, 353.7, 378.1, {
-      font: 'Times-Bold',
-      size: 13.5,
+    // ── Author Name (centered, ~Y 290 -> 328) ──────────────────────────
+    drawCenteredSlot(doc, authorName, 292, 328, {
+      font: 'Times-BoldItalic',
+      size: 22,
       color: NAVY,
-      maxWidth: 560,
-      minSize: 8.5,
-      maxLines: 2,
-      lineHeightFactor: 1.15,
-      verticalPadding: 2.5,
+      maxWidth: 520,
+      minSize: 13,
+      maxLines: 1,
+      verticalPadding: 2,
       characterSpacing: 0.8,
     })
 
-    // ── Volume / Issue / Year (Cover placeholder and render dynamic text) ─
-    doc.rect(300, 394, 242, 16).fillColor('#FFFFFF').fill()
+    // ── Article Title (centered, ~Y 354 -> 410) ────────────────────────
+    drawCenteredSlot(doc, articleTitle, 354, 410, {
+      font: 'Times-Bold',
+      size: 13.5,
+      color: NAVY,
+      maxWidth: 540,
+      minSize: 8.5,
+      maxLines: 3,
+      lineHeightFactor: 1.15,
+      verticalPadding: 2,
+      characterSpacing: 0.6,
+    })
 
-    const volText = `in Volume ${volume},  Issue ${issue},  Year ${year}`
-    doc.font('Times-Roman').fontSize(11).fillColor(NAVY)
-    const volW = doc.widthOfString(volText)
-    doc.text(volText, (PAGE_W - volW) / 2, 396, { lineBreak: false })
+    // ── Volume / Issue / Year (render with underlined value slots) ──────
+    const volFontSize = 11
+    const lineThickness = 0.75
+    const slotWidth = 55          // width of each underline slot
+    const slotPad = 3             // padding between label text and slot
+    const baseY = 418             // text baseline Y
+    const underlineY = baseY + volFontSize + 2  // underline sits just below text
 
-    // ── QR Code (bottom-left scanner pointing to www.ijidcr-asgard.in) ───
-    const qrSize = 76
-    const qrX    = 48
-    const qrY    = 428
+    doc.font('Times-Roman').fontSize(volFontSize).fillColor(NAVY)
+
+    // Build segments: "in Volume" ___1___ ", Issue" ___1___ ", Year" ___2026___
+    const segments = [
+      { label: 'in Volume ', value: String(volume) },
+      { label: ', Issue ',   value: String(issue) },
+      { label: ', Year ',    value: String(year) },
+    ]
+
+    // Calculate total width for centering
+    let totalWidth = 0
+    for (const seg of segments) {
+      totalWidth += doc.widthOfString(seg.label) + slotWidth
+    }
+
+    let cursorX = (PAGE_W - totalWidth) / 2
+
+    for (const seg of segments) {
+      // Draw label text
+      const labelW = doc.widthOfString(seg.label)
+      doc.text(seg.label, cursorX, baseY, { lineBreak: false })
+      cursorX += labelW
+
+      // Draw underline
+      doc.save()
+        .lineWidth(lineThickness)
+        .strokeColor(NAVY)
+        .moveTo(cursorX, underlineY)
+        .lineTo(cursorX + slotWidth, underlineY)
+        .stroke()
+        .restore()
+
+      // Draw value centered within the slot
+      const valW = doc.widthOfString(seg.value)
+      doc.text(seg.value, cursorX + (slotWidth - valW) / 2, baseY, { lineBreak: false })
+      cursorX += slotWidth
+    }
+
+    // ── QR Code (right side, inside golden frame) ───────────────────────
+    const qrSize = 78
+    const qrX    = 709
+    const qrY    = 236
     doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize })
 
-    // ── Top-right: Certificate No. ──────────────────────────────────────
-    const certBoxW = 170
-    const certBoxH = 76
-    const certBoxX = PAGE_W - 22 - certBoxW
-    const certBoxY = 174
-    if (certNo && certNo !== '-') {
-      doc.save()
-      doc.lineWidth(1.1)
-      doc.roundedRect(certBoxX, certBoxY, certBoxW, certBoxH, 7)
-      doc.fillAndStroke('#FBF6EA', GOLD)
-
-      doc.font('Times-Bold').fontSize(9).fillColor(GOLD)
-      doc.text('CERTIFICATE NO.', certBoxX + 14, certBoxY + 13, {
-        width: certBoxW - 28,
-        align: 'left',
-        lineBreak: false,
-      })
-      doc.font('Times-Bold').fontSize(11.2).fillColor(NAVY)
-      doc.text(certNo, certBoxX + 14, certBoxY + 29, {
-        width: certBoxW - 28,
-        align: 'left',
-        lineBreak: false,
-      })
-
-      doc.moveTo(certBoxX + 14, certBoxY + 50).lineTo(certBoxX + certBoxW - 14, certBoxY + 50).stroke(GOLD)
-
-      doc.font('Times-Bold').fontSize(9).fillColor(GOLD)
-      doc.text('ARTICLE ID', certBoxX + 14, certBoxY + 54, {
-        width: certBoxW - 28,
-        align: 'left',
-        lineBreak: false,
-      })
-      doc.font('Times-Bold').fontSize(11).fillColor(NAVY)
-      doc.text(articleNo, certBoxX + 14, certBoxY + 67, {
-        width: certBoxW - 28,
-        align: 'left',
-        lineBreak: false,
-      })
-      doc.restore()
+    // ── Article ID (bottom-left, next to "ARTICLE ID:" label) ───────────
+    const articleIdText = String(articleNo || '').trim()
+    if (articleIdText && articleIdText !== '-') {
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(NAVY)
+      doc.text(articleIdText, 233, 569.5, { lineBreak: false })
     }
 
     doc.end()
   })
 }
+

@@ -125,8 +125,8 @@ export function resolveCertificateAuthorName(author = {}) {
  * Certificate No. = ARFI-{YY}-{ARTICLE_NO}, reusing the existing Article No.
  * (manuscripts.submission_number). No separate certificate sequence is used.
  *
- * Example: submission_number = IJIDCR-26-0001, year = 2026
- *          -> ARFI-26-IJIDCR-26-0001
+ * Example: submission_number = IJIDCR-26-00001, year = 2026
+ *          -> ARFI-26-IJIDCR-26-00001
  */
 export function buildCertificateNumber(submissionNumber, publicationYear) {
   const articleNo = String(submissionNumber || '').trim()
