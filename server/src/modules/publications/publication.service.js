@@ -3,6 +3,7 @@ import { AppError } from '../../shared/errors/AppError.js'
 import { generateToken, buildAppUrl, buildServerUrl } from '../email/email.utils.js'
 import { renderCertificatePdf, formatCertificateName } from './certificate.renderer.js'
 import { uploadCertificatePdf } from './certificate.storage.js'
+import { buildCertificateQrUrl } from './certificate.urls.js'
 import { sendPublicationCertificate } from '../notification/manuscript-notification.service.js'
 
 const DEFAULT_VOLUME = 1
@@ -376,7 +377,7 @@ async function generateAndStoreCertificate({ publication, manuscript, certificat
     publicationDate: publication.publication_date || new Date(),
     certificateNumber: certificate.certificate_number,
     submissionNumber: manuscript.submission_number,
-    verificationUrl: buildAppUrl(`/verify/${certificate.verification_token}`),
+    verificationUrl: buildCertificateQrUrl(certificate.verification_token),
     doi: publication.doi || '',
     issn: manuscript.issn_print || manuscript.issn_online || '',
   }
@@ -753,6 +754,7 @@ export async function getMyCertificate(manuscriptId, userId, user = {}) {
   return {
     id: row.id,
     certificate_number: row.certificate_number,
+    verification_token: row.verification_token,
     status: row.status,
     manuscript_title: row.manuscript_title,
     submission_number: row.submission_number,
@@ -808,7 +810,7 @@ export async function downloadMyCertificatePdf(manuscriptId, userId, user = {}) 
     publicationDate: certInfo.publication_date || publication.publication_date || new Date(),
     certificateNumber: certInfo.certificate_number,
     submissionNumber: certInfo.submission_number || manuscript.submission_number,
-    verificationUrl: certInfo.verification_url,
+    verificationUrl: buildCertificateQrUrl(certInfo.verification_token),
     doi: certInfo.doi || publication.doi || '',
     issn: certInfo.issn_print || certInfo.issn_online || '',
   }
@@ -845,7 +847,7 @@ export async function downloadPublicCertificatePdf(token) {
     publicationDate: certInfo.publication_date || new Date(),
     certificateNumber: certInfo.certificate_number,
     submissionNumber: certInfo.submission_number,
-    verificationUrl: buildAppUrl(`/verify/${certInfo.verification_token}`),
+    verificationUrl: buildCertificateQrUrl(certInfo.verification_token),
     doi: certInfo.doi || '',
     issn: certInfo.issn_print || certInfo.issn_online || '',
   }
