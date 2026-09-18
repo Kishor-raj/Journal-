@@ -414,7 +414,7 @@ export default function PublicLayout() {
           flexWrap: 'wrap',
         }}>
           <span>© 2026 Asgard Publications. All rights reserved.</span>
-          <span>Content licensed under CC BY 4.0 · ISSN 2977-4418</span>
+          <span>Content licensed under CC BY 4.0 · ISSN 2654-6725</span>
         </div>
       </footer>
     </div>
