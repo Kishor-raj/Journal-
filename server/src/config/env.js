@@ -58,6 +58,9 @@ export const env = {
   SERVER_ORIGIN: process.env.SERVER_ORIGIN || 'http://localhost:3001',
   AUTH_CALLBACK_ORIGIN: process.env.AUTH_CALLBACK_ORIGIN,
   PUBLIC_APP_ORIGIN: publicAppOrigin,
+  // Optional separate origin used only inside certificate QR codes.
+  // Falls back to the general public app origin for backward compatibility.
+  CERTIFICATE_QR_ORIGIN: process.env.CERTIFICATE_QR_ORIGIN || publicAppOrigin,
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
