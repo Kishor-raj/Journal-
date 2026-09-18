@@ -212,7 +212,7 @@ export async function executeToolCall(toolName, args) {
 export async function logToolCall({ emailId, toolName, args, result, error }) {
   await pool.query(
     `INSERT INTO workflow_logs (workflow_name, event_name, source, status, payload)
-     VALUES ('ai_email', 'tool_call', 'gemini', $1, $2)`,
+     VALUES ('ai_email', 'tool_call', 'groq', $1, $2)`,
     [
       error ? 'failed' : 'success',
       JSON.stringify({
