@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom'
 import { useVisitorCount } from '../shared/hooks/useVisitorCount'
-import { formatVisitorCount } from '../shared/utils/formatVisitorCount'
 import AnalyticsConsentBanner from '../shared/components/AnalyticsConsentBanner'
 
 const NAV_ITEMS = [
@@ -107,10 +106,6 @@ export default function PublicLayout() {
             {!isCompact && <span>Peer-reviewed &amp; Open Access</span>}
           </div>
           <div style={{ display: 'flex', gap: '6px 26px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', whiteSpace: 'nowrap' }}>
-              <span className="live-dot" aria-hidden="true"></span>
-              {formatVisitorCount(visitorCount) ?? '—'} Visitors
-            </span>
             <span>ceo@ijidcr-asgard.in</span>
           </div>
         </div>
