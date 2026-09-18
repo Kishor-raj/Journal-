@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 import { publicService } from '../../services/publicService.js'
+import VisitorSocialProof from './VisitorSocialProof.jsx'
 
 /* ─── Static data ──────────────────────────────────────────────────────── */
 const METRICS = [
@@ -306,6 +307,11 @@ export default function Home() {
   const [featured, setFeatured] = useState([])
   const [loadingFeatured, setLoadingFeatured] = useState(true)
 
+  // Use visitor count directly from PublicLayout (top of page), sharing the single live fetch
+  const outletContext = useOutletContext()
+  const visitorCount = outletContext?.visitorCount ?? null
+  const visitorLoading = outletContext?.visitorLoading ?? false
+
   useEffect(() => {
     publicService.getFeaturedArticles(6)
       .then(data => setFeatured((data || []).map(toCard)))
@@ -341,14 +347,14 @@ export default function Home() {
           padding: '0 var(--layout-pad)',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
-          minHeight: 'calc(100vh - 148px)',
+          minHeight: 'clamp(480px, calc(100vh - 120px), 780px)',
           alignItems: 'center',
-          gap: 'clamp(32px, 4vw, 64px)',
+          gap: 'clamp(24px, 3.5vw, 56px)',
           position: 'relative',
           zIndex: 1,
         }}>
           {/* Left Column: Hero Content */}
-          <div style={{ padding: 'clamp(44px, 6vw, 76px) 0' }}>
+          <div style={{ padding: 'clamp(24px, 3.5vw, 56px) 0' }}>
             {/* Journal Badge */}
             <div style={{
               display: 'inline-flex',
@@ -418,7 +424,7 @@ export default function Home() {
             </p>
 
             {/* Hero Buttons */}
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '44px' }}>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
               <HoverLink
                 to="/guidelines"
                 bg="linear-gradient(135deg, #D4AF37 0%, #C4A24C 50%, #B38E2F 100%)"
@@ -451,12 +457,23 @@ export default function Home() {
               </OutlineLink>
             </div>
 
+            {/* Social-proof: live visit count (from existing visitor hook) +
+                fixed country count (64). Shows "—" while loading; hidden
+                entirely if the visit-tracking fetch fails. */}
+            {(visitorLoading || visitorCount !== null) && (
+              <VisitorSocialProof
+                totalVisits={visitorCount}
+                totalCountries={64}
+              />
+            )}
+
             {/* Trust / Journal Features */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: 'clamp(14px, 2vw, 24px)',
               flexWrap: 'wrap',
+              marginTop: '24px',
               paddingTop: '20px',
               borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             }}>
