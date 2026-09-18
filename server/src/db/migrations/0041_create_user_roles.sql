@@ -15,12 +15,3 @@ FROM users
 WHERE role_id IS NOT NULL
 ON CONFLICT (user_id, role_id) DO NOTHING;
 
--- The seeded development account is intentionally a full workflow account so
--- the five portals can be exercised with one login.
-INSERT INTO user_roles (user_id, role_id)
-SELECT u.id, r.id
-FROM users u
-CROSS JOIN roles r
-WHERE u.email = 'admin@jar-journal.org'
-  AND r.name IN ('admin', 'author', 'moderator', 'editor', 'reviewer')
-ON CONFLICT (user_id, role_id) DO NOTHING;

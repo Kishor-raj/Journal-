@@ -92,4 +92,7 @@ export const env = {
   AI_EMAIL_WORKER_INTERVAL_MS: parseInt(process.env.AI_EMAIL_WORKER_INTERVAL_MS, 10) || 20000,
   AI_WEBHOOK_RATE_LIMIT: parseInt(process.env.AI_WEBHOOK_RATE_LIMIT, 10) || 30,
   AI_DATA_RETENTION_DAYS: parseInt(process.env.AI_DATA_RETENTION_DAYS, 10) || 90,
+  ADMIN_SEED_EMAIL: process.env.ADMIN_SEED_EMAIL,
+  ADMIN_SEED_PASSWORD: process.env.ADMIN_SEED_PASSWORD,
 }
+
