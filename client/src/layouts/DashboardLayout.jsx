@@ -362,7 +362,7 @@ export default function DashboardLayout() {
           J
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', opacity: isCollapsed ? 0 : 1, transition: 'opacity 150ms ease', pointerEvents: isCollapsed ? 'none' : 'auto' }}>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff', letterSpacing: '0.02em', lineHeight: 1.2 }}>Journal MS</span>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff', letterSpacing: '0.02em', lineHeight: 1.2 }}>IJIDCR-ASGARD</span>
           <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>
             {cfg?.portalLabel ?? 'Dashboard'}
           </span>
