@@ -21,7 +21,6 @@ import Login from '../features/public/Login'
 import AuthCallback from '../features/public/AuthCallback'
 
 import CompleteProfile from '../features/auth/CompleteProfile'
-import RoleSelect from '../features/auth/RoleSelect'
 import Register from '../features/auth/Register'
 import VerifyEmail from '../features/auth/VerifyEmail'
 import ForgotPassword from '../features/auth/ForgotPassword'
@@ -172,7 +171,6 @@ function AppRouter() {
       </Route>
 
       <Route path="/profile/complete" element={<ProtectedRoute requireProfileComplete={false}><CompleteProfile /></ProtectedRoute>} />
-      <Route path="/auth/select-role" element={<RoleSelect />} />
       <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>
   )

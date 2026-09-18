@@ -69,7 +69,7 @@ export default function AuthCallback() {
         if (!isMounted) return
 
         if (userData) {
-          navigate('/auth/select-role', { replace: true })
+          navigate('/dashboard', { replace: true })
         } else {
           setError('Authentication verification failed. Redirecting to login...')
           setTimeout(() => navigate('/login', { replace: true }), 1500)

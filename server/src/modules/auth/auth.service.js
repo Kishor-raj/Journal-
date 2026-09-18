@@ -139,16 +139,20 @@ export async function findOrCreateUser(payload) {
       )
     }
 
-    // This journal's shared workflow accounts can enter every portal.
-    await client.query(
-      `INSERT INTO user_roles (user_id, role_id)
-       SELECT $1, id FROM roles
-       WHERE name IN ('admin', 'author', 'moderator', 'editor', 'reviewer')
-       ON CONFLICT (user_id, role_id) DO NOTHING`,
-      [userId]
-    )
+    // New Google user receives only the assigned canonical role
+    const userRoleRes = await client.query('SELECT role_id FROM users WHERE id = $1', [userId])
+    const assignedRoleId = userRoleRes.rows[0]?.role_id || authorRoleId
+    if (assignedRoleId) {
+      await client.query(
+        `INSERT INTO user_roles (user_id, role_id)
+         VALUES ($1, $2)
+         ON CONFLICT (user_id, role_id) DO NOTHING`,
+        [userId, assignedRoleId]
+      )
+    }
 
     await client.query('COMMIT')
+
     return userId
   } catch (err) {
     await client.query('ROLLBACK')
@@ -186,34 +190,8 @@ export async function createSession(userId, ip, userAgent) {
   return { token, expiresAt }
 }
 
-export async function selectRoleForSession(sessionId, roleName) {
-  const roleResult = await pool.query(
-    'SELECT id FROM roles WHERE name = $1',
-    [roleName]
-  )
-
-  if (roleResult.rows.length === 0) {
-    return null
-  }
-
-  const roleId = roleResult.rows[0].id
-  const result = await pool.query(
-    `UPDATE user_sessions
-     SET role_id = $1
-     WHERE id = $2 AND revoked_at IS NULL AND expires_at > now()
-     RETURNING id`,
-    [roleId, sessionId]
-  )
-
-  if (result.rowCount === 0) {
-    return null
-  }
-
-  return roleName
-}
-
 export async function getAssignedRoles(userId) {
-  let result = await pool.query(
+  const result = await pool.query(
     `SELECT r.name
      FROM user_roles ur
      JOIN roles r ON r.id = ur.role_id
@@ -225,28 +203,20 @@ export async function getAssignedRoles(userId) {
   )
 
   if (result.rows.length === 0) {
-    // Ensure all standard roles exist for this user in user_roles
-    await pool.query(
-      `INSERT INTO user_roles (user_id, role_id)
-       SELECT $1, id FROM roles
-       WHERE name IN ('admin', 'author', 'moderator', 'editor', 'reviewer')
-       ON CONFLICT (user_id, role_id) DO NOTHING`,
-      [userId]
-    )
-    result = await pool.query(
+    const userRole = await pool.query(
       `SELECT r.name
-       FROM user_roles ur
-       JOIN roles r ON r.id = ur.role_id
-       WHERE ur.user_id = $1 AND r.is_active = true
-       ORDER BY CASE r.name
-         WHEN 'admin' THEN 1 WHEN 'author' THEN 2 WHEN 'moderator' THEN 3
-         WHEN 'editor' THEN 4 WHEN 'reviewer' THEN 5 ELSE 99 END`,
+       FROM users u
+       JOIN roles r ON r.id = u.role_id
+       WHERE u.id = $1 AND r.is_active = true`,
       [userId]
     )
+    if (userRole.rows.length > 0) {
+      return [userRole.rows[0].name]
+    }
+    return []
   }
 
-  const roleNames = result.rows.map((row) => row.name)
-  return roleNames.length > 0 ? roleNames : ['admin', 'author', 'moderator', 'editor', 'reviewer']
+  return result.rows.map((row) => row.name)
 }
 
 export async function destroySession(tokenHash) {
@@ -288,10 +258,6 @@ export async function findSession(tokenHash) {
     session.display_name = session.display_name.replace(/\bundefined\b/g, '').trim() ||
       session.first_name ||
       session.email?.split('@')[0]
-  }
-
-  if (!session.assigned_roles || session.assigned_roles.length === 0) {
-    session.assigned_roles = ['admin', 'author', 'moderator', 'editor', 'reviewer']
   }
 
   return session

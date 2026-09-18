@@ -89,9 +89,14 @@ router.patch('/users/:id/role', authenticate, requireRole('admin'), async (req, 
       [userId, oldRoleId, newRoleId, req.user.uid, reason]
     )
     await client.query('UPDATE users SET role_id = $1, updated_at = now() WHERE id = $2', [newRoleId, userId])
+    await client.query('DELETE FROM user_roles WHERE user_id = $1', [userId])
     await client.query(
-      'INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT (user_id, role_id) DO NOTHING',
+      'INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)',
       [userId, newRoleId]
+    )
+    await client.query(
+      'UPDATE user_sessions SET role_id = $1 WHERE user_id = $2 AND revoked_at IS NULL',
+      [newRoleId, userId]
     )
 
     await client.query(
