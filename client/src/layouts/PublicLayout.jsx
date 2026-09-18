@@ -102,7 +102,7 @@ export default function PublicLayout() {
           width: '100%',
         }}>
           <div style={{ display: 'flex', gap: '6px 26px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>ISSN 2977-4418 (Online)</span>
+            <span>ISSN 2654-6725 (Online)</span>
             {!isCompact && <span style={{ opacity: 0.35 }}>|</span>}
             {!isCompact && <span>Peer-reviewed &amp; Open Access</span>}
           </div>
