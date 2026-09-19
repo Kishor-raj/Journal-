@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import {
+  ShieldHalf, Gauge, Users, MailOpen, FileText, Inbox, MailCheck, BarChart2, Server,
+  UserCircle, Feather, Route, RotateCw, Bell, HelpCircle, PenLine, UserCheck, Gavel,
+  CheckCircle2, ClipboardCheck, Layers, BookOpen, Search, History, Menu, ChevronLeft, LogOut,
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -10,39 +15,39 @@ const NAV = {
   admin: {
     portalLabel: 'Admin Portal',
     roleBadge: 'Administrator',
-    roleIcon: 'fa-shield-halved',
+    roleIcon: ShieldHalf,
     badgeVariant: 'accent',
     sections: [
       {
         label: 'Overview',
-        items: [{ to: '/admin/dashboard', label: 'Dashboard', icon: 'fa-gauge' }],
+        items: [{ to: '/admin/dashboard', label: 'Dashboard', icon: Gauge }],
       },
       {
         label: 'Management',
         items: [
-          { to: '/admin/users', label: 'Users', icon: 'fa-users' },
-          { to: '/admin/contact-inquiries', label: 'Contact Inquiries', icon: 'fa-envelope-open-text' },
+          { to: '/admin/users', label: 'Users', icon: Users },
+          { to: '/admin/contact-inquiries', label: 'Contact Inquiries', icon: MailOpen },
         ],
       },
       {
         label: 'Logs',
         items: [
-          { to: '/admin/audit-logs', label: 'Audit Logs', icon: 'fa-file-lines' },
+          { to: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
         ],
       },
       {
         label: 'Notifications',
         items: [
-          { to: '/admin/notifications', label: 'History', icon: 'fa-inbox' },
-          { to: '/admin/email-templates', label: 'Email Templates', icon: 'fa-envelope-circle-check' },
-          { to: '/admin/email-stats', label: 'Delivery Stats', icon: 'fa-chart-column' },
-          { to: '/admin/email-provider', label: 'Provider Status', icon: 'fa-server' },
+          { to: '/admin/notifications', label: 'History', icon: Inbox },
+          { to: '/admin/email-templates', label: 'Email Templates', icon: MailCheck },
+          { to: '/admin/email-stats', label: 'Delivery Stats', icon: BarChart2 },
+          { to: '/admin/email-provider', label: 'Provider Status', icon: Server },
         ],
       },
       {
         label: 'Account',
         items: [
-          { to: '/profile', label: 'Profile', icon: 'fa-user-circle' },
+          { to: '/profile', label: 'Profile', icon: UserCircle },
         ],
       },
     ],
@@ -52,29 +57,29 @@ const NAV = {
   author: {
     portalLabel: 'Author Portal',
     roleBadge: 'Author',
-    roleIcon: 'fa-feather-pointed',
+    roleIcon: Feather,
     badgeVariant: 'success',
     sections: [
       {
         label: 'Submissions',
         items: [
-          { to: '/author/dashboard',  label: 'Dashboard',          icon: 'fa-gauge' },
-          { to: '/author/manuscripts', label: 'My Manuscripts',    icon: 'fa-file-lines' },
-          { to: '/author/track',       label: 'Track Manuscript',  icon: 'fa-route' },
-          { to: '/author/revisions',   label: 'Revisions',         icon: 'fa-rotate' },
+          { to: '/author/dashboard',  label: 'Dashboard',          icon: Gauge },
+          { to: '/author/manuscripts', label: 'My Manuscripts',    icon: FileText },
+          { to: '/author/track',       label: 'Track Manuscript',  icon: Route },
+          { to: '/author/revisions',   label: 'Revisions',         icon: RotateCw },
         ],
       },
       {
         label: 'Communication',
         items: [
-          { to: '/author/notifications', label: 'Notifications', icon: 'fa-bell' },
+          { to: '/author/notifications', label: 'Notifications', icon: Bell },
         ],
       },
       {
         label: 'Account',
         items: [
-          { to: '/profile',      label: 'Profile', icon: 'fa-user-circle' },
-          { to: '/author/help',  label: 'Help',    icon: 'fa-circle-question' },
+          { to: '/profile',      label: 'Profile', icon: UserCircle },
+          { to: '/author/help',  label: 'Help',    icon: HelpCircle },
         ],
       },
     ],
@@ -84,29 +89,29 @@ const NAV = {
   editor: {
     portalLabel: 'Editor Workspace',
     roleBadge: 'Editor',
-    roleIcon: 'fa-pen-nib',
+    roleIcon: PenLine,
     badgeVariant: 'info',
     sections: [
       {
         label: 'Workflow',
         items: [
-          { to: '/editor/dashboard',   label: 'Dashboard',           icon: 'fa-gauge' },
-          { to: '/editor/queue',       label: 'Manuscripts',         icon: 'fa-file-lines', match: ['/editor/queue', '/editor/manuscripts'] },
-          { to: '/editor/reviewers',   label: 'Reviewer Management', icon: 'fa-user-check' },
-          { to: '/editor/decisions',   label: 'Decisions',           icon: 'fa-gavel' },
-          { to: '/editor/accepted',    label: 'Accepted & Published', icon: 'fa-circle-check' },
+          { to: '/editor/dashboard',   label: 'Dashboard',           icon: Gauge },
+          { to: '/editor/queue',       label: 'Manuscripts',         icon: FileText, match: ['/editor/queue', '/editor/manuscripts'] },
+          { to: '/editor/reviewers',   label: 'Reviewer Management', icon: UserCheck },
+          { to: '/editor/decisions',   label: 'Decisions',           icon: Gavel },
+          { to: '/editor/accepted',    label: 'Accepted & Published', icon: CheckCircle2 },
         ],
       },
       {
         label: 'Communication',
         items: [
-          { to: '/editor/notifications', label: 'Notifications', icon: 'fa-bell' },
+          { to: '/editor/notifications', label: 'Notifications', icon: Bell },
         ],
       },
       {
         label: 'Account',
         items: [
-          { to: '/profile', label: 'Profile', icon: 'fa-user-circle' },
+          { to: '/profile', label: 'Profile', icon: UserCircle },
         ],
       },
     ],
@@ -116,27 +121,27 @@ const NAV = {
   moderator: {
     portalLabel: 'Moderator Console',
     roleBadge: 'Moderator',
-    roleIcon: 'fa-clipboard-check',
+    roleIcon: ClipboardCheck,
     badgeVariant: 'accent',
     sections: [
       {
         label: 'Screening',
         items: [
-          { to: '/moderator/dashboard', label: 'Dashboard',        icon: 'fa-gauge' },
-          { to: '/moderator/screening', label: 'Moderation Queue', icon: 'fa-layer-group', match: ['/moderator/screening'] },
-          { to: '/moderator/rules',     label: 'Screening Rules',  icon: 'fa-book-open' },
+          { to: '/moderator/dashboard', label: 'Dashboard',        icon: Gauge },
+          { to: '/moderator/screening', label: 'Moderation Queue', icon: Layers, match: ['/moderator/screening'] },
+          { to: '/moderator/rules',     label: 'Screening Rules',  icon: BookOpen },
         ],
       },
       {
         label: 'Communication',
         items: [
-          { to: '/moderator/notifications', label: 'Notifications', icon: 'fa-bell' },
+          { to: '/moderator/notifications', label: 'Notifications', icon: Bell },
         ],
       },
       {
         label: 'Account',
         items: [
-          { to: '/profile', label: 'Profile', icon: 'fa-user-circle' },
+          { to: '/profile', label: 'Profile', icon: UserCircle },
         ],
       },
     ],
@@ -146,22 +151,22 @@ const NAV = {
   reviewer: {
     portalLabel: 'Reviewer Portal',
     roleBadge: 'Reviewer',
-    roleIcon: 'fa-magnifying-glass',
+    roleIcon: Search,
     badgeVariant: 'blue',
     sections: [
       {
         label: 'Reviews',
         items: [
-          { to: '/reviewer/dashboard',   label: 'Dashboard',   icon: 'fa-gauge' },
-          { to: '/reviewer/invitations', label: 'Invitations', icon: 'fa-envelope-open-text' },
-          { to: '/reviewer/assignments', label: 'My Reviews',  icon: 'fa-clipboard-check', match: ['/reviewer/assignments'], exclude: ['/extension'] },
-          { to: '/reviewer/extensions',  label: 'Extensions',  icon: 'fa-clock-rotate-left', match: ['/reviewer/extensions'], endsWith: ['/extension'] },
+          { to: '/reviewer/dashboard',   label: 'Dashboard',   icon: Gauge },
+          { to: '/reviewer/invitations', label: 'Invitations', icon: MailOpen },
+          { to: '/reviewer/assignments', label: 'My Reviews',  icon: ClipboardCheck, match: ['/reviewer/assignments'], exclude: ['/extension'] },
+          { to: '/reviewer/extensions',  label: 'Extensions',  icon: History, match: ['/reviewer/extensions'], endsWith: ['/extension'] },
         ],
       },
       {
         label: 'Account',
         items: [
-          { to: '/profile', label: 'Profile', icon: 'fa-user-circle' },
+          { to: '/profile', label: 'Profile', icon: UserCircle },
         ],
       },
     ],
@@ -246,10 +251,7 @@ function NavItem({ item, collapsed }) {
       }}
       title={collapsed ? item.label : undefined}
     >
-      <i
-        className={`fas ${item.icon}`}
-        style={{ width: '20px', minWidth: '20px', textAlign: 'center', fontSize: '15px' }}
-      />
+      <item.icon size={16} style={{ width: '20px', minWidth: '20px', flexShrink: 0 }} />
       <span style={{
         opacity: collapsed ? 0 : 1,
         transition: 'opacity 150ms ease',
@@ -383,7 +385,7 @@ export default function DashboardLayout() {
           border: `1px solid ${BADGE[cfg.badgeVariant].border}`,
           color: BADGE[cfg.badgeVariant].color,
         }}>
-          <i className={`fas ${cfg.roleIcon}`} style={{ fontSize: '11px' }} />
+          <cfg.roleIcon size={12} />
           {cfg.roleBadge}
         </div>
       )}
@@ -457,7 +459,7 @@ export default function DashboardLayout() {
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: '18px', padding: '4px', display: 'flex' }}
                 aria-label="Toggle menu"
               >
-                <i className="fas fa-bars" />
+                <Menu size={20} />
               </button>
             )}
             <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', fontWeight: 500 }}>
@@ -481,7 +483,7 @@ export default function DashboardLayout() {
               }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D9A94A', position: 'relative', padding: '4px', display: 'flex' }}
             >
-              <i className="fas fa-bell" style={{ fontSize: '18px' }} />
+              <Bell size={18} />
               <span style={{ width: '8px', height: '8px', background: '#F59E0B', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px', border: '1.5px solid #1B2A4A' }} />
             </button>
 
@@ -548,7 +550,7 @@ function CollapseBtn({ collapsed, onClick }) {
       }}
       title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
     >
-      <i className="fas fa-chevron-left" style={{ transition: 'transform 250ms ease', transform: collapsed ? 'rotate(180deg)' : 'none', fontSize: '13px' }} />
+      <ChevronLeft size={14} style={{ transition: 'transform 250ms ease', transform: collapsed ? 'rotate(180deg)' : 'none' }} />
       {!collapsed && <span>Collapse</span>}
     </button>
   )
@@ -574,7 +576,7 @@ function LogoutBtn({ onClick }) {
         transition: 'border-color 150ms ease, color 150ms ease',
       }}
     >
-      <i className="fas fa-right-from-bracket" style={{ marginRight: '5px', fontSize: '11px' }} />
+      <LogOut size={12} style={{ marginRight: '5px' }} />
       Logout
     </button>
   )

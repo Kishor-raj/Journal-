@@ -52,7 +52,7 @@ export default function StatCard({ label, value, sublabel, icon, iconBg, iconCol
               color: resolvedIconColor,
             }}
           >
-            <i className={icon} />
+            {icon}
           </div>
         )}
       </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Clock, CalendarRange, FileText, Target } from 'lucide-react'
 import { getEmailStats, getEmailTemplates } from '../../../services/emailAdminService'
 import StatCard from '../../../shared/components/StatCard'
 import PageHeader from '../../../shared/components/PageHeader'
@@ -88,10 +89,10 @@ export default function EmailStats() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginTop: '20px' }}>
-            <StatCard label="Last 24 Hours" value={summary.last_24h ?? 0} icon="fas fa-clock" />
-            <StatCard label="Last 7 Days" value={summary.last_7d ?? 0} icon="fas fa-calendar-week" />
-            <StatCard label="Active Templates" value={templates.filter((t) => t.is_active).length} icon="fas fa-file-lines" />
-            <StatCard label="Success Rate" value={summary.success_rate != null ? `${Math.round(summary.success_rate)}%` : '—'} icon="fas fa-bullseye" />
+            <StatCard label="Last 24 Hours" value={summary.last_24h ?? 0} icon={<Clock size={16} />} />
+            <StatCard label="Last 7 Days" value={summary.last_7d ?? 0} icon={<CalendarRange size={16} />} />
+            <StatCard label="Active Templates" value={templates.filter((t) => t.is_active).length} icon={<FileText size={16} />} />
+            <StatCard label="Success Rate" value={summary.success_rate != null ? `${Math.round(summary.success_rate)}%` : '—'} icon={<Target size={16} />} />
           </div>
 
           <div style={styles.card}>
