@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMyManuscripts } from './services/manuscriptService'
 import apiClient from '../../services/apiClient'
+import {
+  Send, Search, RotateCw, CheckCircle2, CircleX, Ban, ClipboardCheck, AlertTriangle,
+  CheckCheck, Clock, Check, Loader2, BellOff,
+} from 'lucide-react'
 
 /* ─── Status → notification metadata ─────────────────────────────────────── */
 const STATUS_META = {
@@ -9,7 +13,7 @@ const STATUS_META = {
     type: 'Submitted',
     typeColor: '#2E6B9E',
     typeBg: '#EBF4FB',
-    icon: 'fa-paper-plane',
+    icon: Send,
     iconColor: '#2E6B9E',
     text: (m) =>
       `<strong>${m.submission_number || m.title || 'Your manuscript'}</strong> submitted successfully. Awaiting moderation screening.`,
@@ -18,7 +22,7 @@ const STATUS_META = {
     type: 'Review',
     typeColor: '#2E6B9E',
     typeBg: '#EBF4FB',
-    icon: 'fa-magnifying-glass',
+    icon: Search,
     iconColor: '#2E6B9E',
     text: (m) =>
       `<strong>${m.submission_number || m.title}</strong> has entered peer review. Reviewers have been assigned.`,
@@ -27,7 +31,7 @@ const STATUS_META = {
     type: 'Revision',
     typeColor: '#C48B1E',
     typeBg: '#FEF7E8',
-    icon: 'fa-rotate',
+    icon: RotateCw,
     iconColor: '#C48B1E',
     text: (m) =>
       `<strong>Revision required</strong> for ${m.submission_number || m.title}. Review comments are available in the manuscript detail page.`,
@@ -36,7 +40,7 @@ const STATUS_META = {
     type: 'Resubmitted',
     typeColor: '#2E6B9E',
     typeBg: '#EBF4FB',
-    icon: 'fa-paper-plane',
+    icon: Send,
     iconColor: '#2E6B9E',
     text: (m) =>
       `<strong>${m.submission_number || m.title}</strong> resubmission received. Under editorial review.`,
@@ -45,7 +49,7 @@ const STATUS_META = {
     type: 'Accepted',
     typeColor: '#2B7A4B',
     typeBg: '#E8F5EC',
-    icon: 'fa-circle-check',
+    icon: CheckCircle2,
     iconColor: '#2B7A4B',
     text: (m) =>
       `<strong>${m.submission_number || m.title}</strong> has been <strong>accepted</strong> for publication. Congratulations! The production team will contact you regarding proof review.`,
@@ -54,7 +58,7 @@ const STATUS_META = {
     type: 'Decision',
     typeColor: '#B83333',
     typeBg: '#FCECEC',
-    icon: 'fa-circle-xmark',
+    icon: CircleX,
     iconColor: '#B83333',
     text: (m) =>
       `<strong>${m.submission_number || m.title}</strong> was not accepted for publication in this cycle. Reviewer feedback is available.`,
@@ -63,7 +67,7 @@ const STATUS_META = {
     type: 'Withdrawn',
     typeColor: '#8B8F9A',
     typeBg: '#F4F5F7',
-    icon: 'fa-ban',
+    icon: Ban,
     iconColor: '#8B8F9A',
     text: (m) =>
       `<strong>${m.submission_number || m.title}</strong> has been withdrawn as requested.`,
@@ -72,7 +76,7 @@ const STATUS_META = {
     type: 'Screening',
     typeColor: '#2B7A4B',
     typeBg: '#E8F5EC',
-    icon: 'fa-clipboard-check',
+    icon: ClipboardCheck,
     iconColor: '#2B7A4B',
     text: (m) =>
       `<strong>${m.submission_number || m.title}</strong> passed moderation screening and is awaiting editorial assignment.`,
@@ -81,7 +85,7 @@ const STATUS_META = {
     type: 'Screening',
     typeColor: '#B83333',
     typeBg: '#FCECEC',
-    icon: 'fa-triangle-exclamation',
+    icon: AlertTriangle,
     iconColor: '#B83333',
     text: (m) =>
       `<strong>${m.submission_number || m.title}</strong> did not pass moderation screening. Please review the checklist notes.`,
@@ -267,7 +271,7 @@ export default function AuthorNotifications() {
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#C4922E'; e.currentTarget.style.color = '#C4922E' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E4E8'; e.currentTarget.style.color = '#5A5E6B' }}
           >
-            <i className="fas fa-check-double" style={{ fontSize: '13px' }} />
+            <CheckCheck size={13} />
             Mark all read
           </button>
         )}
@@ -377,7 +381,7 @@ function NotifItem({ notif, isRead, isLast, onRead, onNavigate }) {
         background: notif.typeBg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <i className={`fas ${notif.icon}`} style={{ fontSize: '15px', color: notif.iconColor }} />
+        <notif.icon size={15} style={{ color: notif.iconColor }} />
       </div>
 
       {/* Content */}
@@ -387,7 +391,7 @@ function NotifItem({ notif, isRead, isLast, onRead, onNavigate }) {
           dangerouslySetInnerHTML={{ __html: notif.html }}
         />
         <div style={{ fontSize: '12px', color: '#8B8F9A', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <i className="fas fa-clock" style={{ fontSize: '10px' }} />
+          <Clock size={10} />
           {timeAgo(notif.createdAt)}
         </div>
       </div>
@@ -416,7 +420,7 @@ function NotifItem({ notif, isRead, isLast, onRead, onNavigate }) {
             onMouseLeave={e => { e.currentTarget.style.color = '#8B8F9A' }}
             title="Mark as read"
           >
-            <i className="fas fa-check" style={{ fontSize: '11px', marginRight: '3px' }} />
+            <Check size={11} style={{ marginRight: '3px' }} />
             Mark read
           </button>
         )}
@@ -429,7 +433,7 @@ function NotifItem({ notif, isRead, isLast, onRead, onNavigate }) {
 function LoadingState() {
   return (
     <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-      <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px', color: '#8B8F9A', marginBottom: '12px', display: 'block' }} />
+      <Loader2 size={24} className="icon-spin" style={{ color: '#8B8F9A', marginBottom: '12px', display: 'block' }} />
       <div style={{ fontSize: '14px', color: '#8B8F9A' }}>Loading notifications…</div>
     </div>
   )
@@ -444,7 +448,7 @@ function EmptyState({ filter }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         margin: '0 auto 16px',
       }}>
-        <i className="fas fa-bell-slash" style={{ fontSize: '22px', color: '#8B8F9A' }} />
+        <BellOff size={22} style={{ color: '#8B8F9A' }} />
       </div>
       <div style={{ fontSize: '15px', fontWeight: 600, color: '#1A1A2E', marginBottom: '6px' }}>
         {filter === 'all' ? 'No notifications yet' : `No ${filter.toLowerCase()} notifications`}

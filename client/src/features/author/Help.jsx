@@ -1,40 +1,45 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  PlusCircle, RotateCw, Route, Users, FileText, Ban,
+  ChevronUp, ChevronDown, X, Send, ClipboardCheck, Search, Gavel, CheckCircle2,
+  Mail, Headset, Clock, Calendar,
+} from 'lucide-react'
 
 /* ─── Data ──────────────────────────────────────────────────────────────────── */
 const QUICK_LINKS = [
   {
-    icon: 'fa-plus-circle', iconColor: '#2E6B9E', iconBg: '#EBF4FB',
+    icon: PlusCircle, iconColor: '#2E6B9E', iconBg: '#EBF4FB',
     title: 'How to Submit',
     desc: 'Step-by-step guide through the 6-step submission wizard',
     to: '/author/submit/new',
   },
   {
-    icon: 'fa-rotate', iconColor: '#C48B1E', iconBg: '#FEF7E8',
+    icon: RotateCw, iconColor: '#C48B1E', iconBg: '#FEF7E8',
     title: 'How to Revise',
     desc: 'Respond to revision requests with a cover letter and updated files',
     to: '/author/revisions',
   },
   {
-    icon: 'fa-route', iconColor: '#7C3AED', iconBg: '#F3E8FF',
+    icon: Route, iconColor: '#7C3AED', iconBg: '#F3E8FF',
     title: 'Manuscript Lifecycle',
     desc: 'Understand the stages: Submit → Screen → Review → Decision → Revision',
     modal: 'lifecycle',
   },
   {
-    icon: 'fa-users', iconColor: '#2B7A4B', iconBg: '#E8F5EC',
+    icon: Users, iconColor: '#2B7A4B', iconBg: '#E8F5EC',
     title: 'Co-Author Access',
     desc: 'How linked co-authors can view manuscript status and files',
     modal: 'coauthor',
   },
   {
-    icon: 'fa-file-lines', iconColor: '#2E6B9E', iconBg: '#EBF4FB',
+    icon: FileText, iconColor: '#2E6B9E', iconBg: '#EBF4FB',
     title: 'My Manuscripts',
     desc: 'View, track, and manage all your submitted and draft manuscripts',
     to: '/author/manuscripts',
   },
   {
-    icon: 'fa-ban', iconColor: '#B83333', iconBg: '#FCECEC',
+    icon: Ban, iconColor: '#B83333', iconBg: '#FCECEC',
     title: 'Withdrawal Policy',
     desc: 'When and how to withdraw a manuscript from the review process',
     to: '/author/withdrawals',
@@ -69,19 +74,19 @@ const FAQ = [
 ]
 
 const LIFECYCLE_STEPS = [
-  { icon: 'fa-paper-plane',    color: '#2E6B9E', bg: '#EBF4FB', label: 'Submitted',  desc: 'Manuscript received and assigned a submission number.' },
-  { icon: 'fa-clipboard-check',color: '#7C3AED', bg: '#F3E8FF', label: 'Screening',  desc: 'Moderator checks formatting, scope, and ethics compliance.' },
-  { icon: 'fa-magnifying-glass',color: '#C48B1E', bg: '#FEF7E8', label: 'Peer Review',desc: 'Assigned to 2–3 independent reviewers for double-blind review.' },
-  { icon: 'fa-gavel',           color: '#1B2A4A', bg: '#E8ECF5', label: 'Decision',   desc: 'Editor issues Accept, Minor Revision, Major Revision, or Reject.' },
-  { icon: 'fa-rotate',          color: '#C48B1E', bg: '#FEF7E8', label: 'Revision',   desc: 'Author responds to reviewer comments and resubmits.' },
-  { icon: 'fa-circle-check',    color: '#2B7A4B', bg: '#E8F5EC', label: 'Accepted',   desc: 'Manuscript enters production for typesetting and publication.' },
+  { icon: Send,           color: '#2E6B9E', bg: '#EBF4FB', label: 'Submitted',  desc: 'Manuscript received and assigned a submission number.' },
+  { icon: ClipboardCheck, color: '#7C3AED', bg: '#F3E8FF', label: 'Screening',  desc: 'Moderator checks formatting, scope, and ethics compliance.' },
+  { icon: Search,         color: '#C48B1E', bg: '#FEF7E8', label: 'Peer Review',desc: 'Assigned to 2–3 independent reviewers for double-blind review.' },
+  { icon: Gavel,          color: '#1B2A4A', bg: '#E8ECF5', label: 'Decision',   desc: 'Editor issues Accept, Minor Revision, Major Revision, or Reject.' },
+  { icon: RotateCw,       color: '#C48B1E', bg: '#FEF7E8', label: 'Revision',   desc: 'Author responds to reviewer comments and resubmits.' },
+  { icon: CheckCircle2,   color: '#2B7A4B', bg: '#E8F5EC', label: 'Accepted',   desc: 'Manuscript enters production for typesetting and publication.' },
 ]
 
 const CONTACT_INFO = [
-  { icon: 'fa-envelope',  label: 'General Inquiries', value: 'ceo@ijidcr-asgard.in' },
-  { icon: 'fa-headset',   label: 'Technical Support',  value: 'support@ijidcr-asgard.in' },
-  { icon: 'fa-clock',     label: 'Response Time',      value: '1–3 business days' },
-  { icon: 'fa-calendar',  label: 'Office Hours',       value: 'Mon–Fri, 09:00–17:00 GMT' },
+  { icon: Mail,     label: 'General Inquiries', value: 'ceo@ijidcr-asgard.in' },
+  { icon: Headset,  label: 'Technical Support',  value: 'support@ijidcr-asgard.in' },
+  { icon: Clock,    label: 'Response Time',      value: '1–3 business days' },
+  { icon: Calendar, label: 'Office Hours',       value: 'Mon–Fri, 09:00–17:00 GMT' },
 ]
 
 /* ─── QuickCard ─────────────────────────────────────────────────────────────── */
@@ -109,7 +114,7 @@ function QuickCard({ item, onClick }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         margin: '0 auto 14px',
       }}>
-        <i className={`fas ${item.icon}`} style={{ fontSize: '22px', color: item.iconColor }} />
+        <item.icon size={22} style={{ color: item.iconColor }} />
       </div>
       <div style={{ fontSize: '15px', fontWeight: 700, color: '#1A1A2E', marginBottom: '6px' }}>{item.title}</div>
       <div style={{ fontSize: '13px', color: '#8B8F9A', lineHeight: 1.5 }}>{item.desc}</div>
@@ -132,7 +137,9 @@ function FAQItem({ q, a }) {
         }}
       >
         <span style={{ fontSize: '14px', fontWeight: 600, color: '#1A1A2E', lineHeight: 1.4 }}>{q}</span>
-        <i className={`fas fa-chevron-${open ? 'up' : 'down'}`} style={{ fontSize: '12px', color: '#8B8F9A', flexShrink: 0 }} />
+        {open
+          ? <ChevronUp size={12} style={{ color: '#8B8F9A', flexShrink: 0 }} />
+          : <ChevronDown size={12} style={{ color: '#8B8F9A', flexShrink: 0 }} />}
       </button>
       {open && (
         <div style={{ padding: '0 20px 16px', fontSize: '13px', color: '#5A5E6B', lineHeight: 1.65 }}>
@@ -157,7 +164,7 @@ function InfoModal({ title, onClose, children }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 22px', borderBottom: '1px solid #E2E4E8' }}>
           <span style={{ fontSize: '16px', fontWeight: 700, color: '#1A1A2E', fontFamily: "'Playfair Display', serif" }}>{title}</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B8F9A', fontSize: '18px', padding: '2px', display: 'flex' }}>
-            <i className="fas fa-xmark" />
+            <X size={18} />
           </button>
         </div>
         <div style={{ padding: '22px' }}>{children}</div>
@@ -215,7 +222,7 @@ export default function AuthorHelp() {
           {CONTACT_INFO.map(c => (
             <div key={c.label} style={{ padding: '14px 16px', background: '#F4F5F7', borderRadius: '6px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-                <i className={`fas ${c.icon}`} style={{ fontSize: '12px', color: '#1B2A4A' }} />
+                <c.icon size={12} style={{ color: '#1B2A4A' }} />
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#1A1A2E', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{c.label}</span>
               </div>
               <div style={{ fontSize: '13px', color: '#5A5E6B' }}>{c.value}</div>
@@ -235,7 +242,7 @@ export default function AuthorHelp() {
               <div key={step.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: step.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <i className={`fas ${step.icon}`} style={{ fontSize: '14px', color: step.color }} />
+                    <step.icon size={14} style={{ color: step.color }} />
                   </div>
                   {i < LIFECYCLE_STEPS.length - 1 && (
                     <div style={{ width: '2px', height: '22px', background: '#E2E4E8' }} />

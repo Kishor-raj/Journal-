@@ -5,6 +5,7 @@ import Button from '../../shared/components/Button'
 import Tabs from '../../shared/components/Tabs'
 import { getManuscript, getMyCertificate, downloadCertificatePdf } from './services/manuscriptService'
 import { formatDate, formatDateTime } from '../../shared/utils/formatDate'
+import { RotateCw } from 'lucide-react'
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
@@ -414,7 +415,7 @@ export default function ManuscriptDetail() {
               onClick={() => navigate('/author/revisions')}
               style={{ marginLeft: 'auto' }}
             >
-              <i className="fas fa-rotate" style={{ marginRight: '6px' }} />
+              <RotateCw size={14} style={{ marginRight: '6px' }} />
               Submit Revision
             </Button>
           )}

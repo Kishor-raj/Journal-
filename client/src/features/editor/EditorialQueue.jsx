@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Inbox } from 'lucide-react'
 import Table from '../../shared/components/Table'
 import StatusBadge from '../../shared/components/StatusBadge'
 import EmptyState from '../../shared/components/EmptyState'
@@ -153,7 +154,7 @@ export default function EditorialQueue() {
         />
       ) : (
         <EmptyState
-          icon="📝"
+          icon={<Inbox size={44} />}
           message="The editorial queue is empty."
         />
       )}

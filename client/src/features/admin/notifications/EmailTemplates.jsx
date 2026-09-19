@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { FileText } from 'lucide-react'
 import {
   getEmailTemplates,
   updateEmailTemplate,
@@ -235,7 +236,7 @@ export default function EmailTemplates() {
       {loading ? (
         <p style={{ color: 'var(--color-text-muted)', padding: '20px 0' }}>Loading templates...</p>
       ) : templates.length === 0 ? (
-        <EmptyState icon="📝" message="No email templates found." />
+        <EmptyState icon={<FileText size={44} />} message="No email templates found." />
       ) : (
         <Table columns={columns} data={templates} />
       )}

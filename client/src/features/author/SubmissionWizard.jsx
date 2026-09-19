@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import {
+  Info, Loader2, X, UserPlus, FileText, FileSpreadsheet, FileImage, File,
+  CheckCircle2, Trash2, UploadCloud, Paperclip, AlertTriangle, Send, ShieldHalf,
+  Check, ArrowLeft, ArrowRight, Save,
+} from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import FormField from '../../shared/components/FormField'
 import Button from '../../shared/components/Button'
@@ -797,7 +802,7 @@ function StepAuthors({ manuscript, onChange }) {
       <h2 style={styles.sectionTitle}>Authors</h2>
       
       <div style={styles.coauthorNotice}>
-        <i className="fas fa-info-circle" style={{ marginTop: '2px' }}></i>
+        <Info size={16} style={{ marginTop: '2px' }} />
         <div>
           You are automatically added as the primary author. Add co-authors below. Author order determines the published byline.
         </div>
@@ -885,7 +890,7 @@ function StepAuthors({ manuscript, onChange }) {
             disabled={authorAction !== null}
             type="button"
           >
-            {authorAction === `remove:${author.id}` ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-times"></i>}
+            {authorAction === `remove:${author.id}` ? <Loader2 size={14} className="icon-spin" /> : <X size={14} />}
           </button>
         </div>
       ))}
@@ -902,7 +907,7 @@ function StepAuthors({ manuscript, onChange }) {
             style={{ ...styles.input, flex: 1 }}
           />
           <Button variant="secondary" onClick={handleAddAuthor} loading={adding}>
-            <i className="fas fa-user-plus" style={{ marginRight: '6px' }}></i>
+            <UserPlus size={14} style={{ marginRight: '6px' }} />
             Add Co-Author
           </Button>
         </div>
@@ -982,11 +987,13 @@ function StepFiles({ manuscript, onChange, errors }) {
 
   const getFileIcon = (filename) => {
     const ext = filename?.split('.').pop()?.toLowerCase()
-    if (ext === 'pdf') return { icon: 'fa-file-pdf', color: 'var(--color-danger)', bg: 'rgba(184, 51, 51, 0.08)' }
-    if (['xlsx', 'csv'].includes(ext)) return { icon: 'fa-file-excel', color: 'var(--color-success)', bg: 'rgba(43, 122, 75, 0.08)' }
-    if (['png', 'jpg', 'jpeg', 'svg'].includes(ext)) return { icon: 'fa-file-image', color: 'var(--color-info, #2E6B9E)', bg: 'rgba(46, 107, 158, 0.08)' }
-    return { icon: 'fa-file', color: 'var(--color-text-muted)', bg: 'var(--color-vellum, #F9F8F6)' }
+    if (ext === 'pdf') return { icon: FileText, color: 'var(--color-danger)', bg: 'rgba(184, 51, 51, 0.08)' }
+    if (['xlsx', 'csv'].includes(ext)) return { icon: FileSpreadsheet, color: 'var(--color-success)', bg: 'rgba(43, 122, 75, 0.08)' }
+    if (['png', 'jpg', 'jpeg', 'svg'].includes(ext)) return { icon: FileImage, color: 'var(--color-info, #2E6B9E)', bg: 'rgba(46, 107, 158, 0.08)' }
+    return { icon: File, color: 'var(--color-text-muted)', bg: 'var(--color-vellum, #F9F8F6)' }
   }
+
+  const mainFileIcon = mainFile ? getFileIcon(mainFile.original_name) : null
 
   return (
     <div>
@@ -995,12 +1002,12 @@ function StepFiles({ manuscript, onChange, errors }) {
       <FormField label="Manuscript File" required error={errors.main_manuscript}>
         {mainFile ? (
           <div style={styles.fileItem}>
-            <div style={{ 
-              ...styles.fileItemIcon, 
-              background: getFileIcon(mainFile.original_name).bg,
-              color: getFileIcon(mainFile.original_name).color,
+            <div style={{
+              ...styles.fileItemIcon,
+              background: mainFileIcon.bg,
+              color: mainFileIcon.color,
             }}>
-              <i className={`fas ${getFileIcon(mainFile.original_name).icon}`}></i>
+              <mainFileIcon.icon size={18} />
             </div>
             <div style={styles.fileItemInfo}>
               <div style={styles.fileItemName}>{mainFile.original_name}</div>
@@ -1009,7 +1016,7 @@ function StepFiles({ manuscript, onChange, errors }) {
               </div>
             </div>
             <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px', marginRight: '8px' }}>
-              <i className="fas fa-check-circle"></i>
+              <CheckCircle2 size={14} />
             </span>
             <button
               type="button"
@@ -1032,9 +1039,9 @@ function StepFiles({ manuscript, onChange, errors }) {
               }}
             >
               {removing === mainFile.id ? (
-                <i className="fas fa-spinner fa-spin"></i>
+                <Loader2 size={12} className="icon-spin" />
               ) : (
-                <i className="fas fa-trash-can"></i>
+                <Trash2 size={12} />
               )}
               Remove
             </button>
@@ -1046,13 +1053,13 @@ function StepFiles({ manuscript, onChange, errors }) {
             label={
               <div>
                 <div style={styles.uploadIcon}>
-                  <i className="fas fa-cloud-arrow-up"></i>
+                  <UploadCloud size={32} />
                 </div>
                 <div style={styles.uploadText}>Click to upload your manuscript</div>
                 <div style={styles.uploadHint}>PDF only, max 20 MB. Ensure all figures and tables are embedded or attached separately.</div>
                 {uploading === 'main_manuscript' && (
                   <div style={{ ...styles.uploadHint, color: 'var(--color-info, #2E6B9E)', marginTop: '8px' }}>
-                    <i className="fas fa-spinner fa-spin" style={{ marginRight: '6px' }}></i>
+                    <Loader2 size={14} className="icon-spin" style={{ marginRight: '6px' }} />
                     Uploading manuscript...
                   </div>
                 )}
@@ -1065,53 +1072,56 @@ function StepFiles({ manuscript, onChange, errors }) {
       <FormField label="Supplementary Files (optional)" helperText="ZIP, XLSX, CSV, or individual image files.">
         {suppFiles.length > 0 && (
           <div style={{ marginBottom: '12px' }}>
-            {suppFiles.map((f, i) => (
-              <div key={i} style={styles.fileItem}>
-                <div style={{ 
-                  ...styles.fileItemIcon, 
-                  background: getFileIcon(f.original_name).bg,
-                  color: getFileIcon(f.original_name).color,
-                }}>
-                  <i className={`fas ${getFileIcon(f.original_name).icon}`}></i>
-                </div>
-                <div style={styles.fileItemInfo}>
-                  <div style={styles.fileItemName}>{f.original_name}</div>
-                  <div style={styles.fileItemMeta}>
-                    {(f.file_size_bytes / 1024 / 1024).toFixed(1)} MB — Uploaded
+            {suppFiles.map((f, i) => {
+              const fileIcon = getFileIcon(f.original_name)
+              return (
+                <div key={i} style={styles.fileItem}>
+                  <div style={{
+                    ...styles.fileItemIcon,
+                    background: fileIcon.bg,
+                    color: fileIcon.color,
+                  }}>
+                    <fileIcon.icon size={18} />
                   </div>
+                  <div style={styles.fileItemInfo}>
+                    <div style={styles.fileItemName}>{f.original_name}</div>
+                    <div style={styles.fileItemMeta}>
+                      {(f.file_size_bytes / 1024 / 1024).toFixed(1)} MB — Uploaded
+                    </div>
+                  </div>
+                  <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px', marginRight: '8px' }}>
+                    <CheckCircle2 size={14} />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleFileRemove(f.id)}
+                    disabled={removing === f.id}
+                    style={{
+                      background: 'rgba(184, 51, 51, 0.08)',
+                      border: '1px solid rgba(184, 51, 51, 0.3)',
+                      color: 'var(--color-danger)',
+                      cursor: removing === f.id ? 'not-allowed' : 'pointer',
+                      borderRadius: '6px',
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      opacity: removing === f.id ? 0.6 : 1,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {removing === f.id ? (
+                      <Loader2 size={12} className="icon-spin" />
+                    ) : (
+                      <Trash2 size={12} />
+                    )}
+                    Remove
+                  </button>
                 </div>
-                <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px', marginRight: '8px' }}>
-                  <i className="fas fa-check-circle"></i>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleFileRemove(f.id)}
-                  disabled={removing === f.id}
-                  style={{
-                    background: 'rgba(184, 51, 51, 0.08)',
-                    border: '1px solid rgba(184, 51, 51, 0.3)',
-                    color: 'var(--color-danger)',
-                    cursor: removing === f.id ? 'not-allowed' : 'pointer',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    opacity: removing === f.id ? 0.6 : 1,
-                    flexShrink: 0,
-                  }}
-                >
-                  {removing === f.id ? (
-                    <i className="fas fa-spinner fa-spin"></i>
-                  ) : (
-                    <i className="fas fa-trash-can"></i>
-                  )}
-                  Remove
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
         <FileUpload
@@ -1125,13 +1135,13 @@ function StepFiles({ manuscript, onChange, errors }) {
           label={
             <div>
               <div style={styles.uploadIcon}>
-                <i className="fas fa-paperclip"></i>
+                <Paperclip size={32} />
               </div>
               <div style={styles.uploadText}>Click to upload supplementary files</div>
               <div style={styles.uploadHint}>ZIP, XLSX, CSV, images. Multiple files can be uploaded.</div>
               {uploading === 'supplementary' && (
                 <div style={{ ...styles.uploadHint, color: 'var(--color-info, #2E6B9E)', marginTop: '8px' }}>
-                  <i className="fas fa-spinner fa-spin" style={{ marginRight: '6px' }}></i>
+                  <Loader2 size={14} className="icon-spin" style={{ marginRight: '6px' }} />
                   Uploading files...
                 </div>
               )}
@@ -1237,13 +1247,13 @@ function StepReview({ manuscript }) {
       <h2 style={styles.sectionTitle}>Review Your Submission</h2>
       
       <div style={{ ...styles.alertBanner, ...styles.alertInfo }}>
-        <i className="fas fa-info-circle" style={{ marginTop: '2px' }}></i>
+        <Info size={16} style={{ marginTop: '2px' }} />
         <div>Review all information below before submitting. You can still go back to make changes.</div>
       </div>
 
       {issues.length > 0 ? (
         <div style={{ ...styles.alertBanner, ...styles.alertWarning }}>
-          <i className="fas fa-exclamation-triangle" style={{ marginTop: '2px' }}></i>
+          <AlertTriangle size={16} style={{ marginTop: '2px' }} />
           <div>
             <strong>Incomplete Fields:</strong> Several required fields are incomplete. Please return to the relevant steps before submitting:
             <ul style={{ margin: '6px 0 0 18px', padding: 0 }}>
@@ -1255,7 +1265,7 @@ function StepReview({ manuscript }) {
         </div>
       ) : (
         <div style={{ ...styles.alertBanner, ...styles.alertSuccess }}>
-          <i className="fas fa-check-circle" style={{ marginTop: '2px' }}></i>
+          <CheckCircle2 size={16} style={{ marginTop: '2px' }} />
           <div>
             <strong>All required sections are complete.</strong> Please double-check your submission details below.
           </div>
@@ -1335,7 +1345,7 @@ function StepReview({ manuscript }) {
           {(manuscript.files || []).length > 0 ? (
             manuscript.files.map((f, i) => (
               <div key={i} style={{ marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <i className="fas fa-file" style={{ color: 'var(--color-text-muted)' }}></i>
+                <File size={16} style={{ color: 'var(--color-text-muted)' }} />
                 <strong>{f.original_name}</strong>
                 <span style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>
                   ({f.file_type?.replace(/_/g, ' ')}) — {(f.file_size_bytes / 1024 / 1024).toFixed(1)} MB
@@ -1387,15 +1397,15 @@ function StepSubmit({ manuscript, declarations, onDeclarationChange, onSubmit, s
       
       <div style={styles.submitContainer}>
         <div style={styles.submitIcon}>
-          <i className="fas fa-paper-plane"></i>
+          <Send size={28} />
         </div>
         <div style={styles.submitTitle}>Ready to Submit</div>
         <p style={styles.submitDesc}>
           By submitting, you confirm that this manuscript is original, has not been published elsewhere, and all authors have approved the submission and order.
         </p>
-        
+
         <div style={{ ...styles.alertBanner, ...styles.alertInfo, textAlign: 'left', maxWidth: '500px', margin: '0 auto 24px' }}>
-          <i className="fas fa-shield-halved" style={{ marginTop: '2px' }}></i>
+          <ShieldHalf size={16} style={{ marginTop: '2px' }} />
           <div>
             <strong>Declaration:</strong> I confirm this manuscript is original work, all authors have approved this submission, and I accept the journal's submission policies and terms.
           </div>
@@ -1421,11 +1431,11 @@ function StepSubmit({ manuscript, declarations, onDeclarationChange, onSubmit, s
         
         {errors.submit && (
           <div style={{ ...styles.alertBanner, ...styles.alertDanger, maxWidth: '500px', margin: '0 auto 16px' }}>
-            <i className="fas fa-triangle-exclamation"></i>
+            <AlertTriangle size={16} />
             <div>{errors.submit}</div>
           </div>
         )}
-        
+
         <Button
           variant="primary"
           size="lg"
@@ -1433,7 +1443,7 @@ function StepSubmit({ manuscript, declarations, onDeclarationChange, onSubmit, s
           disabled={!allChecked}
           onClick={onSubmit}
         >
-          <i className="fas fa-paper-plane" style={{ marginRight: '8px' }}></i>
+          <Send size={16} style={{ marginRight: '8px' }} />
           Submit Manuscript
         </Button>
       </div>
@@ -1647,7 +1657,7 @@ export default function SubmissionWizard() {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '60px 0' }}>
-        <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px', marginBottom: '12px' }}></i>
+        <Loader2 size={24} className="icon-spin" style={{ marginBottom: '12px' }} />
         <div>Loading submission wizard...</div>
       </div>
     )
@@ -1673,7 +1683,7 @@ export default function SubmissionWizard() {
               style={styles.wizardNum(i === step, i < step)}
               onClick={() => handleStepClick(i)}
             >
-              {i < step ? <i className="fas fa-check" style={{ fontSize: '12px' }}></i> : i + 1}
+              {i < step ? <Check size={12} /> : i + 1}
             </div>
             <div style={styles.wizardStepLabel(i === step, i < step)}>{s.label}</div>
             {i < STEPS.length - 1 && (
@@ -1733,25 +1743,25 @@ export default function SubmissionWizard() {
       {/* Navigation Buttons */}
       <div style={styles.navButtons}>
         <Button variant="ghost" onClick={handlePrev} disabled={step === 0}>
-          <i className="fas fa-arrow-left" style={{ marginRight: '8px' }}></i>
+          <ArrowLeft size={14} style={{ marginRight: '8px' }} />
           Previous
         </Button>
-        
+
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {saving && (
             <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-              <i className="fas fa-spinner fa-spin" style={{ marginRight: '6px' }}></i>
+              <Loader2 size={13} className="icon-spin" style={{ marginRight: '6px' }} />
               Saving...
             </span>
           )}
           <Button variant="secondary" onClick={handleSave}>
-            <i className="fas fa-save" style={{ marginRight: '6px' }}></i>
+            <Save size={14} style={{ marginRight: '6px' }} />
             Save Draft
           </Button>
           {step < STEPS.length - 1 ? (
             <Button variant="primary" onClick={handleNext}>
               Next Step
-              <i className="fas fa-arrow-right" style={{ marginLeft: '8px' }}></i>
+              <ArrowRight size={14} style={{ marginLeft: '8px' }} />
             </Button>
           ) : null}
         </div>

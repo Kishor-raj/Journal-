@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Scale } from 'lucide-react'
 import Table from '../../shared/components/Table'
 import StatusBadge from '../../shared/components/StatusBadge'
 import EmptyState from '../../shared/components/EmptyState'
@@ -152,7 +153,7 @@ export default function DecisionQueue() {
           emptyMessage="No manuscripts awaiting a decision"
         />
       ) : (
-        <EmptyState icon="⚖️" message="No manuscripts awaiting a decision right now." />
+        <EmptyState icon={<Scale size={44} />} message="No manuscripts awaiting a decision right now." />
       )}
     </div>
   )

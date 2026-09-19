@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { MailOpen } from 'lucide-react'
 import Button from '../../shared/components/Button'
 import FormField from '../../shared/components/FormField'
 import EmptyState from '../../shared/components/EmptyState'
@@ -189,7 +190,7 @@ export default function Invitations() {
 
       {invitations.length === 0 ? (
         <EmptyState
-          icon="📬"
+          icon={<MailOpen size={44} />}
           message="You have no review invitations at this time."
         />
       ) : (

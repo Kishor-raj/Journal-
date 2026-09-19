@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
+import { Mail } from 'lucide-react'
 import { contactService } from '../../services/contactService'
 import Table from '../../shared/components/Table'
 import Button from '../../shared/components/Button'
@@ -287,7 +288,7 @@ export default function ContactInquiries() {
           Loading inquiries...
         </p>
       ) : inquiries.length === 0 ? (
-        <EmptyState icon="📩" message="No contact inquiries match the selected filters." />
+        <EmptyState icon={<Mail size={44} />} message="No contact inquiries match the selected filters." />
       ) : (
         <>
           <Table columns={columns} data={inquiries} />

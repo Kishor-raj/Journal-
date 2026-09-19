@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import {
+  Send, ClipboardCheck, PenLine, Search, Gavel, CheckCircle2, CircleX, CircleMinus,
+  CalendarDays, Eye, ChevronUp, ChevronDown, Check, Info, RotateCw, History, Loader2,
+  ArrowLeft, ChevronRight, Route, Plus, Inbox,
+} from 'lucide-react'
 import { getMyManuscripts, getStatusHistory } from './services/manuscriptService'
 
 /* ─── Workflow pipeline stages ───────────────────────────────────────────── */
@@ -9,7 +14,7 @@ const PIPELINE = [
     id: 'submitted',
     label: 'Submitted',
     sublabel: 'Awaiting moderation screening',
-    icon: 'fa-paper-plane',
+    icon: Send,
     statuses: ['submitted'],
     color: '#1565C0',
     bg: '#E3EEF9',
@@ -18,7 +23,7 @@ const PIPELINE = [
     id: 'moderator',
     label: 'Moderator',
     sublabel: 'Technical screening in progress',
-    icon: 'fa-clipboard-check',
+    icon: ClipboardCheck,
     statuses: ['submitted'],           // moderator acts on 'submitted' — detected via history
     color: '#C2410C',
     bg: '#FFF7ED',
@@ -27,7 +32,7 @@ const PIPELINE = [
     id: 'editor',
     label: 'Editor',
     sublabel: 'Editorial assignment & review setup',
-    icon: 'fa-pen-nib',
+    icon: PenLine,
     statuses: ['under_review', 'revision_requested', 'resubmitted'],
     color: '#0369A1',
     bg: '#E0F2FE',
@@ -36,7 +41,7 @@ const PIPELINE = [
     id: 'reviewer',
     label: 'Peer Review',
     sublabel: 'Expert reviewers evaluating manuscript',
-    icon: 'fa-magnifying-glass',
+    icon: Search,
     statuses: ['under_review'],
     color: '#B45309',
     bg: '#FEF3C7',
@@ -45,7 +50,7 @@ const PIPELINE = [
     id: 'final_decision',
     label: 'Final Decision',
     sublabel: 'Editor reviewing all reports',
-    icon: 'fa-gavel',
+    icon: Gavel,
     statuses: ['revision_requested'],
     color: '#7C3AED',
     bg: '#F3E8FF',
@@ -54,7 +59,7 @@ const PIPELINE = [
     id: 'outcome',
     label: 'Outcome',
     sublabel: 'Accepted / Rejected / Published',
-    icon: 'fa-circle-check',
+    icon: CheckCircle2,
     statuses: ['accepted', 'published', 'rejected', 'desk_rejected', 'withdrawn'],
     color: '#1A7F4B',
     bg: '#EAF7F0',
@@ -77,12 +82,12 @@ function resolveActiveStep(status) {
 /* ─── Outcome colour for terminal statuses ────────────────────────────────── */
 function outcomeStyle(status) {
   if (['accepted', 'published'].includes(status))
-    return { color: '#1A7F4B', bg: '#EAF7F0', border: '#1A7F4B', icon: 'fa-circle-check' }
+    return { color: '#1A7F4B', bg: '#EAF7F0', border: '#1A7F4B', icon: CheckCircle2 }
   if (['rejected', 'desk_rejected'].includes(status))
-    return { color: '#C0392B', bg: '#FDEDEC', border: '#C0392B', icon: 'fa-circle-xmark' }
+    return { color: '#C0392B', bg: '#FDEDEC', border: '#C0392B', icon: CircleX }
   if (status === 'withdrawn')
-    return { color: '#64748B', bg: '#F1F5F9', border: '#94A3B8', icon: 'fa-circle-minus' }
-  return { color: '#1A7F4B', bg: '#EAF7F0', border: '#1A7F4B', icon: 'fa-circle-check' }
+    return { color: '#64748B', bg: '#F1F5F9', border: '#94A3B8', icon: CircleMinus }
+  return { color: '#1A7F4B', bg: '#EAF7F0', border: '#1A7F4B', icon: CheckCircle2 }
 }
 
 function formatDate(d) {
@@ -174,7 +179,7 @@ function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
           </div>
           {manuscript.submitted_at && (
             <div style={{ fontSize: '11px', color: 'var(--dash-text-muted)', marginTop: '3px' }}>
-              <i className="fas fa-calendar-alt" style={{ marginRight: '4px' }} />
+              <CalendarDays size={12} style={{ marginRight: '4px' }} />
               Submitted {formatDate(manuscript.submitted_at)}
             </div>
           )}
@@ -192,13 +197,14 @@ function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#1565C0'; e.currentTarget.style.color = '#1565C0' }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--dash-surface-border)'; e.currentTarget.style.color = 'var(--dash-text-secondary)' }}
           >
-            <i className="fas fa-eye" style={{ marginRight: '4px', fontSize: '11px' }} />
+            <Eye size={11} style={{ marginRight: '4px' }} />
             View
           </button>
-          <i
-            className={`fas fa-chevron-${expanded ? 'up' : 'down'}`}
-            style={{ fontSize: '13px', color: 'var(--dash-text-muted)', transition: 'transform 200ms ease' }}
-          />
+          {expanded ? (
+            <ChevronUp size={13} style={{ color: 'var(--dash-text-muted)', transition: 'transform 200ms ease' }} />
+          ) : (
+            <ChevronDown size={13} style={{ color: 'var(--dash-text-muted)', transition: 'transform 200ms ease' }} />
+          )}
         </div>
       </div>
 
@@ -225,9 +231,13 @@ function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
                 else           { circleColor = 'rgba(0,0,0,0.3)'; circleBg = 'var(--dash-bg)'; circleBorder = 'var(--dash-surface-border)'; labelColor = 'var(--dash-text-muted)' }
 
                 // Override outcome step if terminal
+                let StepIcon = step.icon
+                let stepIconSize = 14
                 if (isTerminal && idx === 5) {
                   const os = outcomeStyle(manuscript.current_status)
                   circleColor = '#fff'; circleBg = os.color; circleBorder = os.color; labelColor = os.color
+                  StepIcon = os.icon
+                  stepIconSize = 15
                 }
 
                 return (
@@ -247,10 +257,8 @@ function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
                         position: 'relative',
                       }}>
                         {isDone
-                          ? <i className="fas fa-check" style={{ fontSize: '14px' }} />
-                          : isTerminal && idx === 5
-                            ? <i className={`fas ${outcomeStyle(manuscript.current_status).icon}`} style={{ fontSize: '15px' }} />
-                            : <i className={`fas ${step.icon}`} style={{ fontSize: '14px' }} />
+                          ? <Check size={14} />
+                          : <StepIcon size={stepIconSize} />
                         }
                         {isCurrent && !isTerminal && (
                           <span style={{
@@ -293,15 +301,16 @@ function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
           </div>
 
           {/* Current stage callout */}
-          {!isTerminal && (
+          {!isTerminal && (() => {
+            const CurrentIcon = PIPELINE[activeStep]?.icon || Info
+            return (
             <div style={{
               display: 'flex', alignItems: 'center', gap: '12px',
               padding: '12px 16px', borderRadius: '8px', marginBottom: '24px',
               background: PIPELINE[activeStep]?.bg || '#E3EEF9',
               border: `1px solid ${PIPELINE[activeStep]?.color || '#1565C0'}30`,
             }}>
-              <i className={`fas ${PIPELINE[activeStep]?.icon || 'fa-circle-info'}`}
-                style={{ color: PIPELINE[activeStep]?.color || '#1565C0', fontSize: '18px' }} />
+              <CurrentIcon size={18} style={{ color: PIPELINE[activeStep]?.color || '#1565C0' }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: PIPELINE[activeStep]?.color || '#1565C0' }}>
                   {manuscript.current_status === 'resubmitted'
@@ -332,11 +341,12 @@ function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  <i className="fas fa-rotate" /> Submit Revision
+                  <RotateCw size={12} /> Submit Revision
                 </button>
               )}
             </div>
-          )}
+            )
+          })()}
 
           {/* Terminal outcome callout */}
           {isTerminal && (
@@ -346,7 +356,7 @@ function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
               background: outcomeS.bg,
               border: `1px solid ${outcomeS.border}40`,
             }}>
-              <i className={`fas ${outcomeS.icon}`} style={{ color: outcomeS.color, fontSize: '18px' }} />
+              <outcomeS.icon size={18} style={{ color: outcomeS.color }} />
               <div>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: outcomeS.color }}>
                   {humanStatus(manuscript.current_status)}
@@ -361,12 +371,12 @@ function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
           {/* Status history timeline */}
           <div>
             <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--dash-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
-              <i className="fas fa-history" style={{ marginRight: '6px' }} />
+              <History size={12} style={{ marginRight: '6px' }} />
               Activity Timeline
             </div>
             {loadingHistory && (
               <div style={{ padding: '16px 0', color: 'var(--dash-text-muted)', fontSize: '13px', textAlign: 'center' }}>
-                <i className="fas fa-circle-notch fa-spin" style={{ marginRight: '8px' }} />
+                <Loader2 size={14} className="icon-spin" style={{ marginRight: '8px' }} />
                 Loading history...
               </div>
             )}
@@ -468,14 +478,14 @@ export default function TrackManuscript() {
             onClick={() => navigate('/author/dashboard')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dash-text-muted)', fontSize: '13px', padding: 0, display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            <i className="fas fa-arrow-left" style={{ fontSize: '11px' }} /> Dashboard
+            <ArrowLeft size={11} /> Dashboard
           </button>
-          <i className="fas fa-chevron-right" style={{ fontSize: '10px', color: 'var(--dash-text-muted)' }} />
+          <ChevronRight size={10} style={{ color: 'var(--dash-text-muted)' }} />
           <span style={{ fontSize: '13px', color: 'var(--dash-text-muted)' }}>Track Manuscript</span>
         </div>
 
         <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '26px', fontWeight: 700, color: 'var(--dash-text-primary)', margin: 0, lineHeight: 1.2 }}>
-          <i className="fas fa-route" style={{ fontSize: '20px', marginRight: '10px', color: '#1565C0' }} />
+          <Route size={20} style={{ marginRight: '10px', color: '#1565C0' }} />
           Track Manuscripts
         </h1>
         <p style={{ fontSize: '14px', color: 'var(--dash-text-secondary)', marginTop: '4px', margin: '4px 0 0' }}>
@@ -519,7 +529,7 @@ export default function TrackManuscript() {
       {/* Content */}
       {loading && (
         <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--dash-text-muted)', fontSize: '14px' }}>
-          <i className="fas fa-circle-notch fa-spin" style={{ fontSize: '24px', marginBottom: '12px', display: 'block' }} />
+          <Loader2 size={24} className="icon-spin" style={{ marginBottom: '12px', display: 'block' }} />
           Loading manuscripts...
         </div>
       )}
@@ -530,7 +540,7 @@ export default function TrackManuscript() {
           background: 'var(--dash-surface)', border: '1px solid var(--dash-surface-border)',
           borderRadius: '12px',
         }}>
-          <i className="fas fa-paper-plane" style={{ fontSize: '32px', color: 'var(--dash-text-muted)', marginBottom: '12px', display: 'block' }} />
+          <Send size={32} style={{ color: 'var(--dash-text-muted)', marginBottom: '12px', display: 'block' }} />
           <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--dash-text-primary)', marginBottom: '8px' }}>
             No submitted manuscripts yet
           </div>
@@ -545,7 +555,7 @@ export default function TrackManuscript() {
               fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
-            <i className="fas fa-plus" style={{ marginRight: '6px' }} />
+            <Plus size={13} style={{ marginRight: '6px' }} />
             New Submission
           </button>
         </div>
@@ -557,7 +567,7 @@ export default function TrackManuscript() {
           background: 'var(--dash-surface)', border: '1px solid var(--dash-surface-border)',
           borderRadius: '12px',
         }}>
-          <i className="fas fa-inbox" style={{ fontSize: '24px', color: 'var(--dash-text-muted)', marginBottom: '12px', display: 'block' }} />
+          <Inbox size={24} style={{ color: 'var(--dash-text-muted)', marginBottom: '12px', display: 'block' }} />
           <div style={{ fontSize: '14px', color: 'var(--dash-text-muted)' }}>
             No manuscripts in this category.
           </div>

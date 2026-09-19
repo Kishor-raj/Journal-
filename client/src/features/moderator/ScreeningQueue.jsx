@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Circle, ArrowRight, ClipboardCheck, Search, Inbox } from 'lucide-react'
 import { getQueue } from '../../services/moderationService'
 
 /* ─── Status display map ─────────────────────────────────────────────────── */
@@ -11,7 +12,7 @@ function StatusBadge({ status }) {
   const s = STATUS[status] ?? { label: status?.replace(/_/g, ' ') ?? '—', bg: '#F4F5F7', color: '#5A5E6B' }
   return (
     <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>
-      <i className="fas fa-circle" style={{ fontSize: '7px', marginRight: '5px' }} />{s.label}
+      <Circle size={7} fill="currentColor" stroke="none" style={{ marginRight: '5px' }} />{s.label}
     </span>
   )
 }
@@ -34,7 +35,7 @@ function ActionBtn({ isInProgress, onClick }) {
         transition: 'background 150ms',
       }}
     >
-      <i className={`fas ${isInProgress ? 'fa-arrow-right' : 'fa-clipboard-check'}`} style={{ fontSize: '11px' }} />
+      {isInProgress ? <ArrowRight size={11} /> : <ClipboardCheck size={11} />}
       {isInProgress ? 'Continue' : 'Screen'}
     </button>
   )
@@ -113,7 +114,7 @@ export default function ScreeningQueue() {
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E4E8', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Search */}
           <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
-            <i className="fas fa-search" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#8B8F9A', pointerEvents: 'none' }} />
+            <Search size={13} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#8B8F9A', pointerEvents: 'none' }} />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -241,7 +242,7 @@ function EmptyRow({ search }) {
   return (
     <tr>
       <td colSpan={7} style={{ padding: '60px 16px', textAlign: 'center' }}>
-        <i className="fas fa-inbox" style={{ fontSize: '24px', color: '#E2E4E8', marginBottom: '12px', display: 'block' }} />
+        <Inbox size={24} style={{ color: '#E2E4E8', marginBottom: '12px', display: 'block' }} />
         <div style={{ fontSize: '14px', fontWeight: 600, color: '#1A1A2E', marginBottom: '4px' }}>
           {search ? `No results for "${search}"` : 'Queue is empty'}
         </div>

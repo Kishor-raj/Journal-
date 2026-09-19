@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { AlertTriangle, UserSearch } from 'lucide-react'
 import Button from '../../shared/components/Button'
 import EmptyState from '../../shared/components/EmptyState'
 import Table from '../../shared/components/Table'
@@ -218,10 +219,10 @@ export default function ReviewerSelectionPanel() {
       )}
 
       {loadError ? (
-        <EmptyState icon="⚠️" message={loadError} />
+        <EmptyState icon={<AlertTriangle size={44} />} message={loadError} />
       ) : reviewers.length === 0 ? (
         <EmptyState
-          icon="👥"
+          icon={<UserSearch size={44} />}
           message="No eligible reviewers found for this manuscript."
         />
       ) : (

@@ -4,6 +4,7 @@ import EmptyState from '../../shared/components/EmptyState'
 import PageHeader from '../../shared/components/PageHeader'
 import { getMyWithdrawals } from '../../services/withdrawalService'
 import { formatDate } from '../../shared/utils/formatDate'
+import { ClipboardList } from 'lucide-react'
 
 const styles = {
   page: {
@@ -96,7 +97,7 @@ export default function Withdrawals() {
         />
       ) : (
         <EmptyState
-          icon="📋"
+          icon={<ClipboardList size={44} />}
           message="You have no withdrawal requests."
         />
       )}

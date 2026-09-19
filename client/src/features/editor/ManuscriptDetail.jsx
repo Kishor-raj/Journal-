@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { FileText, FilePenLine, File, Check, Eye, Download, CheckCircle2, Clock } from 'lucide-react'
 import Button from '../../shared/components/Button'
 import StatusBadge from '../../shared/components/StatusBadge'
 import Table from '../../shared/components/Table'
@@ -150,7 +151,7 @@ function getFileVersionInfo(file, manuscript) {
       shortLabel: 'Original (v1)',
       badgeBg: '#EBF4FB',
       badgeColor: '#1A4A6E',
-      icon: 'fa-file-lines',
+      icon: FileText,
       isLatest,
     }
   }
@@ -161,7 +162,7 @@ function getFileVersionInfo(file, manuscript) {
       shortLabel: 'Revision 1',
       badgeBg: '#F3E8FF',
       badgeColor: '#6B21A8',
-      icon: 'fa-file-pen',
+      icon: FilePenLine,
       isLatest,
     }
   }
@@ -172,7 +173,7 @@ function getFileVersionInfo(file, manuscript) {
       shortLabel: 'Revision 2',
       badgeBg: '#EDE9FE',
       badgeColor: '#5B21B6',
-      icon: 'fa-file-pen',
+      icon: FilePenLine,
       isLatest,
     }
   }
@@ -183,7 +184,7 @@ function getFileVersionInfo(file, manuscript) {
       shortLabel: `Revision ${versionNum - 1}`,
       badgeBg: '#F3E8FF',
       badgeColor: '#6B21A8',
-      icon: 'fa-file-pen',
+      icon: FilePenLine,
       isLatest,
     }
   }
@@ -193,7 +194,7 @@ function getFileVersionInfo(file, manuscript) {
     shortLabel: 'File',
     badgeBg: '#F4F5F7',
     badgeColor: '#5A5E6B',
-    icon: 'fa-file',
+    icon: File,
     isLatest,
   }
 }
@@ -508,7 +509,7 @@ export default function ManuscriptDetail() {
                         marginTop: '2px',
                       }}
                     >
-                      <i className={`fas ${info.icon}`} />
+                      <info.icon size={15} />
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
@@ -539,7 +540,7 @@ export default function ManuscriptDetail() {
                               gap: '4px',
                             }}
                           >
-                            <i className="fas fa-check" style={{ fontSize: '9px' }} /> Latest Version
+                            <Check size={9} /> Latest Version
                           </span>
                         )}
                         {file.file_type === 'main_manuscript' || file.file_type === 'manuscript' ? (
@@ -573,10 +574,10 @@ export default function ManuscriptDetail() {
 
                   <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                     <Button variant="secondary" size="sm" onClick={() => openFile(file.id, 'view_url')}>
-                      <i className="fas fa-eye" style={{ marginRight: '6px' }} /> View
+                      <Eye size={14} style={{ marginRight: '6px' }} /> View
                     </Button>
                     <Button variant="primary" size="sm" onClick={() => openFile(file.id, 'download_url')}>
-                      <i className="fas fa-download" style={{ marginRight: '6px' }} /> Download
+                      <Download size={14} style={{ marginRight: '6px' }} /> Download
                     </Button>
                   </div>
                 </div>
@@ -609,12 +610,12 @@ export default function ManuscriptDetail() {
                   <StatusBadge status={rev.request_type === 'major' ? 'major_revision' : 'minor_revision'} />
                   {rev.response_status === 'submitted' ? (
                     <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#E8F5EC', color: '#2B7A4B' }}>
-                      <i className="fas fa-check-circle" style={{ marginRight: '4px' }} />
+                      <CheckCircle2 size={14} style={{ marginRight: '4px' }} />
                       Resubmitted {formatDate(rev.response_submitted_at)}
                     </span>
                   ) : (
                     <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: '#FEF7E8', color: '#C48B1E' }}>
-                      <i className="fas fa-clock" style={{ marginRight: '4px' }} />
+                      <Clock size={14} style={{ marginRight: '4px' }} />
                       Awaiting Author Response
                     </span>
                   )}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { Lock } from 'lucide-react'
 import Button from '../../shared/components/Button'
 import FormField from '../../shared/components/FormField'
 import Modal from '../../shared/components/Modal'
@@ -244,7 +245,7 @@ export default function ReviewForm() {
       {readOnly && (
         <div style={{ ...styles.section, border: '1px solid var(--color-rule-grey)', boxShadow: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-success)', marginBottom: '6px' }}>
-            <i className="fas fa-lock" style={{ fontSize: '13px' }} />
+            <Lock size={13} />
             <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>Review submitted — read only</span>
           </div>
           <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { CheckCircle2, CircleX, FilePenLine } from 'lucide-react'
 import Button from '../../shared/components/Button'
 import FormField from '../../shared/components/FormField'
 import StatusBadge from '../../shared/components/StatusBadge'
@@ -138,8 +139,8 @@ function formatRecommendation(val) {
 }
 
 function getFinalDecisionDisplay(status) {
-  if (status === 'accepted') return { label: 'Accepted', color: '#2B7A4B', bg: '#E8F5EC', icon: 'fa-circle-check' }
-  if (status === 'rejected') return { label: 'Rejected', color: '#B83333', bg: '#FCECEC', icon: 'fa-circle-xmark' }
+  if (status === 'accepted') return { label: 'Accepted', color: '#2B7A4B', bg: '#E8F5EC', icon: CheckCircle2 }
+  if (status === 'rejected') return { label: 'Rejected', color: '#B83333', bg: '#FCECEC', icon: CircleX }
   return null
 }
 
@@ -211,7 +212,7 @@ export default function DecisionPanel() {
       {manuscript.revisions && manuscript.revisions.length > 0 && (
         <div style={{ ...styles.reviewCard, marginBottom: '24px', background: '#F8FAFC' }}>
           <h3 style={{ ...styles.reviewerName, fontSize: '15px', marginBottom: '12px' }}>
-            <i className="fas fa-file-pen" style={{ marginRight: '8px', color: 'var(--color-info, #2E6B9E)' }} />
+            <FilePenLine size={16} style={{ marginRight: '8px', color: 'var(--color-info, #2E6B9E)' }} />
             Author Revision Responses
           </h3>
           {manuscript.revisions.map((rev) => (
@@ -319,9 +320,9 @@ export default function DecisionPanel() {
               background: finalDisplay.bg,
               marginBottom: '16px',
             }}>
-              <i
-                className={`fas ${finalDisplay.icon}`}
-                style={{ fontSize: '20px', color: finalDisplay.color }}
+              <finalDisplay.icon
+                size={20}
+                style={{ color: finalDisplay.color }}
               />
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem', color: finalDisplay.color }}>

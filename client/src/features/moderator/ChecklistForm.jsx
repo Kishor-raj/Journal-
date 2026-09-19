@@ -1,5 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import {
+  Target, ListChecks, Type, Scale, FingerprintPattern, VenetianMask,
+  ChevronUp, ChevronDown, Info, Check, X, HelpCircle, AlertTriangle,
+  CheckCircle2, RotateCcw, CircleX, ArrowLeft, FileText, Eye, Download,
+  Ban, Contrast, Loader2, Circle,
+} from 'lucide-react'
 import { getManuscript, submitCheck } from '../../services/moderationService'
 import { getFileAccess } from '../../services/fileService'
 
@@ -9,14 +15,14 @@ import { getFileAccess } from '../../services/fileService'
 const SECTIONS = [
   {
     id: 'scope',
-    icon: 'fa-bullseye',
+    icon: Target,
     title: '1. Scope Assessment',
     type: 'radio',   // radio: pass / fail / clarify
     notePlaceholder: 'Add a note about the scope assessment (e.g., which areas of scope are relevant, any borderline aspects)...',
   },
   {
     id: 'completeness',
-    icon: 'fa-list-check',
+    icon: ListChecks,
     title: '2. Completeness Check',
     type: 'checks',
     items: [
@@ -30,7 +36,7 @@ const SECTIONS = [
   },
   {
     id: 'formatting',
-    icon: 'fa-text-height',
+    icon: Type,
     title: '3. Formatting Check',
     type: 'checks',
     items: [
@@ -43,7 +49,7 @@ const SECTIONS = [
   },
   {
     id: 'ethics',
-    icon: 'fa-scale-balanced',
+    icon: Scale,
     title: '4. Publication Ethics',
     type: 'checks',
     items: [
@@ -56,7 +62,7 @@ const SECTIONS = [
   },
   {
     id: 'plagiarism',
-    icon: 'fa-fingerprint',
+    icon: FingerprintPattern,
     title: '5. Plagiarism Check',
     type: 'plagiarism',
     items: [
@@ -67,7 +73,7 @@ const SECTIONS = [
   },
   {
     id: 'anonymization',
-    icon: 'fa-user-secret',
+    icon: VenetianMask,
     title: '6. Anonymization (Double-Blind)',
     type: 'checks',
     items: [
@@ -176,14 +182,18 @@ function ChecklistSection({ section, form, update }) {
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', cursor: 'pointer', background: open ? '#fff' : '#FAFAFA', userSelect: 'none' }}
       >
         <span style={{ fontSize: '14px', fontWeight: 600, color: '#1A1A2E', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <i className={`fas ${section.icon}`} style={{ fontSize: '13px', color: '#1B2A4A', width: '16px', textAlign: 'center' }} />
+          <section.icon size={13} style={{ color: '#1B2A4A', width: '16px', textAlign: 'center' }} />
           {section.title}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '10px', background: badgeStyle.bg, color: badgeStyle.color }}>
             {badge}
           </span>
-          <i className={`fas fa-chevron-${open ? 'up' : 'down'}`} style={{ fontSize: '11px', color: '#8B8F9A', transition: 'transform 0.2s' }} />
+          {open ? (
+            <ChevronUp size={11} style={{ color: '#8B8F9A', transition: 'transform 0.2s' }} />
+          ) : (
+            <ChevronDown size={11} style={{ color: '#8B8F9A', transition: 'transform 0.2s' }} />
+          )}
         </div>
       </div>
 
@@ -194,7 +204,7 @@ function ChecklistSection({ section, form, update }) {
           {/* Info banner (anonymization) */}
           {section.infoBanner && (
             <div style={{ display: 'flex', gap: '10px', padding: '12px 14px', borderRadius: '6px', background: '#EBF4FB', border: '1px solid #A8CCE8', fontSize: '13px', color: '#2E6B9E', margin: '14px 0 10px' }}>
-              <i className="fas fa-info-circle" style={{ marginTop: '1px', flexShrink: 0 }} />
+              <Info size={14} style={{ marginTop: '1px', flexShrink: 0 }} />
               <span>{section.infoBanner}</span>
             </div>
           )}
@@ -207,15 +217,15 @@ function ChecklistSection({ section, form, update }) {
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 {[
-                  { val: 'pass',    label: 'Pass',               icon: 'fa-check',    bg: '#E8F5EC', color: '#2B7A4B', border: '#2B7A4B' },
-                  { val: 'fail',    label: 'Fail',               icon: 'fa-xmark',    bg: '#FCECEC', color: '#B83333', border: '#B83333' },
-                  { val: 'clarify', label: 'Needs Clarification', icon: 'fa-question', bg: '#FEF7E8', color: '#C48B1E', border: '#C48B1E' },
+                  { val: 'pass',    label: 'Pass',               icon: Check,      bg: '#E8F5EC', color: '#2B7A4B', border: '#2B7A4B' },
+                  { val: 'fail',    label: 'Fail',               icon: X,          bg: '#FCECEC', color: '#B83333', border: '#B83333' },
+                  { val: 'clarify', label: 'Needs Clarification', icon: HelpCircle, bg: '#FEF7E8', color: '#C48B1E', border: '#C48B1E' },
                 ].map(opt => {
                   const sel = form[`${section.id}_radio`] === opt.val
                   return (
                     <label key={opt.val} onClick={() => update(`${section.id}_radio`, opt.val)}
                       style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 14px', borderRadius: '6px', border: `1px solid ${sel ? opt.border : '#E2E4E8'}`, background: sel ? opt.bg : '#FAFAFA', color: sel ? opt.color : '#5A5E6B', cursor: 'pointer', fontSize: '13px', fontWeight: sel ? 600 : 400, transition: 'all 150ms' }}>
-                      <i className={`fas ${opt.icon}`} style={{ fontSize: '11px' }} />
+                      <opt.icon size={11} />
                       {opt.label}
                     </label>
                   )
@@ -276,7 +286,7 @@ function ChecklistSection({ section, form, update }) {
           <div style={{ marginTop: '12px' }}>
             {section.noteWarning && (
               <div style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#C48B1E', marginBottom: '6px', alignItems: 'flex-start' }}>
-                <i className="fas fa-exclamation-triangle" style={{ marginTop: '1px', flexShrink: 0 }} />
+                <AlertTriangle size={14} style={{ marginTop: '1px', flexShrink: 0 }} />
                 <span>{section.noteWarning}</span>
               </div>
             )}
@@ -313,17 +323,17 @@ function DecisionModal({ type, onClose, onConfirm, submitting }) {
   const cfg = {
     approve: {
       title: 'Approve Manuscript',
-      icon: 'fa-circle-check',
+      icon: CheckCircle2,
       color: '#2B7A4B',
-      banner: { bg: '#E8F5EC', border: '#B8DCC8', color: '#2B7A4B', icon: 'fa-circle-check', text: 'Approving this manuscript will forward it to an editor for peer review assignment. The author will be notified that their submission has passed initial screening.' },
+      banner: { bg: '#E8F5EC', border: '#B8DCC8', color: '#2B7A4B', icon: CheckCircle2, text: 'Approving this manuscript will forward it to an editor for peer review assignment. The author will be notified that their submission has passed initial screening.' },
       confirmLabel: 'Confirm Approval',
       confirmBg: '#2B7A4B',
     },
     return: {
       title: 'Return to Author',
-      icon: 'fa-rotate-left',
+      icon: RotateCcw,
       color: '#C48B1E',
-      banner: { bg: '#FEF7E8', border: '#F0DCA0', color: '#C48B1E', icon: 'fa-rotate-left', text: 'The manuscript will be returned to the author with your instructions. The author can resubmit after making corrections.' },
+      banner: { bg: '#FEF7E8', border: '#F0DCA0', color: '#C48B1E', icon: RotateCcw, text: 'The manuscript will be returned to the author with your instructions. The author can resubmit after making corrections.' },
       confirmLabel: 'Return to Author',
       confirmBg: '#C48B1E',
       needsReason: true,
@@ -331,9 +341,9 @@ function DecisionModal({ type, onClose, onConfirm, submitting }) {
     },
     reject: {
       title: 'Reject Manuscript',
-      icon: 'fa-circle-xmark',
+      icon: CircleX,
       color: '#B83333',
-      banner: { bg: '#FCECEC', border: '#E8B8B8', color: '#B83333', icon: 'fa-triangle-exclamation', text: 'Rejecting this manuscript will desk-reject it without peer review. This action cannot be easily undone. The author will be notified with your explanation.' },
+      banner: { bg: '#FCECEC', border: '#E8B8B8', color: '#B83333', icon: AlertTriangle, text: 'Rejecting this manuscript will desk-reject it without peer review. This action cannot be easily undone. The author will be notified with your explanation.' },
       confirmLabel: 'Reject Manuscript',
       confirmBg: '#B83333',
       needsReason: true,
@@ -351,10 +361,10 @@ function DecisionModal({ type, onClose, onConfirm, submitting }) {
         {/* Modal header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 22px', borderBottom: '1px solid #E2E4E8' }}>
           <span style={{ fontSize: '16px', fontWeight: 700, color: '#1A1A2E', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Playfair Display', serif" }}>
-            <i className={`fas ${cfg.icon}`} style={{ color: cfg.color }} />{cfg.title}
+            <cfg.icon size={18} style={{ color: cfg.color }} />{cfg.title}
           </span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B8F9A', fontSize: '18px', padding: '2px', display: 'flex' }}>
-            <i className="fas fa-xmark" />
+            <X size={18} />
           </button>
         </div>
 
@@ -362,7 +372,7 @@ function DecisionModal({ type, onClose, onConfirm, submitting }) {
         <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Banner */}
           <div style={{ display: 'flex', gap: '10px', padding: '13px 16px', borderRadius: '6px', background: cfg.banner.bg, border: `1px solid ${cfg.banner.border}`, fontSize: '13px', color: cfg.banner.color, lineHeight: 1.55 }}>
-            <i className={`fas ${cfg.banner.icon}`} style={{ marginTop: '1px', flexShrink: 0 }} />
+            <cfg.banner.icon size={14} style={{ marginTop: '1px', flexShrink: 0 }} />
             <span>{cfg.banner.text}</span>
           </div>
 
@@ -421,6 +431,7 @@ function DecisionModal({ type, onClose, onConfirm, submitting }) {
 
 function ConfirmBtn({ disabled, submitting, bg, icon, label, onClick }) {
   const [h, setH] = useState(false)
+  const Icon = icon
   return (
     <button
       onClick={onClick}
@@ -437,7 +448,7 @@ function ConfirmBtn({ disabled, submitting, bg, icon, label, onClick }) {
         transition: 'background 150ms',
       }}
     >
-      <i className={`fas ${submitting ? 'fa-spinner fa-spin' : icon}`} style={{ fontSize: '12px' }} />
+      {submitting ? <Loader2 size={12} className="icon-spin" /> : <Icon size={12} />}
       {label}
     </button>
   )
@@ -523,7 +534,7 @@ export default function ChecklistForm() {
   if (loading) {
     return (
       <div style={{ padding: '40px', fontFamily: "'DM Sans', sans-serif", textAlign: 'center', color: '#8B8F9A' }}>
-        <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px', marginBottom: '12px', display: 'block' }} />
+        <Loader2 size={24} className="icon-spin" style={{ marginBottom: '12px', display: 'block' }} />
         Loading manuscript…
       </div>
     )
@@ -533,7 +544,7 @@ export default function ChecklistForm() {
     return (
       <div style={{ padding: '40px', fontFamily: "'DM Sans', sans-serif" }}>
         <div style={{ padding: '20px', background: '#FCECEC', border: '1px solid #E8B8B8', borderRadius: '8px', color: '#B83333', fontSize: '14px' }}>
-          <i className="fas fa-triangle-exclamation" style={{ marginRight: '8px' }} />
+          <AlertTriangle size={14} style={{ marginRight: '8px' }} />
           Manuscript not found or not available for screening.
         </div>
       </div>
@@ -564,7 +575,7 @@ export default function ChecklistForm() {
           onMouseEnter={e => { e.currentTarget.style.color = '#1B2A4A' }}
           onMouseLeave={e => { e.currentTarget.style.color = '#5A5E6B' }}
         >
-          <i className="fas fa-arrow-left" style={{ fontSize: '12px' }} /> Back to Queue
+          <ArrowLeft size={12} /> Back to Queue
         </button>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
@@ -609,20 +620,20 @@ export default function ChecklistForm() {
           </div>
           {fileError && (
             <div style={{ padding: '10px 18px', background: '#FCECEC', fontSize: '13px', color: '#B83333' }}>
-              <i className="fas fa-triangle-exclamation" style={{ marginRight: '6px' }} />{fileError}
+              <AlertTriangle size={14} style={{ marginRight: '6px' }} />{fileError}
             </div>
           )}
           {manuscript.files.map(file => (
             <div key={file.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 18px', borderBottom: '1px solid #F4F5F7' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1A1A2E', minWidth: 0 }}>
-                <i className="fas fa-file-pdf" style={{ color: '#B83333', flexShrink: 0 }} />
+                <FileText size={16} style={{ color: '#B83333', flexShrink: 0 }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {file.original_filename || file.file_type || 'File'}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                <SmallBtn onClick={() => openFile(file.id, 'view_url')} icon="fa-eye">View</SmallBtn>
-                <SmallBtn onClick={() => openFile(file.id, 'download_url')} icon="fa-download" primary>Download</SmallBtn>
+                <SmallBtn onClick={() => openFile(file.id, 'view_url')} icon={Eye}>View</SmallBtn>
+                <SmallBtn onClick={() => openFile(file.id, 'download_url')} icon={Download} primary>Download</SmallBtn>
               </div>
             </div>
           ))}
@@ -668,7 +679,13 @@ export default function ChecklistForm() {
         boxShadow: '0 -4px 20px rgba(27,42,74,0.08)',
       }}>
         <span style={{ fontSize: '13px', fontWeight: 600, color: scopeFail ? '#B83333' : canApprove ? '#2B7A4B' : '#8B8F9A' }}>
-          <i className={`fas ${scopeFail ? 'fa-ban' : canApprove ? 'fa-circle-check' : 'fa-circle-half-stroke'}`} style={{ marginRight: '6px' }} />
+          {scopeFail ? (
+            <Ban size={14} style={{ marginRight: '6px' }} />
+          ) : canApprove ? (
+            <CheckCircle2 size={14} style={{ marginRight: '6px' }} />
+          ) : (
+            <Contrast size={14} style={{ marginRight: '6px' }} />
+          )}
           {scopeFail
             ? 'Scope FAIL — manuscript not relevant. Reject or Return to Author.'
             : canApprove
@@ -697,7 +714,7 @@ export default function ChecklistForm() {
                 filter: canApprove ? 'none' : 'blur(0.6px)',
               }}
             >
-              <i className="fas fa-circle-check" style={{ fontSize: '12px' }} />
+              <CheckCircle2 size={12} />
               Approve
             </button>
 
@@ -720,14 +737,14 @@ export default function ChecklistForm() {
                 }} />
 
                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#1A1A2E', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <i className="fas fa-triangle-exclamation" style={{ color: '#C48B1E' }} />
+                  <AlertTriangle size={14} style={{ color: '#C48B1E' }} />
                   Approve requires:
                 </div>
 
                 <ul style={{ margin: 0, padding: '0 0 0 4px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '7px' }}>
                   {/* Rule 1: Scope = PASS */}
                   <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: scopePass ? '#2B7A4B' : '#B83333' }}>
-                    <i className={`fas ${scopePass ? 'fa-circle-check' : 'fa-circle-xmark'}`} style={{ fontSize: '12px', flexShrink: 0 }} />
+                    {scopePass ? <CheckCircle2 size={12} style={{ flexShrink: 0 }} /> : <CircleX size={12} style={{ flexShrink: 0 }} />}
                     Scope Assessment = <strong>PASS</strong>
                     {!scopePass && form.scope_radio && (
                       <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, background: '#FCECEC', color: '#B83333', padding: '1px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
@@ -738,7 +755,7 @@ export default function ChecklistForm() {
 
                   {/* Rule 2: all 6 sections complete */}
                   <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: allComplete ? '#2B7A4B' : '#B83333' }}>
-                    <i className={`fas ${allComplete ? 'fa-circle-check' : 'fa-circle-xmark'}`} style={{ fontSize: '12px', flexShrink: 0 }} />
+                    {allComplete ? <CheckCircle2 size={12} style={{ flexShrink: 0 }} /> : <CircleX size={12} style={{ flexShrink: 0 }} />}
                     All 6 modules checked
                     {!allComplete && (
                       <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, background: '#FCECEC', color: '#B83333', padding: '1px 6px', borderRadius: '4px' }}>
@@ -761,7 +778,7 @@ export default function ChecklistForm() {
           <DecisionBarBtn
             disabled={false}
             bg="#C48B1E" hoverBg="#A97618"
-            icon="fa-rotate-left"
+            icon={RotateCcw}
             label="Return to Author"
             onClick={() => setModal('return')}
           />
@@ -769,7 +786,7 @@ export default function ChecklistForm() {
           <DecisionBarBtn
             disabled={false}
             bg="#B83333" hoverBg="#9A2B2B"
-            icon="fa-circle-xmark"
+            icon={CircleX}
             label="Reject"
             onClick={() => setModal('reject')}
           />
@@ -798,17 +815,18 @@ function StatusBadgeInline({ status }) {
   const s = map[status] ?? { label: status?.replace(/_/g, ' ') ?? '', bg: '#F4F5F7', color: '#5A5E6B' }
   return (
     <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', background: s.bg, color: s.color }}>
-      <i className="fas fa-circle" style={{ fontSize: '7px', marginRight: '5px' }} />{s.label}
+      <Circle size={7} fill="currentColor" stroke="none" style={{ marginRight: '5px' }} />{s.label}
     </span>
   )
 }
 
 function SmallBtn({ onClick, icon, children, primary }) {
   const [h, setH] = useState(false)
+  const Icon = icon
   return (
     <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{ padding: '5px 10px', borderRadius: '5px', border: `1px solid ${primary ? 'transparent' : '#E2E4E8'}`, background: primary ? (h ? '#2A3F6B' : '#1B2A4A') : (h ? '#F4F5F7' : '#fff'), color: primary ? '#fff' : '#5A5E6B', fontSize: '12px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontFamily: "'DM Sans', sans-serif", transition: 'background 150ms' }}>
-      <i className={`fas ${icon}`} style={{ fontSize: '11px' }} />{children}
+      <Icon size={11} />{children}
     </button>
   )
 }
@@ -818,13 +836,14 @@ function DownloadBtn({ onClick }) {
   return (
     <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #E2E4E8', background: h ? '#F4F5F7' : '#fff', color: '#5A5E6B', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px', fontFamily: "'DM Sans', sans-serif", transition: 'background 150ms', whiteSpace: 'nowrap' }}>
-      <i className="fas fa-download" style={{ fontSize: '12px' }} />Download Files
+      <Download size={12} />Download Files
     </button>
   )
 }
 
 function DecisionBarBtn({ disabled, bg, hoverBg, icon, label, onClick }) {
   const [h, setH] = useState(false)
+  const Icon = icon
   return (
     <button
       onClick={onClick}
@@ -841,7 +860,7 @@ function DecisionBarBtn({ disabled, bg, hoverBg, icon, label, onClick }) {
         transition: 'background 150ms',
       }}
     >
-      <i className={`fas ${icon}`} style={{ fontSize: '12px' }} />{label}
+      <Icon size={12} />{label}
     </button>
   )
 }

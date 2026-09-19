@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  FolderOpen, Hourglass, Search, Gavel, CheckCircle2, Circle, FileText,
+  AlertTriangle, Clock, UserSearch, Inbox, ClipboardList, ArrowRight,
+} from 'lucide-react'
 import { getDashboardStats } from '../../services/editorialService'
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -47,7 +51,7 @@ const S = {
 }
 
 /* ─── KPI Card ───────────────────────────────────────────────────────────── */
-function KpiCard({ label, value, sub, icon, accentColor, iconBg, loading, onClick }) {
+function KpiCard({ label, value, sub, icon: Icon, accentColor, iconBg, loading, onClick }) {
   return (
     <div
       style={{ ...S.card, borderTop: `3px solid ${accentColor}`, cursor: onClick ? 'pointer' : 'default' }}
@@ -57,7 +61,7 @@ function KpiCard({ label, value, sub, icon, accentColor, iconBg, loading, onClic
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <span style={{ fontSize: '12px', fontWeight: 600, color: '#8B8F9A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
           <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <i className={`fas ${icon}`} style={{ fontSize: '15px', color: accentColor }} />
+            <Icon size={15} style={{ color: accentColor }} />
           </div>
         </div>
         <div style={{ fontSize: '32px', fontWeight: 800, color: '#1A1A2E', lineHeight: 1, marginBottom: '8px' }}>
@@ -84,7 +88,7 @@ function StatusBadge({ status }) {
   const s = map[status] || { label: status?.replace(/_/g, ' ') || '—', bg: '#F4F5F7', color: '#5A5E6B' }
   return (
     <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>
-      <i className="fas fa-circle" style={{ fontSize: '7px', marginRight: '5px' }} />{s.label}
+      <Circle size={7} fill="currentColor" style={{ marginRight: '5px' }} />{s.label}
     </span>
   )
 }
@@ -121,7 +125,7 @@ function ActionBtn({ color, hoverColor, children, onClick }) {
 }
 
 /* ─── Urgent row ─────────────────────────────────────────────────────────── */
-function UrgentRow({ icon, iconBg, iconColor, title, desc, action, onClick }) {
+function UrgentRow({ icon: Icon, iconBg, iconColor, title, desc, action, onClick }) {
   return (
     <div
       onClick={onClick}
@@ -131,7 +135,7 @@ function UrgentRow({ icon, iconBg, iconColor, title, desc, action, onClick }) {
       }}
     >
       <div style={{ width: '38px', height: '38px', minWidth: '38px', borderRadius: '8px', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <i className={`fas ${icon}`} style={{ fontSize: '15px', color: iconColor }} />
+        <Icon size={15} style={{ color: iconColor }} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '13px', fontWeight: 600, color: '#1A1A2E' }}>{title}</div>
@@ -145,7 +149,7 @@ function UrgentRow({ icon, iconBg, iconColor, title, desc, action, onClick }) {
 function EmptyUrgent() {
   return (
     <div style={{ padding: '24px 0', textAlign: 'center' }}>
-      <i className="fas fa-circle-check" style={{ fontSize: '20px', color: '#5EC487', marginBottom: '8px', display: 'block' }} />
+      <CheckCircle2 size={20} style={{ color: '#5EC487', margin: '0 auto 8px', display: 'block' }} />
       <div style={{ fontSize: '13px', color: '#8B8F9A' }}>All caught up — nothing requires your attention.</div>
     </div>
   )
@@ -177,7 +181,7 @@ function EmptyRow({ cols, message }) {
   return (
     <tr>
       <td colSpan={cols} style={{ padding: '40px 16px', textAlign: 'center', color: '#8B8F9A', fontSize: '13px' }}>
-        <i className="fas fa-inbox" style={{ fontSize: '20px', display: 'block', marginBottom: '8px', opacity: 0.4 }} />
+        <Inbox size={20} style={{ display: 'block', margin: '0 auto 8px', opacity: 0.4 }} />
         {message}
       </td>
     </tr>
@@ -216,28 +220,28 @@ export default function EditorDashboard() {
           </p>
         </div>
         <PrimaryBtn onClick={() => navigate('/editor/queue')}>
-          <i className="fas fa-file-lines" style={{ marginRight: '6px' }} /> View All Manuscripts
+          <FileText size={14} style={{ marginRight: '6px' }} /> View All Manuscripts
         </PrimaryBtn>
       </div>
 
       {error && (
         <div style={{ padding: '14px 18px', borderRadius: '8px', background: '#FCECEC', border: '1px solid #E8B8B8', fontSize: '13px', color: '#B83333', marginBottom: '24px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <i className="fas fa-triangle-exclamation" />
+          <AlertTriangle size={16} />
           Failed to load dashboard data. Check your connection and refresh.
         </div>
       )}
 
       {/* KPI grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-        <KpiCard loading={loading} label="Assigned to Me"     value={kpi.assigned_to_me ?? 0}      icon="fa-folder-open"     accentColor="#2E6B9E" iconBg="#EBF4FB" sub="Manuscripts I'm handling" />
-        <KpiCard loading={loading} label="Awaiting Reviewers" value={kpi.awaiting_reviewers ?? 0} icon="fa-hourglass-half"  accentColor="#C48B1E" iconBg="#FEF7E8" sub="Need reviewer invites" />
-        <KpiCard loading={loading} label="Under Review"       value={kpi.under_review ?? 0}       icon="fa-magnifying-glass" accentColor="#2B7A4B" iconBg="#E8F5EC" sub="Reviews in progress" />
-        <KpiCard loading={loading} label="Decision Due"       value={kpi.decision_due ?? 0}       icon="fa-gavel"           accentColor="#B83333" iconBg="#FCECEC" sub="Await your decision" />
+        <KpiCard loading={loading} label="Assigned to Me"     value={kpi.assigned_to_me ?? 0}      icon={FolderOpen}     accentColor="#2E6B9E" iconBg="#EBF4FB" sub="Manuscripts I'm handling" />
+        <KpiCard loading={loading} label="Awaiting Reviewers" value={kpi.awaiting_reviewers ?? 0} icon={Hourglass}  accentColor="#C48B1E" iconBg="#FEF7E8" sub="Need reviewer invites" />
+        <KpiCard loading={loading} label="Under Review"       value={kpi.under_review ?? 0}       icon={Search} accentColor="#2B7A4B" iconBg="#E8F5EC" sub="Reviews in progress" />
+        <KpiCard loading={loading} label="Decision Due"       value={kpi.decision_due ?? 0}       icon={Gavel}           accentColor="#B83333" iconBg="#FCECEC" sub="Await your decision" />
         <KpiCard
           loading={loading}
           label="Accepted Manuscripts"
           value={kpi.accepted_manuscripts ?? 0}
-          icon="fa-circle-check"
+          icon={CheckCircle2}
           accentColor="#2B7A4B"
           iconBg="#E8F5EC"
           sub="Final accepted decisions"
@@ -249,12 +253,12 @@ export default function EditorDashboard() {
       <div style={{ ...S.card, marginBottom: '24px' }}>
         <div style={S.cardHdr}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 700, color: '#1A1A2E' }}>
-            <i className="fas fa-triangle-exclamation" style={{ color: '#B83333' }} />
+            <AlertTriangle size={16} style={{ color: '#B83333' }} />
             Urgent Items
           </span>
           {urgentCount > 0 && (
             <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', background: '#FCECEC', color: '#B83333' }}>
-              <i className="fas fa-circle" style={{ fontSize: '7px', marginRight: '5px' }} />{urgentCount} require attention
+              <Circle size={7} fill="currentColor" style={{ marginRight: '5px' }} />{urgentCount} require attention
             </span>
           )}
         </div>
@@ -268,7 +272,7 @@ export default function EditorDashboard() {
               {(urgent.overdue_reviews || []).map((item) => (
                 <UrgentRow
                   key={`overdue-${item.manuscript_id}-${item.due_at}`}
-                  icon="fa-clock"
+                  icon={Clock}
                   iconBg="#FCECEC"
                   iconColor="#B83333"
                   title={`${item.submission_number || 'Manuscript'} — Reviewer overdue by ${daysOverdue(item.due_at)} day${daysOverdue(item.due_at) === 1 ? '' : 's'}`}
@@ -280,7 +284,7 @@ export default function EditorDashboard() {
               {(urgent.decisions_pending || []).map((item) => (
                 <UrgentRow
                   key={`pending-${item.id}`}
-                  icon="fa-gavel"
+                  icon={Gavel}
                   iconBg="#FEF7E8"
                   iconColor="#C48B1E"
                   title={`${item.submission_number || 'Manuscript'} — Editorial decision pending`}
@@ -292,7 +296,7 @@ export default function EditorDashboard() {
               {(urgent.no_reviewers || []).map((item) => (
                 <UrgentRow
                   key={`norev-${item.id}`}
-                  icon="fa-user-magnifying-glass"
+                  icon={UserSearch}
                   iconBg="#FEF7E8"
                   iconColor="#C48B1E"
                   title={`${item.submission_number || 'Manuscript'} — No reviewers assigned yet`}
@@ -313,11 +317,11 @@ export default function EditorDashboard() {
         <div style={S.card}>
           <div style={S.cardHdr}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 700, color: '#1A1A2E' }}>
-              <i className="fas fa-file-lines" style={{ color: '#C4922E' }} />
+              <FileText size={16} style={{ color: '#C4922E' }} />
               Editorial Queue
             </span>
             <GhostBtn onClick={() => navigate('/editor/queue')}>
-              View All <i className="fas fa-arrow-right" style={{ fontSize: '11px' }} />
+              View All <ArrowRight size={11} />
             </GhostBtn>
           </div>
           <div style={{ overflowX: 'auto' }}>
@@ -356,7 +360,7 @@ export default function EditorDashboard() {
               <div style={{ padding: '32px 0', textAlign: 'center', color: '#8B8F9A', fontSize: '13px' }}>Loading…</div>
             ) : activity.length === 0 ? (
               <div style={{ padding: '32px 0', textAlign: 'center' }}>
-                <i className="fas fa-clipboard-list" style={{ fontSize: '20px', color: '#E2E4E8', marginBottom: '8px', display: 'block' }} />
+                <ClipboardList size={20} style={{ color: '#E2E4E8', margin: '0 auto 8px', display: 'block' }} />
                 <div style={{ fontSize: '13px', color: '#8B8F9A' }}>No editorial activity yet.</div>
               </div>
             ) : (

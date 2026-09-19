@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ClipboardList } from 'lucide-react'
 import Table from '../../shared/components/Table'
 import StatusBadge from '../../shared/components/StatusBadge'
 import EmptyState from '../../shared/components/EmptyState'
@@ -148,7 +149,7 @@ export default function Assignments() {
         />
       ) : (
         <EmptyState
-          icon="📋"
+          icon={<ClipboardList size={44} />}
           message="You have no active review assignments."
         />
       )}

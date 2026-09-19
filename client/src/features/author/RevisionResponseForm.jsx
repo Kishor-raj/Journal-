@@ -7,6 +7,7 @@ import StatusBadge from '../../shared/components/StatusBadge'
 import { getRevisionRequest, submitRevisionResponse } from '../../services/revisionService'
 import { requestSignature, confirmUpload, deleteManuscriptFile } from './services/manuscriptService'
 import { formatDate } from '../../shared/utils/formatDate'
+import { CheckCircle2, AlertCircle, FileText, Loader2, UploadCloud } from 'lucide-react'
 
 const TABS = [
   { key: 'request', label: 'Request' },
@@ -372,7 +373,7 @@ export default function RevisionResponseForm() {
           gap: '12px'
         }}>
           <div>
-            <i className="fas fa-circle-check" style={{ marginRight: '8px', color: 'var(--color-success)' }} />
+            <CheckCircle2 size={16} style={{ marginRight: '8px', color: 'var(--color-success)' }} />
             <strong>Revision Submitted:</strong> You have already submitted your response for Round {request.round_number}.
           </div>
           <Button
@@ -387,14 +388,14 @@ export default function RevisionResponseForm() {
 
       {errorMessage && (
         <div style={styles.alertDanger}>
-          <i className="fas fa-circle-exclamation" style={{ marginRight: '8px' }} />
+          <AlertCircle size={16} style={{ marginRight: '8px' }} />
           {errorMessage}
         </div>
       )}
 
       {successMessage && (
         <div style={styles.alertSuccess}>
-          <i className="fas fa-circle-check" style={{ marginRight: '8px' }} />
+          <CheckCircle2 size={16} style={{ marginRight: '8px' }} />
           {successMessage}
         </div>
       )}
@@ -496,7 +497,9 @@ export default function RevisionResponseForm() {
                   onClick={() => !uploading && fileInputRef.current?.click()}
                 >
                   <div style={styles.uploadIcon}>
-                    <i className={uploading ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-arrow-up'} />
+                    {uploading
+                      ? <Loader2 size={28} className="icon-spin" style={{ color: 'var(--color-info, #2E6B9E)' }} />
+                      : <UploadCloud size={28} style={{ color: 'var(--color-info, #2E6B9E)' }} />}
                   </div>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink-navy)', marginBottom: '4px' }}>
                     {uploading ? 'Uploading file...' : 'Click to select revised manuscript file'}
@@ -521,7 +524,7 @@ export default function RevisionResponseForm() {
                   <div key={file.id} style={styles.fileItem}>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink-black)' }}>
-                        <i className="fas fa-file-lines" style={{ marginRight: '8px', color: 'var(--color-info, #2E6B9E)' }} />
+                        <FileText size={14} style={{ marginRight: '8px', color: 'var(--color-info, #2E6B9E)' }} />
                         {file.original_filename || file.file_type}
                       </div>
                       {file.file_size_bytes && (
@@ -555,7 +558,7 @@ export default function RevisionResponseForm() {
                   <div key={file.id} style={styles.fileItem}>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink-black)' }}>
-                        <i className="fas fa-file-lines" style={{ marginRight: '8px', color: 'var(--color-info, #2E6B9E)' }} />
+                        <FileText size={14} style={{ marginRight: '8px', color: 'var(--color-info, #2E6B9E)' }} />
                         {file.original_filename || file.file_type}
                       </div>
                       {file.file_size_bytes && (

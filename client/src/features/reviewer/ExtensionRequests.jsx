@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Loader2, CalendarClock, Clock } from 'lucide-react'
 import StatusBadge from '../../shared/components/StatusBadge'
 import EmptyState from '../../shared/components/EmptyState'
 import PageHeader from '../../shared/components/PageHeader'
@@ -132,9 +133,9 @@ export default function ExtensionRequests() {
       </div>
 
       {loading ? (
-        <EmptyState icon="⏳" message="Loading extension requests…" />
+        <EmptyState icon={<Loader2 size={44} className="icon-spin" />} message="Loading extension requests…" />
       ) : requests.length === 0 ? (
-        <EmptyState icon="📅" message="No extension requests yet. Request an extension from an active review if you need more time." />
+        <EmptyState icon={<CalendarClock size={44} />} message="No extension requests yet. Request an extension from an active review if you need more time." />
       ) : (
         <>
           {active.length > 0 && (
@@ -148,7 +149,7 @@ export default function ExtensionRequests() {
                       background: 'rgba(196,146,46,0.12)', color: 'var(--color-warning)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0,
                     }}>
-                      <i className="fas fa-clock" />
+                      <Clock size={18} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>

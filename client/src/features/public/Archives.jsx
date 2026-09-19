@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { Search, ChevronDown, Mail, FileText, Eye, Download, X, Copy, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { publicService } from '../../services/publicService.js'
 import { triggerPdfDownload } from '../../utils/pdfGenerator.js'
 
@@ -424,15 +425,14 @@ export default function Archives() {
           }}
         >
           <div style={{ width: '100%', position: 'relative' }}>
-            <i
-              className="fa-solid fa-magnifying-glass"
+            <Search
+              size={15}
               style={{
                 position: 'absolute',
                 left: '18px',
                 top: '50%',
                 transform: 'translateY(-50%)',
                 color: '#6B7288',
-                fontSize: '15px',
               }}
             />
             <input
@@ -558,10 +558,9 @@ export default function Archives() {
                           }}
                         >
                           <span>{issue.name}</span>
-                          <i
-                            className="fa-solid fa-chevron-down"
+                          <ChevronDown
+                            size={10}
                             style={{
-                              fontSize: '10px',
                               transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                               transition: 'transform 0.2s',
                             }}
@@ -743,7 +742,7 @@ export default function Archives() {
                                           fontStyle: 'normal',
                                         }}
                                       >
-                                        <i className="fa-solid fa-envelope" style={{ fontSize: '8.5px', marginRight: '3px' }} />
+                                        <Mail size={8.5} style={{ marginRight: '3px' }} />
                                         Corresponding
                                       </span>
                                     )}
@@ -773,7 +772,7 @@ export default function Archives() {
                                   marginBottom: '10px',
                                 }}
                               >
-                                <i className="fa-solid fa-file-lines" />
+                                <FileText size={14} />
                                 <span>{isAbstractOpen ? 'Hide Abstract' : 'Show Abstract & Keywords'}</span>
                               </button>
 
@@ -833,7 +832,7 @@ export default function Archives() {
                                   onMouseEnter={e => { e.currentTarget.style.background = '#182C54'; e.currentTarget.style.borderColor = '#182C54' }}
                                   onMouseLeave={e => { e.currentTarget.style.background = '#0B1B3A'; e.currentTarget.style.borderColor = '#0B1B3A' }}
                                 >
-                                  <i className="fa-regular fa-eye" /> View Article
+                                  <Eye size={14} /> View Article
                                 </button>
 
                                 <button
@@ -859,7 +858,7 @@ export default function Archives() {
                                   onMouseEnter={e => { e.currentTarget.style.background = '#FFFDF5'; e.currentTarget.style.borderColor = '#C4A24C'; e.currentTarget.style.color = '#9A7B23' }}
                                   onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E6E1D6'; e.currentTarget.style.color = '#0B1B3A' }}
                                 >
-                                  <i className="fa-solid fa-download" /> Download Manuscript
+                                  <Download size={14} /> Download Manuscript
                                 </button>
                               </div>
                             </article>
@@ -924,7 +923,7 @@ export default function Archives() {
               }}
               aria-label="Close modal"
             >
-              <i className="fa-solid fa-xmark" />
+              <X size={18} />
             </button>
 
             {/* Modal Top Metadata */}
@@ -1073,7 +1072,7 @@ export default function Archives() {
                   borderRadius: '2px',
                 }}
               >
-                <i className="fa-solid fa-file-pdf" /> Download Manuscript
+                <FileText size={14} /> Download Manuscript
               </button>
 
               <button
@@ -1096,7 +1095,7 @@ export default function Archives() {
                   borderRadius: '2px',
                 }}
               >
-                <i className="fa-regular fa-copy" /> Copy Citation (APA)
+                <Copy size={14} /> Copy Citation (APA)
               </button>
             </div>
           </div>
@@ -1125,14 +1124,11 @@ export default function Archives() {
             lineHeight: 1.5,
           }}
         >
-          <i
-            className={
-              toast.type === 'warning'
-                ? 'fa-solid fa-triangle-exclamation'
-                : 'fa-solid fa-circle-check'
-            }
-            style={{ color: toast.type === 'warning' ? '#E67E22' : '#C4A24C', fontSize: '15px' }}
-          />
+          {toast.type === 'warning' ? (
+            <AlertTriangle size={15} style={{ color: '#E67E22' }} />
+          ) : (
+            <CheckCircle2 size={15} style={{ color: '#C4A24C' }} />
+          )}
           <span>{toast.message}</span>
         </div>
       )}

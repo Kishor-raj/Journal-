@@ -8,6 +8,7 @@ import PageHeader from '../../shared/components/PageHeader'
 import Button from '../../shared/components/Button'
 import { getMyRevisions } from '../../services/revisionService'
 import { formatDate } from '../../shared/utils/formatDate'
+import { FileEdit, FolderOpen } from 'lucide-react'
 
 const styles = {
   page: {
@@ -188,7 +189,7 @@ export default function Revisions() {
           />
         ) : (
           <EmptyState
-            icon="📝"
+            icon={<FileEdit size={44} />}
             message="You have no pending revision requests."
           />
         )
@@ -203,7 +204,7 @@ export default function Revisions() {
           />
         ) : (
           <EmptyState
-            icon="📂"
+            icon={<FolderOpen size={44} />}
             message="No revision history yet."
           />
         )

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BellOff } from 'lucide-react'
 import {
   getNotificationHistory,
   getEmailTemplates,
@@ -260,7 +261,7 @@ export default function NotificationHistory() {
       {loading ? (
         <p style={{ color: 'var(--color-text-muted)', padding: '20px 0' }}>Loading notifications...</p>
       ) : notifications.length === 0 ? (
-        <EmptyState icon="📬" message="No notifications match the selected filters." />
+        <EmptyState icon={<BellOff size={44} />} message="No notifications match the selected filters." />
       ) : (
         <>
           <Table columns={columns} data={notifications} />

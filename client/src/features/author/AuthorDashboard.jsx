@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../../shared/components/Button'
 import StatusBadge from '../../shared/components/StatusBadge'
 import { getMyManuscripts, createDraft } from './services/manuscriptService'
+import { FilePenLine, Search, RotateCw, CheckCircle2, Plus, AlertTriangle, ArrowRight } from 'lucide-react'
 
 const DOT_COLORS = {
   danger:  'var(--dash-danger)',
@@ -12,10 +13,10 @@ const DOT_COLORS = {
 }
 
 const KPI_CONFIG = [
-  { key: 'drafts',         label: 'Drafts',          icon: 'fas fa-file-pen',          iconBg: '#F4F5F7', iconColor: '#8B8F9A', accent: '#8B8F9A', trend: 'Continue where you left off' },
-  { key: 'underReview',    label: 'Under Review',    icon: 'fas fa-magnifying-glass',  iconBg: 'var(--dash-info-bg)', iconColor: 'var(--dash-info)', accent: 'var(--dash-info)', trend: 'Awaiting reviewer reports' },
-  { key: 'revisionNeeded', label: 'Revision Needed',  icon: 'fas fa-rotate',            iconBg: 'var(--dash-warning-bg)', iconColor: 'var(--dash-warning)', accent: 'var(--dash-warning)', trend: null },
-  { key: 'accepted',       label: 'Accepted',        icon: 'fas fa-circle-check',      iconBg: 'var(--dash-success-bg)', iconColor: 'var(--dash-success)', accent: 'var(--dash-success)', trend: 'Proceeding to publication' },
+  { key: 'drafts',         label: 'Drafts',          icon: FilePenLine, iconBg: '#F4F5F7', iconColor: '#8B8F9A', accent: '#8B8F9A', trend: 'Continue where you left off' },
+  { key: 'underReview',    label: 'Under Review',    icon: Search,      iconBg: 'var(--dash-info-bg)', iconColor: 'var(--dash-info)', accent: 'var(--dash-info)', trend: 'Awaiting reviewer reports' },
+  { key: 'revisionNeeded', label: 'Revision Needed',  icon: RotateCw,   iconBg: 'var(--dash-warning-bg)', iconColor: 'var(--dash-warning)', accent: 'var(--dash-warning)', trend: null },
+  { key: 'accepted',       label: 'Accepted',        icon: CheckCircle2, iconBg: 'var(--dash-success-bg)', iconColor: 'var(--dash-success)', accent: 'var(--dash-success)', trend: 'Proceeding to publication' },
 ]
 
 function formatDate(dateString) {
@@ -108,7 +109,7 @@ export default function AuthorDashboard() {
           </p>
         </div>
         <Button variant="primary" size="md" loading={creating} onClick={handleNewSubmission}>
-          <i className="fas fa-plus" style={{ fontSize: '13px' }} /> New Submission
+          <Plus size={13} /> New Submission
         </Button>
       </div>
 
@@ -138,8 +139,8 @@ export default function AuthorDashboard() {
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--dash-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 {kpi.label}
               </span>
-              <div style={{ width: '36px', height: '36px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', background: kpi.iconBg, color: kpi.iconColor }}>
-                <i className={`fas ${kpi.icon}`} />
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: kpi.iconBg, color: kpi.iconColor }}>
+                <kpi.icon size={15} />
               </div>
             </div>
             <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--dash-text-primary)', lineHeight: 1, marginBottom: '4px' }}>
@@ -165,7 +166,7 @@ export default function AuthorDashboard() {
           borderRadius: '8px', fontSize: '13px', marginBottom: '24px',
           background: 'var(--dash-danger-bg)', border: '1px solid #E8B8B8', color: '#7A1A1A',
         }}>
-          <i className="fas fa-triangle-exclamation" style={{ marginTop: '2px', fontSize: '15px', flexShrink: 0 }} />
+          <AlertTriangle size={15} style={{ marginTop: '2px', flexShrink: 0 }} />
           <div>
             <strong>Revision due soon:</strong>{' '}
             {revisionDeadline.submission_number || revisionDeadline.id} &ldquo;{revisionDeadline.title || 'Untitled'}&rdquo; — revision may be due soon.
@@ -224,7 +225,7 @@ export default function AuthorDashboard() {
                 onClick={() => navigate('/author/manuscripts')}
                 style={{ background: 'none', border: 'none', color: 'var(--dash-text-secondary)', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 0' }}
               >
-                View All <i className="fas fa-arrow-right" style={{ fontSize: '11px' }} />
+                View All <ArrowRight size={11} />
               </button>
             </div>
             <div style={{ overflowX: 'auto' }}>

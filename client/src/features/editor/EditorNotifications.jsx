@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Inbox, FileText, MailOpen, Hourglass, Clock, Check, AlertTriangle, Loader2, BellOff, CheckCheck,
+} from 'lucide-react'
 import { getEditorNotifications } from '../../services/editorialService'
 
 /* ─── Type → visual metadata ─────────────────────────────────────────────── */
@@ -12,25 +15,25 @@ const REC_LABEL = {
 
 const TYPE_META = {
   assignment: {
-    icon: 'fa-inbox',            iconBg: '#EBF4FB', iconColor: '#2E6B9E',
+    icon: Inbox,                 iconBg: '#EBF4FB', iconColor: '#2E6B9E',
     typeBg: '#EBF4FB',           typeColor: '#2E6B9E',
     label: 'Assignment',
     text: (n) => `Newly routed to you: <strong>${n.submission_number || 'Manuscript'}</strong> — "${n.title || 'Untitled'}" awaits your reviewer assignment`,
   },
   review: {
-    icon: 'fa-file-lines',       iconBg: '#E8F5EC', iconColor: '#2B7A4B',
+    icon: FileText,              iconBg: '#E8F5EC', iconColor: '#2B7A4B',
     typeBg: '#E8F5EC',           typeColor: '#2B7A4B',
     label: 'Review',
     text: (n) => `<strong>${n.actor_name || 'A reviewer'}</strong> submitted a review for <strong>${n.submission_number || 'a manuscript'}</strong>${n.value ? ` — Recommendation: ${REC_LABEL[n.value] || n.value}` : ''}`,
   },
   invitation: {
-    icon: 'fa-envelope-open-text', iconBg: '#F3E8FF', iconColor: '#7C3AED',
+    icon: MailOpen,                iconBg: '#F3E8FF', iconColor: '#7C3AED',
     typeBg: '#F3E8FF',           typeColor: '#7C3AED',
     label: 'Invitation',
     text: (n) => `<strong>${n.actor_name || 'A reviewer'}</strong> ${n.value === 'declined' ? 'declined' : 'accepted'} your review invitation for <strong>${n.submission_number || 'a manuscript'}</strong>`,
   },
   deadline: {
-    icon: 'fa-hourglass-half',   iconBg: '#FCECEC', iconColor: '#B83333',
+    icon: Hourglass,             iconBg: '#FCECEC', iconColor: '#B83333',
     typeBg: '#FCECEC',           typeColor: '#B83333',
     label: 'Deadline',
     text: (n) => `Overdue alert: <strong>${n.actor_name || 'A reviewer'}</strong>'s review for <strong>${n.submission_number || 'a manuscript'}</strong> is past its deadline`,
@@ -134,7 +137,7 @@ export default function EditorNotifications() {
       {/* Error banner */}
       {error && (
         <div style={{ padding: '14px 18px', borderRadius: '8px', background: '#FCECEC', border: '1px solid #E8B8B8', fontSize: '13px', color: '#B83333', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <i className="fas fa-triangle-exclamation" />
+          <AlertTriangle size={16} />
           Failed to load notifications. Please refresh the page.
         </div>
       )}
@@ -216,7 +219,7 @@ function NotifItem({ notif, isLast, onRead, onClick }) {
 
       {/* Icon */}
       <div style={{ width: '36px', height: '36px', minWidth: '36px', borderRadius: '8px', background: meta.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <i className={`fas ${meta.icon}`} style={{ fontSize: '14px', color: meta.iconColor }} />
+        <meta.icon size={14} style={{ color: meta.iconColor }} />
       </div>
 
       {/* Text */}
@@ -226,7 +229,7 @@ function NotifItem({ notif, isLast, onRead, onClick }) {
           dangerouslySetInnerHTML={{ __html: html }}
         />
         <div style={{ fontSize: '12px', color: '#8B8F9A', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <i className="fas fa-clock" style={{ fontSize: '10px' }} />
+          <Clock size={10} />
           {timeAgo(notif.created_at)}
         </div>
       </div>
@@ -243,7 +246,7 @@ function NotifItem({ notif, isLast, onRead, onClick }) {
             onMouseEnter={e => { e.currentTarget.style.color = '#1B2A4A' }}
             onMouseLeave={e => { e.currentTarget.style.color = '#8B8F9A' }}
           >
-            <i className="fas fa-check" style={{ marginRight: '3px', fontSize: '10px' }} />Mark read
+            <Check size={10} style={{ marginRight: '3px' }} />Mark read
           </button>
         )}
       </div>
@@ -255,7 +258,7 @@ function NotifItem({ notif, isLast, onRead, onClick }) {
 function LoadingState() {
   return (
     <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-      <i className="fas fa-spinner fa-spin" style={{ fontSize: '22px', color: '#8B8F9A', marginBottom: '12px', display: 'block' }} />
+      <Loader2 size={22} className="icon-spin" style={{ color: '#8B8F9A', margin: '0 auto 12px', display: 'block' }} />
       <div style={{ fontSize: '13px', color: '#8B8F9A' }}>Loading notifications…</div>
     </div>
   )
@@ -265,7 +268,7 @@ function EmptyState({ filter }) {
   return (
     <div style={{ padding: '72px 20px', textAlign: 'center' }}>
       <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#F4F5F7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-        <i className="fas fa-bell-slash" style={{ fontSize: '20px', color: '#8B8F9A' }} />
+        <BellOff size={20} style={{ color: '#8B8F9A' }} />
       </div>
       <div style={{ fontSize: '15px', fontWeight: 600, color: '#1A1A2E', marginBottom: '6px' }}>
         {filter === 'all' || filter === 'unread' ? 'No notifications yet' : `No ${filter.toLowerCase()} notifications`}
@@ -282,7 +285,7 @@ function MarkAllBtn({ onClick }) {
   return (
     <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: `1px solid ${h ? '#C4922E' : '#E2E4E8'}`, borderRadius: '6px', background: '#fff', color: h ? '#C4922E' : '#5A5E6B', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 150ms' }}>
-      <i className="fas fa-check-double" style={{ fontSize: '13px' }} />
+      <CheckCheck size={13} />
       Mark all read
     </button>
   )

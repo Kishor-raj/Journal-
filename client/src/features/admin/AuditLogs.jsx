@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { ShieldCheck } from 'lucide-react'
 import { getAuditLogs, getSecurityLogs, getWorkflowLogs } from '../../services/adminService'
 import Table from '../../shared/components/Table'
 import Pagination from '../../shared/components/Pagination'
@@ -225,7 +226,7 @@ export default function AuditLogs() {
         </p>
       ) : logs.length === 0 ? (
         <EmptyState
-          icon="🛡️"
+          icon={<ShieldCheck size={44} />}
           message={`No ${activeTab} log records recorded yet.`}
         />
       ) : (

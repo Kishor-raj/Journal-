@@ -8,6 +8,7 @@ import PageHeader from '../../shared/components/PageHeader'
 import Modal from '../../shared/components/Modal'
 import { getMyManuscripts, createDraft, deleteManuscript, getMyCertificate, downloadCertificatePdf } from './services/manuscriptService'
 import { formatDate } from '../../shared/utils/formatDate'
+import { FileText } from 'lucide-react'
 
 const styles = {
   page: {
@@ -165,7 +166,7 @@ export default function MyManuscripts() {
         />
       ) : (
         <EmptyState
-          icon="📝"
+          icon={<FileText size={44} />}
           message="You haven't submitted any manuscripts yet. Start your first submission to get going."
           actionLabel="New Submission"
           onAction={handleNewSubmission}

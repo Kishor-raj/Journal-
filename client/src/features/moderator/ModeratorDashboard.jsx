@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Inbox, Loader2, RotateCcw, CheckCircle2, Circle, ArrowRight, ClipboardCheck,
+  Layers, AlertTriangle, ClipboardList, BarChart3, Ban,
+} from 'lucide-react'
 import { getDashboardStats, getQueue } from '../../services/moderationService'
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
@@ -33,14 +37,14 @@ const S = {
 }
 
 /* ─── KPI Card ───────────────────────────────────────────────────────────── */
-function KpiCard({ label, value, icon, sub, accentColor, iconBg, loading }) {
+function KpiCard({ label, value, icon: Icon, spin, sub, accentColor, iconBg, loading }) {
   return (
     <div style={{ ...S.card, borderTop: `3px solid ${accentColor}` }}>
       <div style={{ padding: '20px 22px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <span style={{ fontSize: '12px', fontWeight: 600, color: '#8B8F9A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
           <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <i className={`fas ${icon}`} style={{ fontSize: '15px', color: accentColor }} />
+            <Icon size={15} className={spin ? 'icon-spin' : undefined} style={{ color: accentColor }} />
           </div>
         </div>
         <div style={{ fontSize: '32px', fontWeight: 800, color: '#1A1A2E', lineHeight: 1, marginBottom: '8px' }}>
@@ -64,7 +68,7 @@ function StatusBadge({ status }) {
   const s = map[status] || { label: status?.replace(/_/g, ' ') || '—', bg: '#F4F5F7', color: '#5A5E6B' }
   return (
     <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', background: s.bg, color: s.color }}>
-      <i className="fas fa-circle" style={{ fontSize: '7px', marginRight: '5px' }} />{s.label}
+      <Circle size={7} style={{ marginRight: '5px' }} fill="currentColor" />{s.label}
     </span>
   )
 }
@@ -119,7 +123,7 @@ function ScreenBtn({ isInProgress, onClick }) {
   return (
     <button onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{ padding: '5px 12px', borderRadius: '5px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", background: h ? (isInProgress ? '#2A3F6B' : '#C4922E') : (isInProgress ? '#1B2A4A' : '#D9A94A'), color: '#fff', display: 'flex', alignItems: 'center', gap: '5px', transition: 'background 150ms' }}>
-      <i className={`fas ${isInProgress ? 'fa-arrow-right' : 'fa-clipboard-check'}`} style={{ fontSize: '11px' }} />
+      {isInProgress ? <ArrowRight size={11} /> : <ClipboardCheck size={11} />}
       {isInProgress ? 'Continue' : 'Screen'}
     </button>
   )
@@ -130,7 +134,7 @@ function EmptyRow({ cols, message }) {
   return (
     <tr>
       <td colSpan={cols} style={{ padding: '40px 16px', textAlign: 'center', color: '#8B8F9A', fontSize: '13px' }}>
-        <i className="fas fa-inbox" style={{ fontSize: '20px', display: 'block', marginBottom: '8px', opacity: 0.4 }} />
+        <Inbox size={20} style={{ display: 'block', margin: '0 auto 8px', opacity: 0.4 }} />
         {message}
       </td>
     </tr>
@@ -175,34 +179,34 @@ export default function ModeratorDashboard() {
           </p>
         </div>
         <PrimaryBtn onClick={() => navigate('/moderator/screening')}>
-          <i className="fas fa-layer-group" style={{ marginRight: '6px' }} /> Open Queue
+          <Layers size={14} style={{ marginRight: '6px' }} /> Open Queue
         </PrimaryBtn>
       </div>
 
       {error && (
         <div style={{ padding: '14px 18px', borderRadius: '8px', background: '#FCECEC', border: '1px solid #E8B8B8', fontSize: '13px', color: '#B83333', marginBottom: '24px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <i className="fas fa-triangle-exclamation" />
+          <AlertTriangle size={16} />
           Failed to load dashboard data. Check your connection and refresh.
         </div>
       )}
 
       {/* KPI grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-        <KpiCard loading={loading} label="New in Queue"          value={kpi.new_in_queue ?? 0}       icon="fa-inbox"         accentColor="#2E6B9E" iconBg="#EBF4FB" sub="Awaiting screening" />
-        <KpiCard loading={loading} label="In Progress"           value={kpi.in_progress ?? 0}         icon="fa-spinner"       accentColor="#C48B1E" iconBg="#FEF7E8" sub="Currently screening" />
-        <KpiCard loading={loading} label="Returned (This Month)" value={kpi.returned_this_month ?? 0} icon="fa-rotate-left"   accentColor="#B83333" iconBg="#FCECEC" sub="Sent back to author" />
-        <KpiCard loading={loading} label="Approved (This Month)" value={kpi.approved_this_month ?? 0} icon="fa-circle-check"  accentColor="#2B7A4B" iconBg="#E8F5EC" sub="Forwarded to editor" />
+        <KpiCard loading={loading} label="New in Queue"          value={kpi.new_in_queue ?? 0}       icon={Inbox}         accentColor="#2E6B9E" iconBg="#EBF4FB" sub="Awaiting screening" />
+        <KpiCard loading={loading} label="In Progress"           value={kpi.in_progress ?? 0}         icon={Loader2} spin  accentColor="#C48B1E" iconBg="#FEF7E8" sub="Currently screening" />
+        <KpiCard loading={loading} label="Returned (This Month)" value={kpi.returned_this_month ?? 0} icon={RotateCcw}     accentColor="#B83333" iconBg="#FCECEC" sub="Sent back to author" />
+        <KpiCard loading={loading} label="Approved (This Month)" value={kpi.approved_this_month ?? 0} icon={CheckCircle2}  accentColor="#2B7A4B" iconBg="#E8F5EC" sub="Forwarded to editor" />
       </div>
 
       {/* Queue table */}
       <div style={{ ...S.card, marginBottom: '24px' }}>
         <div style={S.cardHdr}>
           <span style={{ ...S.cardTitle, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <i className="fas fa-triangle-exclamation" style={{ color: '#C48B1E' }} />
+            <AlertTriangle size={14} style={{ color: '#C48B1E' }} />
             Current Queue
           </span>
           <GhostBtn onClick={() => navigate('/moderator/screening')}>
-            View Full Queue <i className="fas fa-arrow-right" style={{ fontSize: '11px' }} />
+            View Full Queue <ArrowRight size={11} />
           </GhostBtn>
         </div>
         <div style={{ overflowX: 'auto' }}>
@@ -244,7 +248,7 @@ export default function ModeratorDashboard() {
               <div style={{ padding: '32px 0', textAlign: 'center', color: '#8B8F9A', fontSize: '13px' }}>Loading…</div>
             ) : activity.length === 0 ? (
               <div style={{ padding: '32px 0', textAlign: 'center' }}>
-                <i className="fas fa-clipboard-list" style={{ fontSize: '20px', color: '#E2E4E8', marginBottom: '8px', display: 'block' }} />
+                <ClipboardList size={20} style={{ color: '#E2E4E8', marginBottom: '8px', display: 'block', margin: '0 auto 8px' }} />
                 <div style={{ fontSize: '13px', color: '#8B8F9A' }}>No screening activity yet.</div>
               </div>
             ) : (
@@ -277,19 +281,19 @@ export default function ModeratorDashboard() {
               <div style={{ padding: '32px 0', textAlign: 'center', color: '#8B8F9A', fontSize: '13px' }}>Loading…</div>
             ) : total === 0 ? (
               <div style={{ padding: '32px 0', textAlign: 'center' }}>
-                <i className="fas fa-chart-bar" style={{ fontSize: '20px', color: '#E2E4E8', marginBottom: '8px', display: 'block' }} />
+                <BarChart3 size={20} style={{ color: '#E2E4E8', marginBottom: '8px', display: 'block', margin: '0 auto 8px' }} />
                 <div style={{ fontSize: '13px', color: '#8B8F9A' }}>No decisions recorded this month.</div>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 {[
-                  { label: 'Approved',       value: st.approved ?? 0, pct: pct(st.approved), bg: '#E8F5EC', color: '#2B7A4B', icon: 'fa-circle-check' },
-                  { label: 'Returned',       value: st.returned ?? 0, pct: pct(st.returned), bg: '#FEF7E8', color: '#C48B1E', icon: 'fa-rotate-left' },
-                  { label: 'Rejected',       value: st.rejected ?? 0, pct: pct(st.rejected), bg: '#FCECEC', color: '#B83333', icon: 'fa-ban' },
-                  { label: 'Total Screened', value: total,            pct: '',               bg: '#EBF4FB', color: '#2E6B9E', icon: 'fa-clipboard-check' },
+                  { label: 'Approved',       value: st.approved ?? 0, pct: pct(st.approved), bg: '#E8F5EC', color: '#2B7A4B', icon: CheckCircle2 },
+                  { label: 'Returned',       value: st.returned ?? 0, pct: pct(st.returned), bg: '#FEF7E8', color: '#C48B1E', icon: RotateCcw },
+                  { label: 'Rejected',       value: st.rejected ?? 0, pct: pct(st.rejected), bg: '#FCECEC', color: '#B83333', icon: Ban },
+                  { label: 'Total Screened', value: total,            pct: '',               bg: '#EBF4FB', color: '#2E6B9E', icon: ClipboardCheck },
                 ].map(s => (
                   <div key={s.label} style={{ padding: '16px', background: s.bg, borderRadius: '8px', textAlign: 'center' }}>
-                    <i className={`fas ${s.icon}`} style={{ fontSize: '20px', color: s.color, marginBottom: '8px', display: 'block' }} />
+                    <s.icon size={20} style={{ color: s.color, marginBottom: '8px', display: 'block', margin: '0 auto 8px' }} />
                     <div style={{ fontSize: '22px', fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
                     <div style={{ fontSize: '12px', color: s.color, marginTop: '4px', fontWeight: 500 }}>{s.label}</div>
                     {s.pct && <div style={{ fontSize: '11px', color: s.color, opacity: 0.7 }}>{s.pct} of total</div>}

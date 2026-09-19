@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { UserSearch } from 'lucide-react'
 import {
   getUsers,
   getUser,
@@ -413,7 +414,7 @@ export default function UserManagement() {
         </p>
       ) : users.length === 0 ? (
         <EmptyState
-          icon="👥"
+          icon={<UserSearch size={44} />}
           message="No users match the selected search and filter criteria."
         />
       ) : (

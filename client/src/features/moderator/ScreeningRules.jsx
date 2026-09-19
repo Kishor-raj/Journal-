@@ -1,6 +1,8 @@
+import { Target, ListChecks, Type, Scale, FingerprintPattern, VenetianMask, BookOpen, Check } from 'lucide-react'
+
 const RULES = [
   {
-    icon: 'fa-bullseye',
+    icon: Target,
     title: 'Scope Assessment',
     summary: "Verify that the manuscript's subject matter aligns with the journal's published scope statement. The manuscript should contribute to the journal's core disciplines.",
     items: [
@@ -11,7 +13,7 @@ const RULES = [
     ],
   },
   {
-    icon: 'fa-list-check',
+    icon: ListChecks,
     title: 'Completeness',
     summary: 'All required manuscript components must be present before forwarding. Missing items should result in a "Return to Author" decision with specific instructions.',
     items: [
@@ -23,7 +25,7 @@ const RULES = [
     ],
   },
   {
-    icon: 'fa-text-height',
+    icon: Type,
     title: 'Formatting',
     summary: "The manuscript should follow the journal's template. Minor formatting issues that don't affect readability can be noted but should not block approval.",
     items: [
@@ -35,7 +37,7 @@ const RULES = [
     ],
   },
   {
-    icon: 'fa-scale-balanced',
+    icon: Scale,
     title: 'Publication Ethics',
     summary: 'All submissions must include required ethics declarations. Any suspicion of misconduct (fabrication, falsification, plagiarism) must be documented and escalated.',
     items: [
@@ -47,7 +49,7 @@ const RULES = [
     ],
   },
   {
-    icon: 'fa-fingerprint',
+    icon: FingerprintPattern,
     title: 'Plagiarism Check',
     summary: 'Run all submissions through a plagiarism detection tool. The similarity score alone is not decisive — examine the nature of matched text.',
     items: [
@@ -59,7 +61,7 @@ const RULES = [
     ],
   },
   {
-    icon: 'fa-user-secret',
+    icon: VenetianMask,
     title: 'Anonymization (Double-Blind)',
     summary: 'For double-blind review, the manuscript must not contain any information that could identify the authors to reviewers. This includes obvious and non-obvious identifiers.',
     items: [
@@ -93,7 +95,7 @@ export default function ScreeningRules() {
         background: '#EBF4FB', border: '1px solid #A8CCE8',
         fontSize: '13px', color: '#2E6B9E', marginBottom: '28px',
       }}>
-        <i className="fas fa-book-open" style={{ marginTop: '1px', flexShrink: 0 }} />
+        <BookOpen size={14} style={{ marginTop: '1px', flexShrink: 0 }} />
         <span>Use this page as a reference during screening. These rules define the standard criteria for each check area and help ensure consistency across all moderators.</span>
       </div>
 
@@ -126,7 +128,7 @@ function RuleCard({ rule }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <i className={`fas ${rule.icon}`} style={{ fontSize: '14px', color: '#1B2A4A' }} />
+          <rule.icon size={14} style={{ color: '#1B2A4A' }} />
         </div>
         <span style={{ fontSize: '15px', fontWeight: 700, color: '#1A1A2E' }}>{rule.title}</span>
       </div>
@@ -139,7 +141,7 @@ function RuleCard({ rule }) {
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {rule.items.map(item => (
             <li key={item} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: '#1A1A2E', lineHeight: 1.55 }}>
-              <i className="fas fa-check" style={{ fontSize: '11px', color: '#2B7A4B', marginTop: '3px', flexShrink: 0 }} />
+              <Check size={11} style={{ color: '#2B7A4B', marginTop: '3px', flexShrink: 0 }} />
               <span>{item}</span>
             </li>
           ))}

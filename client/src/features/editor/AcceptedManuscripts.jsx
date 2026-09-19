@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Globe, CheckCircle2 } from 'lucide-react'
 import PageHeader from '../../shared/components/PageHeader'
 import { getAcceptedManuscripts, publishManuscript, getLatestPublicationMeta } from '../../services/editorialService'
 import { formatDate } from '../../shared/utils/formatDate'
@@ -174,12 +175,12 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
         <div style={styles.cardTitle}>{manuscript.title || 'Untitled Manuscript'}</div>
         {isPublished ? (
           <div style={styles.publishedBadge}>
-            <i className="fas fa-globe" style={{ fontSize: '10px' }} />
+            <Globe size={10} />
             Published
           </div>
         ) : (
           <div style={styles.acceptedBadge}>
-            <i className="fas fa-circle-check" style={{ fontSize: '10px' }} />
+            <CheckCircle2 size={10} />
             Accepted
           </div>
         )}
@@ -232,7 +233,7 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
             alignItems: 'center',
             gap: '4px',
           }}>
-            <i className="fas fa-check-circle" /> Live on Site
+            <CheckCircle2 size={14} /> Live on Site
           </span>
         ) : (
           <button
