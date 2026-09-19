@@ -245,31 +245,30 @@ export default function PublicLayout() {
                   fontWeight: 700,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: '#FFFFFF',
-                  background: 'linear-gradient(180deg, #D4AF37 0%, #C4A24C 60%, #B38E2F 100%)',
-                  padding: 'clamp(5px, 0.5vw, 7px) clamp(12px, 0.9vw, 18px)',
+                  color: '#C4A24C',
+                  background: 'transparent',
+                  padding: 'clamp(4px, 0.5vw, 6px) clamp(11px, 0.9vw, 17px)', // adjusted for 1px border
                   borderRadius: '9999px',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   textDecoration: 'none',
                   flexShrink: 0,
                   marginLeft: 'clamp(3px, 0.4vw, 8px)',
-                  border: 'none',
-                  boxShadow: '0 2px 6px rgba(196, 162, 76, 0.35)',
+                  border: '1px solid #C4A24C',
                   transition: 'all 0.2s ease',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-1px)'
-                  e.currentTarget.style.boxShadow = '0 4px 10px rgba(196, 162, 76, 0.45)'
-                  e.currentTarget.style.filter = 'brightness(1.05)'
+                  e.currentTarget.style.color = '#FFFFFF'
+                  e.currentTarget.style.background = '#C4A24C'
+                  e.currentTarget.style.boxShadow = '0 4px 10px rgba(196, 162, 76, 0.25)'
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(196, 162, 76, 0.35)'
-                  e.currentTarget.style.filter = 'none'
+                  e.currentTarget.style.color = '#C4A24C'
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.boxShadow = 'none'
                 }}
               >
                 LOGIN
@@ -322,18 +321,28 @@ export default function PublicLayout() {
                     fontWeight: 700,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    color: '#FFFFFF',
-                    background: 'linear-gradient(180deg, #D4AF37 0%, #C4A24C 60%, #B38E2F 100%)',
-                    padding: '12px 16px',
+                    color: '#C4A24C',
+                    background: 'transparent',
+                    padding: '11px 15px',
                     borderRadius: '9999px',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                     textDecoration: 'none',
-                    border: 'none',
-                    boxShadow: '0 2px 6px rgba(196, 162, 76, 0.35)',
+                    border: '1px solid #C4A24C',
+                    transition: 'all 0.2s ease',
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.color = '#FFFFFF'
+                    e.currentTarget.style.background = '#C4A24C'
+                    e.currentTarget.style.boxShadow = '0 4px 10px rgba(196, 162, 76, 0.25)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.color = '#C4A24C'
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.boxShadow = 'none'
                   }}
                 >
                   Login
