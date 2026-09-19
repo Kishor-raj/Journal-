@@ -244,9 +244,12 @@ function ArticleItem({ article, highlight, openAuthors }) {
                       {author.is_corresponding && <span style={{ color: '#2B7A4B', fontSize: '12px', marginLeft: '8px' }}>Corresponding</span>}
                     </div>
                     <div>{author.email || 'Email not provided'}</div>
-                    <div>Institute: {author.institution || 'Not provided'} · College: {author.college || 'Not provided'}</div>
-                    <div>Department: {author.department || 'Not provided'} · State: {author.state || 'Not provided'}</div>
-                    <div>Country: {author.country || 'Not provided'} · Course: {author.course || 'Not provided'}</div>
+                    <div>Institute: {author.institution || 'Not provided'}</div>
+                    <div>College: {author.college || 'Not provided'}</div>
+                    <div>Department: {author.department || 'Not provided'}</div>
+                    <div>State: {author.state || 'Not provided'}</div>
+                    <div>Country: {author.country || 'Not provided'}</div>
+                    <div>Course: {author.course || 'Not provided'}</div>
                   </div>
                 )
               })}
