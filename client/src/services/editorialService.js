@@ -68,6 +68,10 @@ export function publishManuscript(manuscriptId, publicationData = {}) {
   return apiClient.post(`/editorial/manuscripts/${manuscriptId}/publish`, publicationData)
 }
 
+export function getLatestPublicationMeta() {
+  return apiClient.get('/editorial/latest-publication-meta')
+}
+
 export function getManuscriptCertificates(manuscriptId) {
   return apiClient.get(`/publications/manuscripts/${manuscriptId}/certificates`)
 }

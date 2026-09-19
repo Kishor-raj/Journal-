@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../../shared/components/PageHeader'
-import { getAcceptedManuscripts, publishManuscript } from '../../services/editorialService'
+import { getAcceptedManuscripts, publishManuscript, getLatestPublicationMeta } from '../../services/editorialService'
 import { formatDate } from '../../shared/utils/formatDate'
 
 const styles = {
@@ -285,8 +285,13 @@ export default function AcceptedManuscripts() {
     loadManuscripts()
   }, [])
 
-  const handlePublish = (id) => {
-    setPublishForm({ volume: '', issue: '', doi: '' })
+  const handlePublish = async (id) => {
+    try {
+      const meta = await getLatestPublicationMeta()
+      setPublishForm({ volume: String(meta.volume || 1), issue: String(meta.issue || 1), doi: '' })
+    } catch {
+      setPublishForm({ volume: '1', issue: '1', doi: '' })
+    }
     setPublishTarget(id)
   }
 
@@ -439,24 +444,24 @@ export default function AcceptedManuscripts() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <label style={styles.metaItem}>
-                <span style={styles.metaLabel}>Volume (optional)</span>
+                <span style={styles.metaLabel}>Volume</span>
                 <input
                   type="number"
                   min="1"
                   value={publishForm.volume}
                   onChange={(e) => setPublishForm({ ...publishForm, volume: e.target.value })}
-                  placeholder="Defaults to 1"
+                  placeholder="e.g. 1"
                   style={styles.modalInput}
                 />
               </label>
               <label style={styles.metaItem}>
-                <span style={styles.metaLabel}>Issue (optional)</span>
+                <span style={styles.metaLabel}>Issue</span>
                 <input
                   type="number"
                   min="1"
                   value={publishForm.issue}
                   onChange={(e) => setPublishForm({ ...publishForm, issue: e.target.value })}
-                  placeholder="Defaults to 1"
+                  placeholder="e.g. 1"
                   style={styles.modalInput}
                 />
               </label>

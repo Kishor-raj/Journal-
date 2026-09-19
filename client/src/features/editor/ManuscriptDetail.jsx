@@ -11,6 +11,7 @@ import {
   getExtensionRequests,
   handleExtension,
   publishManuscript,
+  getLatestPublicationMeta,
 } from '../../services/editorialService'
 import { getFileAccess } from '../../services/fileService'
 import { formatDate } from '../../shared/utils/formatDate'
@@ -282,8 +283,13 @@ export default function ManuscriptDetail() {
     }
   }
 
-  const handlePublish = () => {
-    setPublishForm({ volume: '', issue: '', doi: '' })
+  const handlePublish = async () => {
+    try {
+      const meta = await getLatestPublicationMeta()
+      setPublishForm({ volume: String(meta.volume || 1), issue: String(meta.issue || 1), doi: '' })
+    } catch {
+      setPublishForm({ volume: '1', issue: '1', doi: '' })
+    }
     setPublishModal(true)
   }
 
@@ -814,24 +820,24 @@ export default function ManuscriptDetail() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={styles.metaLabel}>Volume (optional)</span>
+                <span style={styles.metaLabel}>Volume</span>
                 <input
                   type="number"
                   min="1"
                   value={publishForm.volume}
                   onChange={(e) => setPublishForm({ ...publishForm, volume: e.target.value })}
-                  placeholder="Defaults to 1"
+                  placeholder="e.g. 1"
                   style={publishInputStyle}
                 />
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={styles.metaLabel}>Issue (optional)</span>
+                <span style={styles.metaLabel}>Issue</span>
                 <input
                   type="number"
                   min="1"
                   value={publishForm.issue}
                   onChange={(e) => setPublishForm({ ...publishForm, issue: e.target.value })}
-                  placeholder="Defaults to 1"
+                  placeholder="e.g. 1"
                   style={publishInputStyle}
                 />
               </label>

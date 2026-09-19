@@ -31,6 +31,9 @@ export async function getPublishedArticles() {
       m.submitted_at,
       m.updated_at,
       COALESCE(p.published_at, m.updated_at) AS published_at,
+      p.volume,
+      p.issue,
+      p.publication_year,
       COALESCE(c.name, 'Research Article') AS category,
       COALESCE(
         json_agg(
@@ -69,7 +72,7 @@ export async function getPublishedArticles() {
     LEFT JOIN users u ON u.id = ma.user_id
     LEFT JOIN publications p ON p.manuscript_id = m.id
     WHERE m.current_status = 'published'
-    GROUP BY m.id, c.name, p.published_at
+    GROUP BY m.id, c.name, p.published_at, p.volume, p.issue, p.publication_year
     ORDER BY COALESCE(p.published_at, m.updated_at) DESC
   `)
 
