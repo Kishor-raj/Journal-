@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
+import pool from '../../config/db.js'
 import { authenticate } from '../../middleware/authenticate.js'
 import { requireRole } from '../../middleware/authorize.js'
 import * as editorialService from './editorial.service.js'
@@ -101,6 +102,16 @@ router.post('/manuscripts/:id/publish', authenticate, requireRole('editor'), asy
 router.get('/accepted', authenticate, requireRole('editor'), async (req, res) => {
   const manuscripts = await editorialService.getAcceptedManuscripts(req.user.uid)
   res.json(manuscripts)
+})
+
+router.get('/latest-publication-meta', authenticate, requireRole('editor'), async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT volume, issue, publication_year
+    FROM publications
+    ORDER BY published_at DESC
+    LIMIT 1
+  `)
+  res.json(rows[0] || { volume: 1, issue: 1, publication_year: new Date().getFullYear() })
 })
 
 export default router

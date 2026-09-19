@@ -183,6 +183,9 @@ export default function Archives() {
               pdfUrl: m.download_url || m.file_url || m.pdf_url || '',
               viewUrl: m.view_url || '',
               originalFilename: m.original_filename || '',
+              volume: m.volume || 1,
+              issue: m.issue || 1,
+              publicationYear: m.publication_year || 2026,
             }
           })
 
@@ -191,12 +194,42 @@ export default function Archives() {
             new Map(formatted.map(item => [item.id, item])).values()
           )
 
-          setArchiveData(prev => {
-            const next = JSON.parse(JSON.stringify(prev))
-            const v1i1 = next[0].issues[0]
-            v1i1.articles = uniqueArticles
-            return next
+          // Group articles by volume → issue dynamically
+          const volumeMap = new Map()
+          for (const art of uniqueArticles) {
+            const volKey = art.volume
+            const issKey = art.issue
+            const year = art.publicationYear
+
+            if (!volumeMap.has(volKey)) {
+              volumeMap.set(volKey, { year, issues: new Map() })
+            }
+            const vol = volumeMap.get(volKey)
+            if (!vol.issues.has(issKey)) {
+              vol.issues.set(issKey, [])
+            }
+            vol.issues.get(issKey).push(art)
+          }
+
+          // Build archive structure sorted by volume desc, issue desc
+          const sortedVolumes = [...volumeMap.entries()].sort((a, b) => b[0] - a[0])
+          const dynamicArchive = sortedVolumes.map(([volNum, volData]) => {
+            const sortedIssues = [...volData.issues.entries()].sort((a, b) => b[0] - a[0])
+            return {
+              id: `vol-${volNum}`,
+              title: `Volume ${volNum} (${volData.year})`,
+              year: volData.year,
+              meta: `${sortedIssues.length} Issue${sortedIssues.length > 1 ? 's' : ''} Available`,
+              issues: sortedIssues.map(([issNum, articles]) => ({
+                id: `vol-${volNum}-iss-${issNum}`,
+                name: `Issue ${issNum} (${volData.year})`,
+                tag: `Volume ${volNum} Issue ${issNum} · Published · Open Access`,
+                articles,
+              })),
+            }
           })
+
+          setArchiveData(dynamicArchive)
         }
       } catch (err) {
         console.warn('Using initial archive dataset:', err)
@@ -341,7 +374,10 @@ export default function Archives() {
               fontWeight: 600,
             }}
           >
-            2026 Archive Collection · Volume 1
+            {archiveData.length > 0
+              ? `${archiveData[0].year} Archive Collection · ${archiveData.map(v => v.title.replace(/ \(\d+\)/, '')).join(', ')}`
+              : '2026 Archive Collection'
+            }
           </div>
           <h1
             style={{
