@@ -4,6 +4,7 @@ node_modules/
 
 # Environment variables
 .env
+.py
 .env.*
 !.env.example
 *.env
@@ -32,3 +33,4 @@ Thumbs.db
 # Misc
 coverage/
 *.local
+.md

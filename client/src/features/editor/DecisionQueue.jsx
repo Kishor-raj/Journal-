@@ -75,6 +75,7 @@ export default function DecisionQueue() {
     {
       key: 'title',
       label: 'Manuscript',
+      minWidth: '240px',
       render: (val, row) => (
         <div style={styles.manuscriptCell}>
           <div style={styles.title}>{val || 'Untitled'}</div>

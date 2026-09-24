@@ -58,6 +58,7 @@ export default function Revisions() {
     {
       key: 'title',
       label: 'Title',
+      minWidth: '240px',
       render: (val) => val || 'Untitled',
     },
     {
@@ -118,6 +119,7 @@ export default function Revisions() {
     {
       key: 'title',
       label: 'Title',
+      minWidth: '240px',
       render: (val) => val || 'Untitled',
     },
     {

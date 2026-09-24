@@ -599,9 +599,9 @@ export default function UserManagement() {
                   {userActivity.map((act) => (
                     <div key={act.id} style={styles.activityItem}>
                       <div>
-                        <strong>{act.action_type || act.action}</strong>
+                        <strong>{act.activity_type}</strong>
                         <span style={{ color: 'var(--color-text-muted)', marginLeft: '8px' }}>
-                          {act.details ? JSON.stringify(act.details) : ''}
+                          {act.metadata ? JSON.stringify(act.metadata) : ''}
                         </span>
                       </div>
                       <span style={{ color: 'var(--color-text-muted)' }}>

@@ -44,7 +44,7 @@ export default function Table({
             <thead>
               <tr>
                 {columns.map((col) => (
-                  <th key={col.key} style={thStyle}>{col.label}</th>
+                  <th key={col.key} style={{ ...thStyle, width: col.width, minWidth: col.minWidth }}>{col.label}</th>
                 ))}
               </tr>
             </thead>
@@ -73,7 +73,7 @@ export default function Table({
         <thead>
           <tr>
             {columns.map((col) => (
-              <th key={col.key} style={thStyle}>{col.label}</th>
+              <th key={col.key} style={{ ...thStyle, width: col.width, minWidth: col.minWidth }}>{col.label}</th>
             ))}
           </tr>
         </thead>
@@ -94,7 +94,7 @@ export default function Table({
               }}
             >
               {columns.map((col) => (
-                <td key={col.key} style={tdStyle}>
+                <td key={col.key} style={{ ...tdStyle, width: col.width, minWidth: col.minWidth }}>
                   {col.render ? col.render(row[col.key], row) : row[col.key]}
                 </td>
               ))}

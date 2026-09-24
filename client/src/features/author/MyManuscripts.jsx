@@ -76,6 +76,7 @@ export default function MyManuscripts() {
     {
       key: 'title',
       label: 'Title',
+      minWidth: '240px',
       render: (val) => val || 'Untitled',
     },
     {

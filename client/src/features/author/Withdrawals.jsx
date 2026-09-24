@@ -43,8 +43,9 @@ const columns = [
   },
   {
     key: 'title',
-    label: 'Title',
-    render: (val) => val || 'Untitled',
+      label: 'Title',
+      minWidth: '240px',
+      render: (val) => val || 'Untitled',
   },
   {
     key: 'status',
