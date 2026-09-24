@@ -260,17 +260,40 @@ function ChecklistSection({ section, form, update }) {
           )}
 
           {/* Checkboxes */}
-          {(section.type === 'checks' || section.type === 'plagiarism') && section.items?.map((item, i) => (
-            <label key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid #F4F5F7', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={!!form[`${section.id}_check_${i}`]}
-                onChange={e => update(`${section.id}_check_${i}`, e.target.checked)}
-                style={{ marginTop: '2px', flexShrink: 0, accentColor: '#1B2A4A', width: '15px', height: '15px' }}
-              />
-              <span style={{ fontSize: '13px', color: '#1A1A2E', lineHeight: 1.5 }}>{item}</span>
-            </label>
-          ))}
+          {(section.type === 'checks' || section.type === 'plagiarism') && (
+            <>
+              {section.items?.length > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const allChecked = section.items.every((_, i) => form[`${section.id}_check_${i}`]);
+                      section.items.forEach((_, i) => update(`${section.id}_check_${i}`, !allChecked));
+                    }}
+                    style={{
+                      background: 'none', border: 'none', color: '#2E6B9E', fontSize: '12px', fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', transition: 'background 150ms'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#EBF4FB'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    {section.items.every((_, i) => form[`${section.id}_check_${i}`]) ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+              )}
+              {section.items?.map((item, i) => (
+                <label key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '10px 0', borderBottom: '1px solid #F4F5F7', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!form[`${section.id}_check_${i}`]}
+                    onChange={e => update(`${section.id}_check_${i}`, e.target.checked)}
+                    style={{ marginTop: '2px', flexShrink: 0, accentColor: '#1B2A4A', width: '15px', height: '15px' }}
+                  />
+                  <span style={{ fontSize: '13px', color: '#1A1A2E', lineHeight: 1.5 }}>{item}</span>
+                </label>
+              ))}
+            </>
+          )}
 
           {/* Per-section note textarea */}
           <div style={{ marginTop: '12px' }}>

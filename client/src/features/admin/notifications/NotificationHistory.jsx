@@ -173,6 +173,7 @@ export default function NotificationHistory() {
     {
       key: 'manuscript_id',
       label: 'Manuscript',
+      minWidth: '240px',
       render: (val) => (val ? `#${val.slice(0, 8)}` : '—'),
     },
     {

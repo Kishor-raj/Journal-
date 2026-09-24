@@ -127,6 +127,7 @@ export default function ReviewerManagement() {
     {
       key: 'title',
       label: 'Manuscript',
+      minWidth: '240px',
       render: (val, row) => (
         <div style={styles.manuscriptCell}>
           <div style={styles.title}>{row.manuscript_title || 'Untitled'}</div>

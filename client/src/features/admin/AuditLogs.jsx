@@ -192,6 +192,7 @@ export default function AuditLogs() {
     {
       key: 'manuscript_id',
       label: 'Manuscript',
+      minWidth: '240px',
       render: (val) => (val ? `#${val.slice(0, 8)}` : '—'),
     },
     {
@@ -200,7 +201,7 @@ export default function AuditLogs() {
       render: (val) => val || '—',
     },
     {
-      key: 'details',
+      key: 'payload',
       label: 'Payload',
       render: (val) => (
         val ? <div style={styles.jsonBlock}>{JSON.stringify(val, null, 1)}</div> : '—'
