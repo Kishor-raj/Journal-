@@ -23,6 +23,12 @@ jobs:
             set -e
             cd /var/www/journal
 
+            # appleboy/ssh-action runs this script over a non-interactive SSH
+            # session, which never sources ~/.bashrc — so nvm/node/npm are not
+            # on PATH unless we load nvm explicitly here.
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
             echo ">>> Backing up server/.env..."
             ENV_BACKUP_DIR="$(mktemp -d)"
             [ -f server/.env ] && cp server/.env "$ENV_BACKUP_DIR/server.env"
