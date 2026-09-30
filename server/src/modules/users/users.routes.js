@@ -43,7 +43,7 @@ router.get('/me', authenticate, async (req, res) => {
   if (user.display_name && user.display_name.includes('undefined')) {
     user.display_name = user.display_name.replace(/\bundefined\b/g, '').trim() || user.first_name || user.email?.split('@')[0]
   }
-  const profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
+  const profileComplete = user.institution && user.department && user.state && user.country
   res.json({ ...user, profile_complete: !!profileComplete })
 })
 

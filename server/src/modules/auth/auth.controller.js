@@ -97,7 +97,7 @@ export async function logout(req, res) {
 
 export async function getMe(req, res) {
   const user = req.user
-  const profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
+  const profileComplete = user.institution && user.department && user.state && user.country
 
   let rawDisplayName = user.display_name
   if (rawDisplayName && rawDisplayName.includes('undefined')) {

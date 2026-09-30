@@ -155,8 +155,8 @@ export default function CompleteProfile() {
     e.preventDefault()
     setError('')
 
-    if (!formData.institution.trim() || !formData.college.trim() || !formData.department.trim() || !formData.state.trim() || !formData.country.trim() || !formData.course.trim()) {
-      setError('Institute, College, Department, State, Country, and Course are required to complete your profile.')
+    if (!formData.institution.trim() || !formData.department.trim() || !formData.state.trim() || !formData.country.trim()) {
+      setError('Institute, Department, State, and Country are required to complete your profile.')
       return
     }
 
@@ -236,14 +236,13 @@ export default function CompleteProfile() {
                 required
               />
             </FormField>
-            <FormField label="College" required>
+            <FormField label="College (optional)">
               <input
                 type="text"
                 style={styles.input}
                 value={formData.college}
                 onChange={(e) => handleChange('college', e.target.value)}
                 placeholder="e.g. School of Engineering"
-                required
               />
             </FormField>
           </div>
@@ -259,14 +258,13 @@ export default function CompleteProfile() {
                 required
               />
             </FormField>
-            <FormField label="Course / Program" required>
+            <FormField label="Course / Program (optional)">
               <input
                 type="text"
                 style={styles.input}
                 value={formData.course}
                 onChange={(e) => handleChange('course', e.target.value)}
                 placeholder="e.g. Computer Science"
-                required
               />
             </FormField>
           </div>

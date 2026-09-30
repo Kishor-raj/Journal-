@@ -317,8 +317,8 @@ export default function ReviewerProfile() {
     setError('')
     setSuccess(false)
 
-    if (!form.institution.trim() || !form.college.trim() || !form.department.trim() || !form.state.trim() || !form.country.trim() || !form.course.trim()) {
-      setError('Institute, College, Department, State, Country, and Course are required.')
+    if (!form.institution.trim() || !form.department.trim() || !form.state.trim() || !form.country.trim()) {
+      setError('Institute, Department, State, and Country are required.')
       return
     }
 
@@ -448,14 +448,13 @@ export default function ReviewerProfile() {
                   required
                 />
               </Field>
-              <Field label="College" required>
+              <Field label="College (optional)">
                 <input
                   type="text"
                   style={S.input}
                   value={form.college}
                   onChange={set('college')}
                   placeholder="e.g. School of Engineering"
-                  required
                 />
               </Field>
             </div>
@@ -471,14 +470,13 @@ export default function ReviewerProfile() {
                   required
                 />
               </Field>
-              <Field label="Course / Program" required>
+              <Field label="Course / Program (optional)">
                 <input
                   type="text"
                   style={S.input}
                   value={form.course}
                   onChange={set('course')}
                   placeholder="e.g. Computer Science"
-                  required
                 />
               </Field>
             </div>
