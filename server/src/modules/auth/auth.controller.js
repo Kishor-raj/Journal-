@@ -11,8 +11,11 @@ import {
   requestPasswordReset,
   validateResetToken,
   resetPassword as resetUserPassword,
+  validateInvitationToken,
+  syncUserProfileFromEditorialApplication,
 } from './auth.service.js'
 import crypto from 'crypto'
+import pool from '../../config/db.js'
 import { env } from '../../config/env.js'
 
 
@@ -96,8 +99,24 @@ export async function logout(req, res) {
 }
 
 export async function getMe(req, res) {
-  const user = req.user
-  const profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
+  let user = req.user
+  let profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
+
+  if (!profileComplete && (user.uid || user.id || user.email)) {
+    const synced = await syncUserProfileFromEditorialApplication(pool, user.uid || user.id, user.email)
+    if (synced) {
+      const refreshed = await pool.query(
+        `SELECT u.*, COALESCE(r.name, 'author') as role_name
+         FROM users u LEFT JOIN roles r ON r.id = u.role_id
+         WHERE u.id = $1`,
+        [user.uid || user.id]
+      )
+      if (refreshed.rows.length > 0) {
+        user = { ...user, ...refreshed.rows[0], uid: user.uid || user.id }
+        profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
+      }
+    }
+  }
 
   let rawDisplayName = user.display_name
   if (rawDisplayName && rawDisplayName.includes('undefined')) {
@@ -109,7 +128,7 @@ export async function getMe(req, res) {
   const cleanName = rawDisplayName || [cleanFirstName, cleanLastName].filter(Boolean).join(' ') || (user.email ? user.email.split('@')[0] : 'User')
 
   res.json({
-    id: user.uid,
+    id: user.uid || user.id,
     email: user.email,
     first_name: cleanFirstName,
     last_name: cleanLastName,
@@ -245,3 +264,13 @@ export async function resetPassword(req, res) {
 
   res.json({ message: 'Password reset successfully.' })
 }
+
+export async function validateInvitation(req, res) {
+  const token = req.params.token || req.query.token
+  const result = await validateInvitationToken(token)
+  if (!result.valid) {
+    return res.status(400).json(result)
+  }
+  res.json(result)
+}
+

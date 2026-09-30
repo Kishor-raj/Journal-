@@ -48,6 +48,111 @@ export async function exchangeCode(code) {
   return ticket.getPayload()
 }
 
+export function parseNameParts(fullName = '', academicTitle = '') {
+  let clean = String(fullName || '').replace(/\bundefined\b/g, '').trim()
+  if (!clean) return { firstName: null, lastName: null, displayName: null }
+
+  const titlePrefixes = [
+    'Prof. Dr.', 'Prof.', 'Dr.', 'Assoc. Prof.', 'Asst. Prof.', 'Mr.', 'Ms.', 'Mrs.'
+  ]
+  for (const prefix of titlePrefixes) {
+    if (clean.toLowerCase().startsWith(prefix.toLowerCase())) {
+      clean = clean.slice(prefix.length).trim()
+      break
+    }
+  }
+
+  const parts = clean.split(/\s+/).filter(Boolean)
+  const firstName = parts[0] || null
+  const lastName = parts.length > 1 ? parts.slice(1).join(' ') : null
+  const displayName = String(fullName).replace(/\bundefined\b/g, '').trim()
+  return { firstName, lastName, displayName }
+}
+
+export async function syncUserProfileFromEditorialApplication(dbOrClient, userId, userEmail) {
+  try {
+    const normalizedEmail = normalizeEmail(userEmail)
+    if (!normalizedEmail && !userId) return null
+
+    let query
+    let params
+    if (userId && normalizedEmail) {
+      query = `SELECT * FROM editorial_applications
+               WHERE (user_id = $1 OR email = $2)
+               ORDER BY created_at DESC LIMIT 1`
+      params = [userId, normalizedEmail]
+    } else if (userId) {
+      query = `SELECT * FROM editorial_applications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`
+      params = [userId]
+    } else {
+      query = `SELECT * FROM editorial_applications WHERE email = $1 ORDER BY created_at DESC LIMIT 1`
+      params = [normalizedEmail]
+    }
+
+    const appResult = await dbOrClient.query(query, params)
+    if (appResult.rows.length === 0) return null
+    const app = appResult.rows[0]
+
+    const targetUserId = userId || app.user_id
+    if (!targetUserId) return app
+
+    const nameParts = parseNameParts(app.full_name, app.academic_title)
+    const inst = app.institution || app.university || 'Academic Institution'
+    const dept = app.department || 'Academic Department'
+    const ctry = app.country || 'International'
+    const stateVal = app.country || 'N/A'
+    const courseVal = app.specialization || app.highest_qualification || 'Editorial Member'
+    const bioVal = app.statement_of_interest || [app.designation, app.department, app.institution].filter(Boolean).join(', ') || null
+
+    await dbOrClient.query(
+      `UPDATE users SET
+         first_name = COALESCE(NULLIF(first_name, ''), $1),
+         last_name = COALESCE(NULLIF(last_name, ''), $2),
+         display_name = COALESCE(NULLIF(display_name, ''), $3),
+         phone = COALESCE(NULLIF(phone, ''), $4),
+         institution = COALESCE(NULLIF(institution, ''), $5),
+         college = COALESCE(NULLIF(college, ''), $6),
+         department = COALESCE(NULLIF(department, ''), $7),
+         state = COALESCE(NULLIF(state, ''), $8),
+         country = COALESCE(NULLIF(country, ''), $9),
+         course = COALESCE(NULLIF(course, ''), $10),
+         bio = COALESCE(NULLIF(bio, ''), $11),
+         orcid_id = COALESCE(NULLIF(orcid_id, ''), $12),
+         profile_image_url = COALESCE(NULLIF(profile_image_url, ''), $13),
+         updated_at = now()
+       WHERE id = $14`,
+      [
+        nameParts.firstName,
+        nameParts.lastName,
+        app.full_name || nameParts.displayName,
+        app.phone,
+        inst,
+        inst,
+        dept,
+        stateVal,
+        ctry,
+        courseVal,
+        bioVal,
+        app.orcid_id,
+        app.profile_image_url,
+        targetUserId,
+      ]
+    )
+
+    if (!app.user_id) {
+      await dbOrClient.query(
+        `UPDATE editorial_applications SET user_id = $1, updated_at = now() WHERE id = $2`,
+        [targetUserId, app.id]
+      )
+    }
+
+    return app
+  } catch (err) {
+    console.error('[AUTH] syncUserProfileFromEditorialApplication error:', err.message)
+    return null
+  }
+}
+
 export async function findOrCreateUser(payload) {
   const { sub, email, given_name, family_name, picture, email_verified, name } = payload
 
@@ -149,6 +254,12 @@ export async function findOrCreateUser(payload) {
          ON CONFLICT (user_id, role_id) DO NOTHING`,
         [userId, assignedRoleId]
       )
+    }
+
+    await syncUserProfileFromEditorialApplication(client, userId, email)
+
+    if (email_verified && email) {
+      await processPendingRoleGrants(client, userId, email)
     }
 
     await client.query('COMMIT')
@@ -323,18 +434,71 @@ export async function registerUser({ email, password, first_name, last_name }) {
 
     const authorRole = await client.query("SELECT id FROM roles WHERE name = 'author'")
     const authorRoleId = authorRole.rows[0]?.id || null
-    const firstNameValue = trimmedFirstName || null
-    const lastNameValue = trimmedLastName || null
-    const displayName = [firstNameValue, lastNameValue].filter(Boolean).join(' ').trim() || normalizedEmail.split('@')[0]
+
+    // Check if there's an existing editorial application for this email
+    const appRes = await client.query(
+      `SELECT * FROM editorial_applications WHERE email = $1 ORDER BY created_at DESC LIMIT 1`,
+      [normalizedEmail]
+    )
+    const app = appRes.rows[0]
+
+    let firstNameValue = trimmedFirstName || null
+    let lastNameValue = trimmedLastName || null
+    let displayName = [firstNameValue, lastNameValue].filter(Boolean).join(' ').trim() || null
+    let phoneVal = null
+    let instVal = null
+    let collegeVal = null
+    let deptVal = null
+    let stateVal = null
+    let countryVal = null
+    let courseVal = null
+    let bioVal = null
+    let orcidVal = null
+    let profileImageUrlVal = null
+
+    if (app) {
+      const nameParts = parseNameParts(app.full_name, app.academic_title)
+      firstNameValue = firstNameValue || nameParts.firstName
+      lastNameValue = lastNameValue || nameParts.lastName
+      displayName = displayName || app.full_name || nameParts.displayName || normalizedEmail.split('@')[0]
+      phoneVal = app.phone || null
+      instVal = app.institution || app.university || null
+      collegeVal = app.institution || app.university || null
+      deptVal = app.department || null
+      stateVal = app.country || 'N/A'
+      countryVal = app.country || null
+      courseVal = app.specialization || app.highest_qualification || 'Editorial Member'
+      bioVal = app.statement_of_interest || [app.designation, app.department, app.institution].filter(Boolean).join(', ') || null
+      orcidVal = app.orcid_id || null
+      profileImageUrlVal = app.profile_image_url || null
+    } else {
+      displayName = displayName || normalizedEmail.split('@')[0]
+    }
 
     const newUser = await client.query(
-      `INSERT INTO users (role_id, email, first_name, last_name, display_name, is_email_verified, account_status)
-       VALUES ($1, $2, $3, $4, $5, false, 'active')
+      `INSERT INTO users (
+         role_id, email, first_name, last_name, display_name,
+         phone, institution, college, department, state, country, course,
+         bio, orcid_id, profile_image_url,
+         is_email_verified, account_status
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, false, 'active')
        RETURNING id`,
-      [authorRoleId, normalizedEmail, firstNameValue, lastNameValue, displayName]
+      [
+        authorRoleId, normalizedEmail, firstNameValue, lastNameValue, displayName,
+        phoneVal, instVal, collegeVal, deptVal, stateVal, countryVal, courseVal,
+        bioVal, orcidVal, profileImageUrlVal
+      ]
     )
 
     const userId = newUser.rows[0].id
+
+    if (app && !app.user_id) {
+      await client.query(
+        `UPDATE editorial_applications SET user_id = $1, updated_at = now() WHERE id = $2`,
+        [userId, app.id]
+      )
+    }
 
     const passwordHash = await hashPassword(String(password))
     await client.query(
@@ -435,6 +599,8 @@ export async function loginWithPassword({ email, password, ip, userAgent }) {
     throw new AuthError('Email not verified', 'EMAIL_NOT_VERIFIED', 403)
   }
 
+  await syncUserProfileFromEditorialApplication(pool, user.id, user.email)
+
   const session = await createSession(user.id, ip, userAgent)
   await logSecurityEvent({ eventType: 'login_success', severity: 'info', userId: user.id, ip, userAgent })
 
@@ -481,6 +647,12 @@ export async function verifyEmailToken(rawToken, ip, userAgent) {
       'UPDATE users SET is_email_verified = true, updated_at = now() WHERE id = $1',
       [token.user_id]
     )
+
+    const userRes = await client.query('SELECT id, email FROM users WHERE id = $1', [token.user_id])
+    if (userRes.rows.length > 0) {
+      await syncUserProfileFromEditorialApplication(client, userRes.rows[0].id, userRes.rows[0].email)
+      await processPendingRoleGrants(client, userRes.rows[0].id, userRes.rows[0].email, ip, userAgent)
+    }
 
     await client.query('COMMIT')
     await logSecurityEvent({ eventType: 'verification_success', severity: 'info', userId: token.user_id, ip, userAgent })
@@ -686,3 +858,125 @@ export async function resetPassword({ token, password, ip, userAgent }) {
     client.release()
   }
 }
+
+export async function processPendingRoleGrants(client, userId, userEmail, ip, userAgent) {
+  try {
+    const normalized = normalizeEmail(userEmail)
+    await syncUserProfileFromEditorialApplication(client, userId, normalized)
+
+    const grantRes = await client.query(
+      `SELECT * FROM editorial_role_grants
+       WHERE email = $1 AND status = 'PENDING' AND token_expires_at > now()
+       ORDER BY granted_at DESC LIMIT 1`,
+      [normalized]
+    )
+
+    if (grantRes.rows.length === 0) return false
+
+    const grant = grantRes.rows[0]
+    const editorRoleRes = await client.query("SELECT id FROM roles WHERE name = 'editor'")
+    const editorRoleId = editorRoleRes.rows[0]?.id
+
+    if (editorRoleId) {
+      await client.query(
+        `UPDATE users SET role_id = $1, updated_at = now() WHERE id = $2`,
+        [editorRoleId, userId]
+      )
+      await client.query(
+        `INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT (user_id, role_id) DO NOTHING`,
+        [userId, editorRoleId]
+      )
+    }
+
+    await client.query(
+      `UPDATE editorial_role_grants
+       SET status = 'USED', used_at = now(), created_user_id = $1, updated_at = now()
+       WHERE id = $2`,
+      [userId, grant.id]
+    )
+
+    // Update editorial_applications, appointments, members
+    const appRes = await client.query('SELECT * FROM editorial_applications WHERE id = $1', [grant.application_id])
+    if (appRes.rows.length > 0) {
+      const app = appRes.rows[0]
+      if (app.profile_image_url) {
+        await client.query(
+          `UPDATE users SET profile_image_url = COALESCE(profile_image_url, $1) WHERE id = $2`,
+          [app.profile_image_url, userId]
+        )
+      }
+      await client.query(
+        `UPDATE editorial_applications SET user_id = $1, status = 'ACTIVE_MEMBER', updated_at = now() WHERE id = $2`,
+        [userId, app.id]
+      )
+      await client.query(
+        `UPDATE editorial_appointments SET user_id = $1, updated_at = now() WHERE application_id = $2 AND user_id IS NULL`,
+        [userId, app.id]
+      )
+      await client.query(
+        `UPDATE editorial_members SET user_id = $1, updated_at = now() WHERE application_id = $2 AND user_id IS NULL`,
+        [userId, app.id]
+      )
+    }
+
+    await client.query(
+      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_values, ip_address, user_agent)
+       VALUES ($1, 'editorial_role_grant_consumed', 'editorial_role_grants', $2, $3, $4, $5)`,
+      [
+        userId,
+        grant.id,
+        JSON.stringify({ application_id: grant.application_id, user_id: userId }),
+        ip || null,
+        userAgent || null,
+      ]
+    )
+
+    return true
+  } catch (err) {
+    console.error('[AUTH] Failed to process pending role grant:', err.message)
+    return false
+  }
+}
+
+export async function validateInvitationToken(rawToken) {
+  if (!rawToken || !String(rawToken).trim()) {
+    return { valid: false, message: 'Invitation token is required.' }
+  }
+
+  const tokenHash = hashToken(String(rawToken).trim())
+  const result = await pool.query(
+    `SELECT rg.*, ea.full_name, ea.preferred_role, ea.preferred_editorial_section
+     FROM editorial_role_grants rg
+     LEFT JOIN editorial_applications ea ON ea.id = rg.application_id
+     WHERE rg.invitation_token_hash = $1`,
+    [tokenHash]
+  )
+
+  const grant = result.rows[0]
+  if (!grant) {
+    return { valid: false, message: 'Invalid invitation link.' }
+  }
+
+  if (grant.status === 'USED') {
+    return { valid: false, message: 'This invitation link has already been used. Please log in with your account credentials.' }
+  }
+
+  if (grant.status === 'REVOKED') {
+    return { valid: false, message: 'This invitation has been revoked.' }
+  }
+
+  if (new Date(grant.token_expires_at) < new Date()) {
+    return { valid: false, message: 'This invitation link has expired. Please contact the editorial office for a new invitation.' }
+  }
+
+  return {
+    valid: true,
+    email: grant.email,
+    role: grant.role,
+    name: grant.full_name,
+    preferred_role: grant.preferred_role,
+    section: grant.preferred_editorial_section,
+    expires_at: grant.token_expires_at,
+  }
+}
+

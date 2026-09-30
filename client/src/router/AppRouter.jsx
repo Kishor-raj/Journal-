@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import ScrollToTop from '../shared/components/ScrollToTop'
 import PublicLayout from '../layouts/PublicLayout'
 import DashboardLayout from '../layouts/DashboardLayout'
 import AuthLayout from '../layouts/AuthLayout'
@@ -17,6 +18,8 @@ import Contact from '../features/public/Contact'
 import Search from '../features/public/Search'
 import Privacy from '../features/public/Privacy'
 import CertificateVerify from '../features/public/CertificateVerify'
+import EditorialApply from '../features/public/EditorialApply'
+import EditorialStatus from '../features/public/EditorialStatus'
 import Login from '../features/public/Login'
 import AuthCallback from '../features/public/AuthCallback'
 
@@ -28,6 +31,8 @@ import ResetPassword from '../features/auth/ResetPassword'
 
 import AdminDashboard from '../features/admin/AdminDashboard'
 import UserManagement from '../features/admin/UserManagement'
+import EditorialApplications from '../features/admin/EditorialApplications'
+import EditorialApplicationDetail from '../features/admin/EditorialApplicationDetail'
 import AuditLogs from '../features/admin/AuditLogs'
 import JournalSettings from '../features/admin/JournalSettings'
 import ContactInquiries from '../features/admin/ContactInquiries'
@@ -77,13 +82,18 @@ import ReviewerProfile from '../features/reviewer/ReviewerProfile'
 
 function AppRouter() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/call-for-papers" element={<CallForPapers />} />
         <Route path="/call-for-paper" element={<Navigate to="/call-for-papers" replace />} />
         <Route path="/board" element={<EditorialBoard />} />
+        <Route path="/editorial-board/apply" element={<EditorialApply />} />
+        <Route path="/editorial-board/join" element={<Navigate to="/editorial-board/apply" replace />} />
+        <Route path="/editorial-board/status" element={<EditorialStatus />} />
         <Route path="/guidelines" element={<SubmissionGuidelines />} />
         <Route path="/current-issue" element={<CurrentIssue />} />
         <Route path="/archives" element={<Archives />} />
@@ -112,6 +122,8 @@ function AppRouter() {
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>} />
+        <Route path="/admin/editorial-applications" element={<ProtectedRoute allowedRoles={['admin']}><EditorialApplications /></ProtectedRoute>} />
+        <Route path="/admin/editorial-applications/:id" element={<ProtectedRoute allowedRoles={['admin']}><EditorialApplicationDetail /></ProtectedRoute>} />
         <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRoles={['admin']}><AuditLogs /></ProtectedRoute>} />
         <Route path="/admin/contact-inquiries" element={<ProtectedRoute allowedRoles={['admin']}><ContactInquiries /></ProtectedRoute>} />
         <Route path="/admin/contact-inquiries/:id" element={<ProtectedRoute allowedRoles={['admin']}><ContactInquiries /></ProtectedRoute>} />
@@ -173,6 +185,7 @@ function AppRouter() {
       <Route path="/profile/complete" element={<ProtectedRoute requireProfileComplete={false}><CompleteProfile /></ProtectedRoute>} />
       <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>
+    </>
   )
 }
 
