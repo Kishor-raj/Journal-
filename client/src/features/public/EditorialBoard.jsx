@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { getPublicEditorialBoard } from './services/editorialApplicationService'
 
-const EDITOR_IN_CHIEF = {
+const DEFAULT_EDITOR_IN_CHIEF = {
   role: 'Editor-in-Chief',
   name: 'Prof. Dr. Dinesh Senduraja',
   affiliation: 'Research Associate (RA), MED & CoS, Defence Research & Development Organisation (DRDO), Pune Zone - 411021 & Professor, Department of Computer Science, Government Arts and Science College, Veerapandi - 625534, Theni District, Tamil Nadu',
@@ -11,7 +12,7 @@ const EDITOR_IN_CHIEF = {
   googleScholar: 'https://scholar.google.co.in/citations?user=8RQre5QAAAAJ&hl=en',
 }
 
-const LEADERSHIP = [
+const DEFAULT_LEADERSHIP = [
   {
     role: 'Editorial Leadership',
     name: 'Prof. Dr. M. Sulthan Ibrahim',
@@ -29,7 +30,7 @@ const LEADERSHIP = [
   },
 ]
 
-const EDITORIAL_BOARD_MEMBERS = [
+const DEFAULT_EDITORIAL_BOARD_MEMBERS = [
   {
     role: 'Editorial Board Member',
     name: 'Dr. V. Isakkirajan',
@@ -64,7 +65,7 @@ const EDITORIAL_BOARD_MEMBERS = [
   },
 ]
 
-const NATIONAL_BOARD = [
+const DEFAULT_NATIONAL_BOARD = [
   {
     role: 'National Editorial Board',
     name: 'Dr. Thulasi Bikku',
@@ -86,7 +87,7 @@ const NATIONAL_BOARD = [
   },
 ]
 
-const INTERNATIONAL_BOARD = [
+const DEFAULT_INTERNATIONAL_BOARD = [
   {
     role: 'International Editorial Board',
     name: 'Dr. Saleem Raja. A',
@@ -138,6 +139,11 @@ const ETHICAL_COMMITMENTS = [
 
 function BoardMemberCard({ member }) {
   const [hovered, setHovered] = useState(false)
+
+  const displayName = member.name
+  const roleLabel = member.role_title || member.role
+  const affiliationText = member.affiliation || [member.designation, member.department, member.institution, member.country].filter(Boolean).join(', ')
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -155,15 +161,63 @@ function BoardMemberCard({ member }) {
       }}
     >
       <div>
-        <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23', marginBottom: '8px' }}>
-          {member.role}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '12px' }}>
+          {member.profile_image_url ? (
+            <img
+              src={member.profile_image_url}
+              alt={displayName}
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '1px solid #C4A24C',
+                flexShrink: 0,
+              }}
+            />
+          ) : (
+            <div style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '50%',
+              background: '#F0ECE3',
+              color: '#0B1B3A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: 'Jost, sans-serif',
+              fontWeight: 700,
+              fontSize: '14px',
+              flexShrink: 0,
+            }}>
+              {displayName ? displayName.split(' ').map(n => n[0]).slice(0, 2).join('') : 'ED'}
+            </div>
+          )}
+
+          <div>
+            <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23', marginBottom: '4px' }}>
+              {roleLabel}
+              {member.editorial_section ? ` • ${member.editorial_section}` : ''}
+            </div>
+            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(18px, 1.8vw, 21px)', color: '#0B1B3A', margin: 0 }}>
+              {displayName}
+            </h3>
+          </div>
         </div>
-        <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(18px, 1.8vw, 21px)', color: '#0B1B3A', margin: '0 0 8px' }}>
-          {member.name}
-        </h3>
+
         <p style={{ fontSize: '14px', color: '#3A4157', lineHeight: 1.6, margin: '0 0 14px' }}>
-          {member.affiliation}
+          {affiliationText}
         </p>
+
+        {member.research_areas && member.research_areas.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+            {member.research_areas.map((kw, i) => (
+              <span key={i} style={{ background: '#F8F9FB', color: '#6A728A', fontSize: '11.5px', padding: '2px 8px', borderRadius: '2px', border: '1px solid #EAECEF' }}>
+                {kw}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingTop: '10px', borderTop: '1px solid #F0ECE3', fontSize: '12px' }}>
@@ -178,17 +232,42 @@ function BoardMemberCard({ member }) {
           </a>
         )}
         {member.orcid && (
-          <a href={member.orcid} target="_blank" rel="noopener noreferrer" style={{ color: '#5B8A00', fontWeight: 600, textDecoration: 'none', background: '#F4F8EC', padding: '3px 8px', borderRadius: '3px' }}>
+          <a
+            href={member.orcid.startsWith('http') ? member.orcid : `https://orcid.org/${member.orcid}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#5B8A00', fontWeight: 600, textDecoration: 'none', background: '#F4F8EC', padding: '3px 8px', borderRadius: '3px' }}
+          >
             ORCID ↗
           </a>
         )}
-        {member.googleScholar && (
-          <a href={member.googleScholar} target="_blank" rel="noopener noreferrer" style={{ color: '#1A73E8', fontWeight: 500, textDecoration: 'none', background: '#ECF3FD', padding: '3px 8px', borderRadius: '3px' }}>
+        {(member.googleScholar || member.google_scholar) && (
+          <a
+            href={member.googleScholar || member.google_scholar}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#1A73E8', fontWeight: 500, textDecoration: 'none', background: '#ECF3FD', padding: '3px 8px', borderRadius: '3px' }}
+          >
             Scholar ↗
           </a>
         )}
-        {member.profileLink && (
-          <a href={member.profileLink} target="_blank" rel="noopener noreferrer" style={{ color: '#0B1B3A', fontWeight: 500, textDecoration: 'none', background: '#EAECEF', padding: '3px 8px', borderRadius: '3px' }}>
+        {(member.scopus) && (
+          <a
+            href={member.scopus.startsWith('http') ? member.scopus : `https://www.scopus.com/authid/detail.uri?authorId=${member.scopus}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#E65100', fontWeight: 500, textDecoration: 'none', background: '#FFF3E0', padding: '3px 8px', borderRadius: '3px' }}
+          >
+            Scopus ↗
+          </a>
+        )}
+        {(member.profileLink || member.profile_link) && (
+          <a
+            href={member.profileLink || member.profile_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#0B1B3A', fontWeight: 500, textDecoration: 'none', background: '#EAECEF', padding: '3px 8px', borderRadius: '3px' }}
+          >
             Profile ↗
           </a>
         )}
@@ -198,6 +277,34 @@ function BoardMemberCard({ member }) {
 }
 
 export default function EditorialBoard() {
+  const [dynamicMembers, setDynamicMembers] = useState([])
+
+  useEffect(() => {
+    getPublicEditorialBoard()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDynamicMembers(data)
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not load dynamic editorial board members:', err)
+      })
+  }, [])
+
+  // Partition dynamic members or fallback to hardcoded defaults
+  const editorInChief = dynamicMembers.find(m => m.role_title === 'Editor-in-Chief') || DEFAULT_EDITOR_IN_CHIEF
+  const leadershipMembers = dynamicMembers.filter(m => m.role_title === 'Editorial Leadership')
+  const activeLeadership = leadershipMembers.length > 0 ? leadershipMembers : DEFAULT_LEADERSHIP
+
+  const boardMembers = dynamicMembers.filter(m => ['Editorial Board Member', 'Associate Editor', 'Section Editor'].includes(m.role_title))
+  const activeBoardMembers = boardMembers.length > 0 ? boardMembers : DEFAULT_EDITORIAL_BOARD_MEMBERS
+
+  const nationalMembers = dynamicMembers.filter(m => m.role_title === 'National Editorial Board')
+  const activeNational = nationalMembers.length > 0 ? nationalMembers : DEFAULT_NATIONAL_BOARD
+
+  const internationalMembers = dynamicMembers.filter(m => m.role_title === 'International Editorial Board')
+  const activeInternational = internationalMembers.length > 0 ? internationalMembers : DEFAULT_INTERNATIONAL_BOARD
+
   return (
     <>
       {/* Page hero */}
@@ -266,36 +373,40 @@ export default function EditorialBoard() {
               textAlign: 'center',
               padding: '12px',
             }}>
-              EDITOR-IN-CHIEF
+              {editorInChief.profile_image_url ? (
+                <img src={editorInChief.profile_image_url} alt={editorInChief.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                'EDITOR-IN-CHIEF'
+              )}
             </div>
             <div>
               <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#9A7B23', marginBottom: '8px' }}>
-                {EDITOR_IN_CHIEF.role}
+                {editorInChief.role_title || editorInChief.role}
               </div>
               <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(24px, 3vw, 32px)', color: '#0B1B3A', margin: '0 0 10px' }}>
-                {EDITOR_IN_CHIEF.name}
+                {editorInChief.name}
               </h3>
               <p style={{ fontSize: '15.5px', lineHeight: 1.7, color: '#3A4157', margin: '0 0 18px' }}>
-                {EDITOR_IN_CHIEF.affiliation}
+                {editorInChief.affiliation || [editorInChief.designation, editorInChief.department, editorInChief.institution, editorInChief.country].filter(Boolean).join(', ')}
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '13px' }}>
-                {EDITOR_IN_CHIEF.instEmail && (
-                  <a href={`mailto:${EDITOR_IN_CHIEF.instEmail}`} style={{ color: '#0B1B3A', textDecoration: 'none', background: '#F4F5F8', padding: '6px 12px', borderRadius: '3px' }}>
-                    ✉️ {EDITOR_IN_CHIEF.instEmail}
+                {editorInChief.instEmail && (
+                  <a href={`mailto:${editorInChief.instEmail}`} style={{ color: '#0B1B3A', textDecoration: 'none', background: '#F4F5F8', padding: '6px 12px', borderRadius: '3px' }}>
+                    ✉️ {editorInChief.instEmail}
                   </a>
                 )}
-                {EDITOR_IN_CHIEF.personalEmail && (
-                  <a href={`mailto:${EDITOR_IN_CHIEF.personalEmail}`} style={{ color: '#0B1B3A', textDecoration: 'none', background: '#F4F5F8', padding: '6px 12px', borderRadius: '3px' }}>
-                    ✉️ {EDITOR_IN_CHIEF.personalEmail}
+                {editorInChief.personalEmail && (
+                  <a href={`mailto:${editorInChief.personalEmail}`} style={{ color: '#0B1B3A', textDecoration: 'none', background: '#F4F5F8', padding: '6px 12px', borderRadius: '3px' }}>
+                    ✉️ {editorInChief.personalEmail}
                   </a>
                 )}
-                {EDITOR_IN_CHIEF.orcid && (
-                  <a href={EDITOR_IN_CHIEF.orcid} target="_blank" rel="noopener noreferrer" style={{ color: '#5B8A00', fontWeight: 600, textDecoration: 'none', background: '#F4F8EC', padding: '6px 12px', borderRadius: '3px' }}>
+                {editorInChief.orcid && (
+                  <a href={editorInChief.orcid.startsWith('http') ? editorInChief.orcid : `https://orcid.org/${editorInChief.orcid}`} target="_blank" rel="noopener noreferrer" style={{ color: '#5B8A00', fontWeight: 600, textDecoration: 'none', background: '#F4F8EC', padding: '6px 12px', borderRadius: '3px' }}>
                     ORCID ↗
                   </a>
                 )}
-                {EDITOR_IN_CHIEF.googleScholar && (
-                  <a href={EDITOR_IN_CHIEF.googleScholar} target="_blank" rel="noopener noreferrer" style={{ color: '#1A73E8', fontWeight: 500, textDecoration: 'none', background: '#ECF3FD', padding: '6px 12px', borderRadius: '3px' }}>
+                {(editorInChief.googleScholar || editorInChief.google_scholar) && (
+                  <a href={editorInChief.googleScholar || editorInChief.google_scholar} target="_blank" rel="noopener noreferrer" style={{ color: '#1A73E8', fontWeight: 500, textDecoration: 'none', background: '#ECF3FD', padding: '6px 12px', borderRadius: '3px' }}>
                     Google Scholar ↗
                   </a>
                 )}
@@ -311,7 +422,7 @@ export default function EditorialBoard() {
           </h2>
           <div style={{ width: '56px', height: '2px', background: '#C4A24C', marginBottom: '24px' }} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '24px' }}>
-            {LEADERSHIP.map(m => <BoardMemberCard key={m.name} member={m} />)}
+            {activeLeadership.map(m => <BoardMemberCard key={m.name || m.id} member={m} />)}
           </div>
         </div>
 
@@ -322,7 +433,7 @@ export default function EditorialBoard() {
           </h2>
           <div style={{ width: '56px', height: '2px', background: '#C4A24C', marginBottom: '24px' }} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
-            {EDITORIAL_BOARD_MEMBERS.map(m => <BoardMemberCard key={m.name} member={m} />)}
+            {activeBoardMembers.map(m => <BoardMemberCard key={m.name || m.id} member={m} />)}
           </div>
         </div>
 
@@ -333,7 +444,7 @@ export default function EditorialBoard() {
           </h2>
           <div style={{ width: '56px', height: '2px', background: '#C4A24C', marginBottom: '24px' }} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
-            {NATIONAL_BOARD.map(m => <BoardMemberCard key={m.name} member={m} />)}
+            {activeNational.map(m => <BoardMemberCard key={m.name || m.id} member={m} />)}
           </div>
         </div>
 
@@ -344,7 +455,7 @@ export default function EditorialBoard() {
           </h2>
           <div style={{ width: '56px', height: '2px', background: '#C4A24C', marginBottom: '24px' }} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
-            {INTERNATIONAL_BOARD.map(m => <BoardMemberCard key={m.name} member={m} />)}
+            {activeInternational.map(m => <BoardMemberCard key={m.name || m.id} member={m} />)}
           </div>
         </div>
 
@@ -427,30 +538,51 @@ export default function EditorialBoard() {
               Join the Editorial Board
             </h3>
             <p style={{ fontSize: '15.5px', lineHeight: 1.7, color: '#C3CBDC', margin: 0 }}>
-              Experienced researchers and academicians interested in serving on the Editorial Board are invited to submit their curriculum vitae (CV) and a brief summary of their research expertise for consideration.
+              Experienced researchers and academicians interested in serving on the Editorial Board are invited to submit their curriculum vitae (CV) and a summary of their research expertise for consideration.
             </p>
           </div>
-          <Link
-            to="/contact"
-            style={{
-              fontFamily: 'Jost, sans-serif',
-              fontSize: '13.5px',
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              background: '#C4A24C',
-              color: '#071228',
-              fontWeight: 600,
-              padding: '15px 29px',
-              borderRadius: '2px',
-              textDecoration: 'none',
-              whiteSpace: 'nowrap',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = '#E3CB86'}
-            onMouseLeave={e => e.currentTarget.style.background = '#C4A24C'}
-          >
-            Editorial Board →
-          </Link>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <Link
+              to="/editorial-board/apply"
+              style={{
+                fontFamily: 'Jost, sans-serif',
+                fontSize: '13.5px',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                background: '#C4A24C',
+                color: '#071228',
+                fontWeight: 700,
+                padding: '15px 28px',
+                borderRadius: '2px',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#E3CB86'}
+              onMouseLeave={e => e.currentTarget.style.background = '#C4A24C'}
+            >
+              Apply to Join →
+            </Link>
+            <Link
+              to="/editorial-board/status"
+              style={{
+                fontFamily: 'Jost, sans-serif',
+                fontSize: '13.5px',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                background: 'transparent',
+                color: '#C4A24C',
+                border: '1px solid #C4A24C',
+                fontWeight: 600,
+                padding: '14px 20px',
+                borderRadius: '2px',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Track Status
+            </Link>
+          </div>
         </div>
 
       </div>

@@ -111,8 +111,17 @@ export default function CompleteProfile() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (user?.profile_complete || user?.role === 'editor' || user?.role === 'admin') {
+      navigate('/dashboard', { replace: true })
+      return
+    }
+
     getMyProfile()
       .then((profile) => {
+        if (profile.profile_complete) {
+          navigate('/dashboard', { replace: true })
+          return
+        }
         const fn = (profile.first_name && profile.first_name !== 'undefined') ? profile.first_name : ''
         const ln = (profile.last_name && profile.last_name !== 'undefined') ? profile.last_name : ''
         const dn = (profile.display_name || '').replace(/\bundefined\b/g, '').trim() || [fn, ln].filter(Boolean).join(' ')
@@ -145,7 +154,7 @@ export default function CompleteProfile() {
         }
       })
       .finally(() => setLoading(false))
-  }, [user])
+  }, [user, navigate])
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))

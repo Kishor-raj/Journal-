@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
-import { googleAuth, googleCallback, logout, getMe, register, login, verifyEmail, resendVerification, forgotPassword, validateResetPasswordToken, resetPassword } from './auth.controller.js'
+import { googleAuth, googleCallback, logout, getMe, register, login, verifyEmail, resendVerification, forgotPassword, validateResetPasswordToken, resetPassword, validateInvitation } from './auth.controller.js'
 import { authenticate } from '../../middleware/authenticate.js'
 import { logSecurityEvent } from '../security/security.service.js'
 
@@ -92,6 +92,8 @@ router.post('/resend-verification', resendLimiter, resendVerification)
 router.post('/forgot-password', forgotPasswordLimiter, forgotPassword)
 router.get('/reset-password/validate', resetPasswordLimiter, validateResetPasswordToken)
 router.post('/reset-password', resetPasswordLimiter, resetPassword)
+router.get('/invitation/validate', validateInvitation)
+router.get('/invitation/:token', validateInvitation)
 router.post('/logout', authenticate, logout)
 router.get('/me', authenticate, getMe)
 

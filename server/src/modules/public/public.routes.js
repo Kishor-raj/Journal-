@@ -54,4 +54,11 @@ router.get('/verify/:token/download', async (req, res) => {
   res.send(pdfBuffer)
 })
 
+// GET /api/public/editorial-board — public list of published editorial board members
+router.get('/editorial-board', async (req, res) => {
+  const { getPublicEditorialBoard } = await import('../editorial-board/editorial-board.service.js')
+  const members = await getPublicEditorialBoard()
+  res.json(members)
+})
+
 export default router

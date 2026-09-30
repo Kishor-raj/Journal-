@@ -1,17 +1,47 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { register } from '../../services/authService'
+import apiClient from '../../services/apiClient'
 
 export default function Register() {
+  const [searchParams] = useSearchParams()
+  const invitationToken = searchParams.get('invitation') || searchParams.get('token') || ''
+  const emailParam = searchParams.get('email') || ''
+
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(emailParam)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [invitationData, setInvitationData] = useState(null)
+
+  useEffect(() => {
+    if (invitationToken) {
+      apiClient.get('/auth/invitation/validate', { params: { token: invitationToken } })
+        .then((res) => {
+          if (res.valid) {
+            setInvitationData(res)
+            if (res.email) setEmail(res.email)
+            if (res.name) {
+              const parts = res.name.split(' ')
+              if (parts.length > 1) {
+                setFirstName(parts[0])
+                setLastName(parts.slice(1).join(' '))
+              } else {
+                setFirstName(res.name)
+              }
+            }
+          }
+        })
+        .catch(() => {
+          // Token invalid/expired - user can still register normally
+        })
+    }
+  }, [invitationToken])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -74,7 +104,28 @@ export default function Register() {
       <div className="auth-page-card">
         <span className="auth-page-eyebrow">Asgard Publications</span>
         <h1 className="auth-page-title">Create your account</h1>
-        <p className="auth-page-text">Join Asgard Publications to submit and track your manuscripts.</p>
+        <p className="auth-page-text">
+          {invitationData ? (
+            <span>Welcome to the IJIDCR Editorial Board! Please set up your password to activate your <strong>Editor</strong> account.</span>
+          ) : (
+            <span>Join Asgard Publications to submit and track your manuscripts.</span>
+          )}
+        </p>
+
+        {invitationData && (
+          <div style={{
+            background: '#ECFDF5',
+            border: '1px solid #047857',
+            color: '#065F46',
+            padding: '12px 14px',
+            borderRadius: '4px',
+            fontSize: '13px',
+            marginBottom: '16px',
+            lineHeight: 1.5,
+          }}>
+            <strong>Editorial Appointment Invitation:</strong> You are registering as <strong>{invitationData.preferred_role || 'Editor'}</strong> ({invitationData.section || 'General Section'}). Once verified, your account will have Editor privileges.
+          </div>
+        )}
 
         {error && <div className="auth-alert auth-alert--error">{error}</div>}
 

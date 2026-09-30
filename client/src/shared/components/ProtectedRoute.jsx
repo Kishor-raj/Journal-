@@ -14,7 +14,9 @@ export default function ProtectedRoute({ children, allowedRoles, requireProfileC
 
   if (loading) return <div>Loading...</div>
   if (!user) return <Navigate to="/login" replace />
-  if (requireProfileComplete && !user.profile_complete) return <Navigate to="/profile/complete" replace />
+  if (requireProfileComplete && !user.profile_complete && user.role !== 'admin' && user.role !== 'editor') {
+    return <Navigate to="/profile/complete" replace />
+  }
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to={ROLE_DASHBOARDS[user.role] || '/'} replace />
   }

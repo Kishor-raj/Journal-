@@ -21,6 +21,7 @@ const NAV = {
         label: 'Management',
         items: [
           { to: '/admin/users', label: 'Users', icon: 'fa-users' },
+          { to: '/admin/editorial-applications', label: 'Editorial Applications', icon: 'fa-user-tie', match: ['/admin/editorial-applications'] },
           { to: '/admin/contact-inquiries', label: 'Contact Inquiries', icon: 'fa-envelope-open-text' },
         ],
       },
@@ -487,8 +488,23 @@ export default function DashboardLayout() {
 
             {/* User */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#C4922E', color: '#0F1A30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
-                {initials(user?.name)}
+              <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#C4922E', color: '#0F1A30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0, overflow: 'hidden' }}>
+                {user?.profile_image_url ? (
+                  <img
+                    src={user.profile_image_url}
+                    alt={user?.name ?? 'User'}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                      if (e.currentTarget.nextElementSibling) {
+                        e.currentTarget.nextElementSibling.style.display = 'flex'
+                      }
+                    }}
+                  />
+                ) : null}
+                <span style={{ display: user?.profile_image_url ? 'none' : 'flex' }}>
+                  {initials(user?.name)}
+                </span>
               </div>
               {!isMobile && (
                 <div style={{ lineHeight: 1.25, minWidth: 0 }}>
