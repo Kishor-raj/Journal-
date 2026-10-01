@@ -57,7 +57,7 @@ describe('Editorial Board Application Validation', () => {
     google_scholar_url: 'https://scholar.google.com/citations?user=xyz123',
     google_scholar_h_index: 12,
     orcid_id: '0000-0002-1825-0097',
-    preferred_role: 'Associate Editor',
+    preferred_role: 'National Editorial Board',
     review_capacity: '3–5 manuscripts/month',
     preferred_review_period: '14 days',
     availability: 'Available',
@@ -183,7 +183,7 @@ describe('Editorial Board Application Workflow', () => {
       primary_research_area: 'Artificial Intelligence',
       research_keywords: ['AI', 'ML', 'DL'],
       preferred_editorial_section: 'Artificial Intelligence',
-      preferred_role: 'Associate Editor',
+      preferred_role: 'National Editorial Board',
       cv_file_url: 'https://cloudinary.com/cv.pdf',
       declaration_confidentiality: true,
       declaration_conflict_of_interest: true,
@@ -207,7 +207,7 @@ describe('Editorial Board Application Workflow', () => {
           full_name: 'Dr. Jane Smith',
           email: 'jane@stanford.edu',
           status: 'UNDER_REVIEW',
-          preferred_role: 'Associate Editor',
+          preferred_role: 'National Editorial Board',
           preferred_editorial_section: 'Artificial Intelligence',
           primary_research_area: 'AI',
           clarification_request: null,
@@ -241,7 +241,7 @@ describe('Editorial Board Application Workflow', () => {
           id: 'app-1',
           email: 'jane@stanford.edu',
           full_name: 'Dr. Jane Smith',
-          preferred_role: 'Associate Editor',
+          preferred_role: 'National Editorial Board',
           preferred_editorial_section: 'Artificial Intelligence',
           status: 'UNDER_REVIEW',
         }],
@@ -257,7 +257,7 @@ describe('Editorial Board Application Workflow', () => {
       .mockResolvedValueOnce({}) // INSERT audit log approved
       .mockResolvedValueOnce({}) // COMMIT
 
-    const result = await approveApplication('app-1', { position: 'Associate Editor' }, 'admin-uuid', '127.0.0.1', 'Vitest')
+    const result = await approveApplication('app-1', { position: 'National Editorial Board' }, 'admin-uuid', '127.0.0.1', 'Vitest')
     expect(result.success).toBe(true)
     expect(result.user_exists).toBe(true)
     expect(result.user_id).toBe('user-123')

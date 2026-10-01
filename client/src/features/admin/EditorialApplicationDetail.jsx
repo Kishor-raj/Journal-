@@ -26,9 +26,8 @@ const EDITORIAL_SECTIONS = [
 
 const POSITIONS = [
   'Editorial Board Member',
-  'Associate Editor',
-  'Section Editor',
-  'Executive Editor',
+  'National Editorial Board',
+  'International Editorial Board',
   'Editorial Leadership',
 ]
 
@@ -94,7 +93,7 @@ export default function EditorialApplicationDetail() {
       setVerificationNotes(data.verification_notes || '')
       setAdminRemarks(data.admin_remarks || '')
       setApproveForm({
-        position: data.preferred_role || POSITIONS[0],
+        position: (data.preferred_role && POSITIONS.includes(data.preferred_role)) ? data.preferred_role : POSITIONS[0],
         section: data.preferred_editorial_section || EDITORIAL_SECTIONS[0],
         appointment_date: new Date().toISOString().split('T')[0],
         term_start_date: new Date().toISOString().split('T')[0],
