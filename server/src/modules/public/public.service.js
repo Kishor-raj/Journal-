@@ -169,15 +169,15 @@ export async function getPublishedArticleAuthors(manuscriptId) {
       ma.user_id,
       ma.author_order,
       ma.is_corresponding,
-      COALESCE(NULLIF(TRIM(u.first_name), ''), ma.first_name) AS first_name,
-      COALESCE(NULLIF(TRIM(u.last_name), ''), ma.last_name) AS last_name,
+      COALESCE(u.first_name, ma.first_name) AS first_name,
+      COALESCE(u.last_name, ma.last_name) AS last_name,
       COALESCE(u.email, ma.email) AS email,
-      COALESCE(NULLIF(TRIM(u.institution), ''), ma.institution) AS institution,
-      COALESCE(NULLIF(TRIM(u.college), ''), ma.college) AS college,
-      COALESCE(NULLIF(TRIM(u.department), ''), ma.department) AS department,
-      COALESCE(NULLIF(TRIM(u.state), ''), ma.state) AS state,
-      COALESCE(NULLIF(TRIM(u.country), ''), ma.country) AS country,
-      COALESCE(NULLIF(TRIM(u.course), ''), ma.course) AS course,
+      COALESCE(u.institution, ma.institution) AS institution,
+      COALESCE(u.college, ma.college) AS college,
+      COALESCE(u.department, ma.department) AS department,
+      COALESCE(u.state, ma.state) AS state,
+      COALESCE(u.country, ma.country) AS country,
+      COALESCE(u.course, ma.course) AS course,
       COALESCE(u.orcid_id, ma.orcid_id) AS orcid_id
     FROM manuscript_authors ma
     JOIN manuscripts m ON m.id = ma.manuscript_id

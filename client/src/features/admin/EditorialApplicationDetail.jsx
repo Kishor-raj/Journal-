@@ -489,10 +489,12 @@ export default function EditorialApplicationDetail() {
                   </span>
                 </div>
 
-                <div style={detailRowStyle}>
-                  <span style={detailLabelStyle}>Phone:</span>
-                  <span style={detailValueStyle}>{application.phone || 'Not provided'}</span>
-                </div>
+                {application.phone && (
+                  <div style={detailRowStyle}>
+                    <span style={detailLabelStyle}>Phone:</span>
+                    <span style={detailValueStyle}>{application.phone}</span>
+                  </div>
+                )}
 
                 <div style={detailRowStyle}>
                   <span style={detailLabelStyle}>Institution:</span>
