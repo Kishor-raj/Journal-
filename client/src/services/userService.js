@@ -34,7 +34,7 @@ export async function uploadUserProfilePhoto(file) {
 
   const uploadData = await uploadRes.json()
   if (!uploadRes.ok) {
-    throw new Error(uploadData.error?.message || 'Failed to upload photo to Cloudinary')
+    throw new Error(uploadData.error?.message || 'Failed to upload photo. Please try again.')
   }
 
   const imageUrl = uploadData.secure_url || uploadData.url
