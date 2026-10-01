@@ -18,10 +18,9 @@ const EDITORIAL_SECTIONS = [
 
 const PREFERRED_ROLES = [
   'Editorial Board Member',
-  'Associate Editor',
-  'Section Editor',
+  'National Editorial Board',
+  'International Editorial Board',
   'Reviewer',
-  'Executive Editor',
 ]
 
 const REVIEW_CAPACITIES = [

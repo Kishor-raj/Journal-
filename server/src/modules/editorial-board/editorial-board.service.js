@@ -34,10 +34,9 @@ export const EDITORIAL_SECTIONS = [
 
 export const PREFERRED_ROLES = [
   'Editorial Board Member',
-  'Associate Editor',
-  'Section Editor',
+  'National Editorial Board',
+  'International Editorial Board',
   'Reviewer',
-  'Executive Editor',
 ]
 
 export const REVIEW_CAPACITY_OPTIONS = [

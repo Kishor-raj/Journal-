@@ -289,8 +289,9 @@ export default function EditorialApplications() {
               >
                 <option value="">All Preferred Roles</option>
                 <option value="Editorial Board Member">Editorial Board Member</option>
-                <option value="Associate Editor">Associate Editor</option>
-                <option value="Section Editor">Section Editor</option>
+                <option value="National Editorial Board">National Editorial Board</option>
+                <option value="International Editorial Board">International Editorial Board</option>
+                <option value="Editorial Leadership">Editorial Leadership</option>
                 <option value="Reviewer">Reviewer</option>
               </select>
             </div>
