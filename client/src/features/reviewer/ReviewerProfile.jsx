@@ -146,6 +146,20 @@ const S = {
     textTransform: 'capitalize',
     letterSpacing: '0.03em',
   },
+  editorIdPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    marginTop: '8px',
+    background: '#0D1B3E',
+    color: '#C4922E',
+    border: '1px solid #C4922E',
+    borderRadius: '999px',
+    padding: '3px 10px',
+    fontSize: '0.78rem',
+    fontWeight: 700,
+    letterSpacing: '0.04em',
+  },
 
   // Form card
   card: {
@@ -326,6 +340,7 @@ export default function ReviewerProfile() {
     course: '',
     orcid_id: '',
     bio: '',
+    editor_id: '',
   })
   const [profileImageUrl, setProfileImageUrl] = useState('')
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -353,6 +368,7 @@ export default function ReviewerProfile() {
           course: profile.course || '',
           orcid_id: profile.orcid_id || '',
           bio: profile.bio || '',
+          editor_id: profile.editor_id || user?.editor_id || '',
         }
         setForm(data)
         setOriginal(data)
@@ -374,6 +390,7 @@ export default function ReviewerProfile() {
             course: user.course || '',
             orcid_id: user.orcid_id || '',
             bio: user.bio || '',
+            editor_id: user.editor_id || '',
           }
           setForm(data)
           setOriginal(data)
@@ -511,7 +528,20 @@ export default function ReviewerProfile() {
           <div style={S.avatarInfo}>
             <p style={S.avatarName}>{displayName}</p>
             <p style={S.avatarEmail}>{user?.email || '—'}</p>
-            {roleLabel && <span style={S.rolePill}>{roleLabel}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+              {roleLabel && <span style={S.rolePill}>{roleLabel}</span>}
+              {(form.editor_id || user?.editor_id) && (
+                <span style={S.editorIdPill} title="Assigned Editor ID">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="16" rx="2" />
+                    <line x1="7" y1="8" x2="17" y2="8" />
+                    <line x1="7" y1="12" x2="17" y2="12" />
+                    <line x1="7" y1="16" x2="12" y2="16" />
+                  </svg>
+                  Editor ID: {form.editor_id || user?.editor_id}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -587,6 +617,26 @@ export default function ReviewerProfile() {
             <h2 style={S.cardTitle}>Personal Information</h2>
           </div>
           <div style={S.cardBody}>
+            {(form.editor_id || user?.editor_id) && (
+              <Field label="Editor ID (Assigned)">
+                <input
+                  type="text"
+                  style={{
+                    ...S.input,
+                    ...S.inputReadonly,
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    color: '#0D1B3E',
+                    background: '#F4F6FB',
+                    border: '1px solid #D1D8E8',
+                  }}
+                  value={form.editor_id || user?.editor_id || ''}
+                  readOnly
+                  tabIndex={-1}
+                />
+              </Field>
+            )}
+
             <div style={S.row}>
               <Field label="First Name" required>
                 <input

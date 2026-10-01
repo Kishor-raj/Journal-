@@ -195,9 +195,25 @@ function BoardMemberCard({ member }) {
           )}
 
           <div>
-            <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23', marginBottom: '4px' }}>
-              {roleLabel}
-              {member.editorial_section ? ` • ${member.editorial_section}` : ''}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+              <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23' }}>
+                {roleLabel}
+                {member.editorial_section ? ` • ${member.editorial_section}` : ''}
+              </span>
+              {member.editor_id && (
+                <span style={{
+                  background: '#0B1B3A',
+                  color: '#C4A24C',
+                  border: '1px solid rgba(196,162,76,0.6)',
+                  borderRadius: '999px',
+                  padding: '1px 6px',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                }} title="Editor ID">
+                  {member.editor_id}
+                </span>
+              )}
             </div>
             <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(18px, 1.8vw, 21px)', color: '#0B1B3A', margin: 0 }}>
               {displayName}

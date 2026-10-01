@@ -302,8 +302,29 @@ export default function UserManagement() {
       label: 'Name / Display Name',
       render: (val, row) => (
         <div>
-          <div style={{ fontWeight: 600, color: 'var(--color-ink-navy)' }}>
-            {val || `${row.first_name || ''} ${row.last_name || ''}`.trim() || '—'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600, color: 'var(--color-ink-navy)' }}>
+              {val || `${row.first_name || ''} ${row.last_name || ''}`.trim() || '—'}
+            </span>
+            {row.editor_id && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  background: '#0D1B3E',
+                  color: '#C4922E',
+                  border: '1px solid rgba(196,146,46,0.6)',
+                  borderRadius: '999px',
+                  padding: '1px 8px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.03em',
+                }}
+                title={`Editor ID: ${row.editor_id}`}
+              >
+                {row.editor_id}
+              </span>
+            )}
           </div>
           <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
             {row.email}
@@ -363,7 +384,7 @@ export default function UserManagement() {
         <div style={styles.searchBox}>
           <input
             type="text"
-            placeholder="Search by name or email..."
+            placeholder="Search by name, email, or Editor ID (e.g. AIRJ0001)..."
             style={styles.input}
             value={search}
             onChange={(e) => {
@@ -469,6 +490,14 @@ export default function UserManagement() {
                       {selectedUser.role_name}
                     </span>
                   </div>
+                  {selectedUser.editor_id && (
+                    <div>
+                      <div style={styles.infoLabel}>Editor ID</div>
+                      <div style={{ ...styles.infoVal, color: '#C4922E', fontWeight: 700, letterSpacing: '0.04em' }}>
+                        {selectedUser.editor_id}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <div style={styles.infoLabel}>Account Status</div>
                     <span style={{ ...styles.badge, ...getStatusBadgeStyle(selectedUser.account_status) }}>

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { authenticate } from '../../middleware/authenticate.js'
 import { requireRole } from '../../middleware/authorize.js'
 import pool from '../../config/db.js'
+import { generateEditorId } from '../editorial-board/editorial-board.service.js'
 
 const router = Router()
 
@@ -21,7 +22,7 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
   }
   if (search) {
     params.push(`%${search}%`)
-    conditions.push(`(u.email ILIKE $${params.length} OR u.display_name ILIKE $${params.length})`)
+    conditions.push(`(u.email ILIKE $${params.length} OR u.display_name ILIKE $${params.length} OR u.editor_id ILIKE $${params.length})`)
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -35,7 +36,7 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
   params.push(offset)
 
   const result = await pool.query(
-    `SELECT u.id, u.email, u.first_name, u.last_name, u.display_name,
+    `SELECT u.id, u.email, u.first_name, u.last_name, u.display_name, u.editor_id,
             u.account_status, u.created_at, COALESCE(r.name, 'author') as role_name
      FROM users u
      LEFT JOIN roles r ON r.id = u.role_id
@@ -76,10 +77,11 @@ router.patch('/users/:id/role', authenticate, requireRole('admin'), async (req, 
   if (roleResult.rows.length === 0) return res.status(400).json({ error: 'Invalid role' })
 
   const newRoleId = roleResult.rows[0].id
-  const userResult = await pool.query('SELECT role_id FROM users WHERE id = $1', [userId])
+  const userResult = await pool.query('SELECT role_id, editor_id FROM users WHERE id = $1', [userId])
   if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' })
 
   const oldRoleId = userResult.rows[0].role_id
+  const existingEditorId = userResult.rows[0].editor_id
 
   const client = await pool.connect()
   try {
@@ -88,7 +90,18 @@ router.patch('/users/:id/role', authenticate, requireRole('admin'), async (req, 
       'INSERT INTO user_role_history (user_id, old_role_id, new_role_id, changed_by, reason) VALUES ($1, $2, $3, $4, $5)',
       [userId, oldRoleId, newRoleId, req.user.uid, reason]
     )
-    await client.query('UPDATE users SET role_id = $1, updated_at = now() WHERE id = $2', [newRoleId, userId])
+
+    let assignedEditorId = null
+    if (role_name === 'editor' && !existingEditorId) {
+      assignedEditorId = await generateEditorId(client)
+    }
+
+    if (assignedEditorId) {
+      await client.query('UPDATE users SET role_id = $1, editor_id = $2, updated_at = now() WHERE id = $3', [newRoleId, assignedEditorId, userId])
+    } else {
+      await client.query('UPDATE users SET role_id = $1, updated_at = now() WHERE id = $2', [newRoleId, userId])
+    }
+
     await client.query('DELETE FROM user_roles WHERE user_id = $1', [userId])
     await client.query(
       'INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)',
@@ -102,11 +115,11 @@ router.patch('/users/:id/role', authenticate, requireRole('admin'), async (req, 
     await client.query(
       `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, old_values, new_values, ip_address)
        VALUES ($1, 'role_changed', 'users', $2, $3, $4, $5)`,
-      [req.user.uid, userId, JSON.stringify({ role_id: oldRoleId }), JSON.stringify({ role_id: newRoleId, role_name }), req.ip]
+      [req.user.uid, userId, JSON.stringify({ role_id: oldRoleId }), JSON.stringify({ role_id: newRoleId, role_name, editor_id: assignedEditorId || existingEditorId }), req.ip]
     )
 
     await client.query('COMMIT')
-    res.json({ message: 'Role updated' })
+    res.json({ message: 'Role updated', editor_id: assignedEditorId || existingEditorId || null })
   } catch (err) {
     await client.query('ROLLBACK')
     throw err

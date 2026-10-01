@@ -119,8 +119,9 @@ export async function syncUserProfileFromEditorialApplication(dbOrClient, userId
          bio = COALESCE(NULLIF(bio, ''), $11),
          orcid_id = COALESCE(NULLIF(orcid_id, ''), $12),
          profile_image_url = COALESCE(NULLIF(profile_image_url, ''), $13),
+         editor_id = COALESCE(editor_id, $14),
          updated_at = now()
-       WHERE id = $14`,
+       WHERE id = $15`,
       [
         nameParts.firstName,
         nameParts.lastName,
@@ -135,6 +136,7 @@ export async function syncUserProfileFromEditorialApplication(dbOrClient, userId
         bioVal,
         app.orcid_id,
         app.profile_image_url,
+        app.editor_id || null,
         targetUserId,
       ]
     )
@@ -340,7 +342,7 @@ export async function destroySession(tokenHash) {
 export async function findSession(tokenHash) {
   const result = await pool.query(
     `SELECT s.*, u.id as uid, u.email, u.first_name, u.last_name, u.display_name,
-            u.role_id, u.account_status, u.profile_image_url,
+            u.role_id, u.editor_id, u.account_status, u.profile_image_url,
             u.institution, u.college, u.department, u.state, u.country, u.course,
             COALESCE(r.name, ur.name, 'author') AS role_name,
             ur.name AS account_role_name,
