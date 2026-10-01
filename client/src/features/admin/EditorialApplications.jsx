@@ -238,7 +238,7 @@ export default function EditorialApplications() {
             <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '10px', flex: '1 1 300px' }}>
               <input
                 type="text"
-                placeholder="Search by name, email, institution, country, reference..."
+                placeholder="Search by name, email, Editor ID (e.g. AIRJ0001), institution, reference..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
@@ -335,9 +335,27 @@ export default function EditorialApplications() {
                   applications.map((app) => (
                     <tr key={app.id} style={{ borderBottom: '1px solid #F0ECE3' }}>
                       <td style={tdStyle}>
-                        <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontWeight: 700, color: '#0B1B3A' }}>
+                        <div style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontWeight: 700, color: '#0B1B3A' }}>
                           {app.application_number}
-                        </span>
+                        </div>
+                        {app.editor_id && (
+                          <div style={{ marginTop: '3px' }}>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              background: '#0D1B3E',
+                              color: '#C4922E',
+                              border: '1px solid rgba(196,146,46,0.6)',
+                              borderRadius: '999px',
+                              padding: '1px 7px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              letterSpacing: '0.03em',
+                            }} title={`Editor ID: ${app.editor_id}`}>
+                              {app.editor_id}
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 600, color: '#0B1B3A' }}>{app.full_name}</div>
@@ -475,7 +493,22 @@ export default function EditorialApplications() {
                           </div>
                         )}
                         <div>
-                          <div style={{ fontWeight: 600, color: '#0B1B3A' }}>{m.name}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 600, color: '#0B1B3A' }}>{m.name}</span>
+                            {m.editor_id && (
+                              <span style={{
+                                background: '#0D1B3E',
+                                color: '#C4922E',
+                                border: '1px solid rgba(196,146,46,0.5)',
+                                borderRadius: '999px',
+                                padding: '1px 6px',
+                                fontSize: '10.5px',
+                                fontWeight: 700,
+                              }}>
+                                {m.editor_id}
+                              </span>
+                            )}
+                          </div>
                           {m.academic_title && <div style={{ fontSize: '11.5px', color: '#6A728A' }}>{m.academic_title}</div>}
                         </div>
                       </div>

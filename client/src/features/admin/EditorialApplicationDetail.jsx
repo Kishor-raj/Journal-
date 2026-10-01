@@ -249,10 +249,24 @@ export default function EditorialApplicationDetail() {
         boxShadow: '0 2px 8px rgba(11,27,58,0.03)',
       }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: '16px', fontWeight: 700, color: '#9A7B23' }}>
               {application.application_number}
             </span>
+            {application.editor_id && (
+              <span style={{
+                background: '#0D1B3E',
+                color: '#C4922E',
+                border: '1px solid rgba(196,146,46,0.6)',
+                borderRadius: '999px',
+                padding: '2px 9px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+              }} title="Assigned Editor ID">
+                Editor ID: {application.editor_id}
+              </span>
+            )}
             <span style={{
               padding: '4px 10px',
               borderRadius: '12px',

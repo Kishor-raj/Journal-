@@ -3,6 +3,7 @@ import {
   validateApplicationInput,
   normalizeEmail,
   generateApplicationNumber,
+  generateEditorId,
   submitApplication,
   getApplicationStatus,
   submitClarificationResponse,
@@ -244,9 +245,10 @@ describe('Editorial Board Application Workflow', () => {
           preferred_role: 'National Editorial Board',
           preferred_editorial_section: 'Artificial Intelligence',
           status: 'UNDER_REVIEW',
+          editor_id: 'AIRJ0001',
         }],
       }) // SELECT application
-      .mockResolvedValueOnce({ rows: [{ id: 'user-123', email: 'jane@stanford.edu', role_id: 'author-role-id' }] }) // SELECT user
+      .mockResolvedValueOnce({ rows: [{ id: 'user-123', email: 'jane@stanford.edu', role_id: 'author-role-id', editor_id: 'AIRJ0001' }] }) // SELECT user
       .mockResolvedValueOnce({ rows: [{ id: 'editor-role-id' }] }) // SELECT editor role
       .mockResolvedValueOnce({}) // UPDATE users SET role_id = editor
       .mockResolvedValueOnce({}) // INSERT user_roles
@@ -261,9 +263,10 @@ describe('Editorial Board Application Workflow', () => {
     expect(result.success).toBe(true)
     expect(result.user_exists).toBe(true)
     expect(result.user_id).toBe('user-123')
+    expect(result.editor_id).toBe('AIRJ0001')
   })
 
-  it('approveApplication generates role grant for applicant without account', async () => {
+  it('approveApplication generates role grant and assigns editor_id for applicant without account', async () => {
     const mockClient = {
       query: vi.fn(),
       release: vi.fn(),
@@ -280,6 +283,7 @@ describe('Editorial Board Application Workflow', () => {
           preferred_role: 'Editorial Board Member',
           preferred_editorial_section: 'Data Science',
           status: 'UNDER_REVIEW',
+          editor_id: 'AIRJ0002',
         }],
       }) // SELECT application
       .mockResolvedValueOnce({ rows: [] }) // SELECT user (none exists)
@@ -297,6 +301,27 @@ describe('Editorial Board Application Workflow', () => {
     expect(result.success).toBe(true)
     expect(result.user_exists).toBe(false)
     expect(result.role_grant_id).toBe('grant-123')
+    expect(result.editor_id).toBe('AIRJ0002')
+  })
+
+  it('generateEditorId generates sequential AIRJ formatted IDs', async () => {
+    const mockDb = {
+      query: vi.fn()
+        .mockResolvedValueOnce({ rows: [{ max_num: 5 }] })
+        .mockResolvedValueOnce({ rows: [] }),
+    }
+    const editorId = await generateEditorId(mockDb)
+    expect(editorId).toBe('AIRJ0006')
+  })
+
+  it('generateEditorId defaults to AIRJ0001 when no prior IDs exist', async () => {
+    const mockDb = {
+      query: vi.fn()
+        .mockResolvedValueOnce({ rows: [{ max_num: null }] })
+        .mockResolvedValueOnce({ rows: [] }),
+    }
+    const editorId = await generateEditorId(mockDb)
+    expect(editorId).toBe('AIRJ0001')
   })
 
   it('validateInvitationToken correctly validates active pending token', async () => {
