@@ -53,6 +53,7 @@ export default function AdminDashboard() {
     totalAuthors: 0,
     totalReviewers: 0,
     totalEditors: 0,
+    totalDeleted: 0,
     totalAuditLogs: 0,
   })
   const [loading, setLoading] = useState(true)
@@ -60,16 +61,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     Promise.all([
       getUsers({ limit: 1 }).catch(() => ({ total: 0 })),
-      getUsers({ role: 'author', limit: 1 }).catch(() => ({ total: 0 })),
-      getUsers({ role: 'reviewer', limit: 1 }).catch(() => ({ total: 0 })),
-      getUsers({ role: 'editor', limit: 1 }).catch(() => ({ total: 0 })),
+      getUsers({ role: 'author', status: 'active', limit: 1 }).catch(() => ({ total: 0 })),
+      getUsers({ role: 'reviewer', status: 'active', limit: 1 }).catch(() => ({ total: 0 })),
+      getUsers({ role: 'editor', status: 'active', limit: 1 }).catch(() => ({ total: 0 })),
+      getUsers({ status: 'disabled', limit: 1 }).catch(() => ({ total: 0 })),
       getAuditLogs({ limit: 1 }).catch(() => ({ total: 0 })),
-    ]).then(([allUsers, authors, reviewers, editors, audits]) => {
+    ]).then(([allUsers, authors, reviewers, editors, deletedUsers, audits]) => {
       setStats({
         totalUsers: allUsers?.total || 0,
         totalAuthors: authors?.total || 0,
         totalReviewers: reviewers?.total || 0,
         totalEditors: editors?.total || 0,
+        totalDeleted: deletedUsers?.total || 0,
         totalAuditLogs: audits?.total || 0,
       })
       setLoading(false)
@@ -88,6 +91,7 @@ export default function AdminDashboard() {
         <StatCard label="Authors" value={loading ? '—' : stats.totalAuthors} accent="blue" />
         <StatCard label="Peer Reviewers" value={loading ? '—' : stats.totalReviewers} accent="purple" />
         <StatCard label="Handling Editors" value={loading ? '—' : stats.totalEditors} accent="green" />
+        <StatCard label="Deleted Users" value={loading ? '—' : stats.totalDeleted} accent="red" />
       </div>
 
       <div style={styles.cardsGrid}>
