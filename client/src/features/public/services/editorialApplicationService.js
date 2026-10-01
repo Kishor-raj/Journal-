@@ -26,7 +26,7 @@ export async function uploadToCloudinary(file, fileType = 'cv') {
 
   const uploadData = await uploadRes.json()
   if (!uploadRes.ok) {
-    throw new Error(uploadData.error?.message || 'Failed to upload file to Cloudinary')
+    throw new Error(uploadData.error?.message || 'Failed to upload file. Please try again.')
   }
 
   return {

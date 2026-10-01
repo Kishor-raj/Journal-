@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { uploadToCloudinary, submitEditorialApplication } from './services/editorialApplicationService'
 
@@ -103,6 +103,8 @@ export default function EditorialApply() {
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [successData, setSuccessData] = useState(null)
+  const cvInputRef = useRef(null)
+  const photoInputRef = useRef(null)
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -170,7 +172,7 @@ export default function EditorialApply() {
     }))
   }
 
-  // CV Upload
+  // CV Upload & Removal
   const handleCvFileChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -198,6 +200,9 @@ export default function EditorialApply() {
         cv_mime_type: 'application/pdf',
       }))
       setCvFileName(file.name)
+      if (fieldErrors.cv_file_url) {
+        setFieldErrors((prev) => ({ ...prev, cv_file_url: null }))
+      }
     } catch (err) {
       setErrorMsg(err.message || 'Failed to upload CV. Please try again.')
     } finally {
@@ -205,7 +210,22 @@ export default function EditorialApply() {
     }
   }
 
-  // Photo Upload
+  const handleRemoveCv = () => {
+    setFormData((prev) => ({
+      ...prev,
+      cv_file_url: '',
+      cv_file_public_id: '',
+      cv_file_name: '',
+      cv_file_size: null,
+      cv_mime_type: 'application/pdf',
+    }))
+    setCvFileName('')
+    if (cvInputRef.current) {
+      cvInputRef.current.value = ''
+    }
+  }
+
+  // Photo Upload & Removal
   const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -234,6 +254,18 @@ export default function EditorialApply() {
       setErrorMsg(err.message || 'Failed to upload profile photo.')
     } finally {
       setUploadingPhoto(false)
+    }
+  }
+
+  const handleRemovePhoto = () => {
+    setFormData((prev) => ({
+      ...prev,
+      profile_image_url: '',
+      profile_image_public_id: '',
+    }))
+    setPhotoPreview('')
+    if (photoInputRef.current) {
+      photoInputRef.current.value = ''
     }
   }
 
@@ -571,6 +603,7 @@ export default function EditorialApply() {
               <div>
                 <label style={labelStyle}>Profile Photo (Optional, Portrait)</label>
                 <input
+                  ref={photoInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   onChange={handlePhotoChange}
@@ -581,7 +614,23 @@ export default function EditorialApply() {
                 {photoPreview && (
                   <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <img src={photoPreview} alt="Preview" style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #C4A24C' }} />
-                    <span style={{ fontSize: '12px', color: '#5B8A00' }}>Photo attached ✓</span>
+                    <span style={{ fontSize: '12px', color: '#5B8A00', fontWeight: 600 }}>Photo attached ✓</span>
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      style={{
+                        background: '#FEF2F2',
+                        border: '1px solid #FECACA',
+                        color: '#B91C1C',
+                        borderRadius: '2px',
+                        padding: '2px 8px',
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Remove
+                    </button>
                   </div>
                 )}
               </div>
@@ -1067,48 +1116,173 @@ export default function EditorialApply() {
             </div>
 
             <div style={{ marginTop: '20px' }}>
+              <style>{`
+                @keyframes cv-spin {
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
               <label style={labelStyle}>Upload Updated Academic CV (PDF) *</label>
-              <div style={{
-                border: fieldErrors.cv_file_url ? '2px dashed #E74C3C' : '2px dashed #C4A24C',
-                padding: '28px',
-                textAlign: 'center',
-                borderRadius: '4px',
-                background: '#FCFBF8',
-              }}>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleCvFileChange}
-                  disabled={uploadingCv}
-                  style={{ display: 'none' }}
-                  id="cv-upload-input"
-                />
-                <label
-                  htmlFor="cv-upload-input"
-                  style={{
-                    display: 'inline-block',
-                    background: '#0B1B3A',
-                    color: '#FFFFFF',
-                    padding: '10px 24px',
-                    borderRadius: '2px',
-                    fontSize: '13.5px',
-                    fontWeight: 600,
-                    cursor: uploadingCv ? 'not-allowed' : 'pointer',
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {uploadingCv ? 'Uploading to Cloudinary...' : 'Select PDF File'}
-                </label>
-                <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#6A728A' }}>
-                  {cvFileName ? `Attached: ${cvFileName}` : 'PDF format only. Maximum size 15 MB.'}
-                </p>
-                {formData.cv_file_url && (
-                  <div style={{ marginTop: '8px', color: '#5B8A00', fontWeight: 600, fontSize: '13px' }}>
-                    ✓ CV successfully uploaded and attached
+              <input
+                ref={cvInputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={handleCvFileChange}
+                disabled={uploadingCv}
+                style={{ display: 'none' }}
+                id="cv-upload-input"
+              />
+
+              {uploadingCv ? (
+                <div style={{
+                  border: '2px dashed #C4A24C',
+                  padding: '32px 24px',
+                  textAlign: 'center',
+                  borderRadius: '4px',
+                  background: '#FCFBF8',
+                }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    color: '#9A7B23',
+                    fontWeight: 700,
+                    fontSize: '14px',
+                  }}>
+                    <span style={{
+                      display: 'inline-block',
+                      width: '18px',
+                      height: '18px',
+                      border: '2px solid #C4A24C',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      animation: 'cv-spin 0.8s linear infinite',
+                    }} />
+                    Uploading...
                   </div>
-                )}
-              </div>
+                  <p style={{ margin: '8px 0 0', fontSize: '13px', color: '#6A728A' }}>
+                    Please wait while your document is being uploaded.
+                  </p>
+                </div>
+              ) : formData.cv_file_url ? (
+                <div style={{
+                  border: '1px solid #A7F3D0',
+                  background: '#F0FDF4',
+                  padding: '20px 24px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '16px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      background: '#ECFDF5',
+                      border: '1px solid #A7F3D0',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '22px',
+                    }}>
+                      📄
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#0B1B3A', fontSize: '14.5px', wordBreak: 'break-all' }}>
+                        {formData.cv_file_name || cvFileName || 'Academic_CV.pdf'}
+                      </div>
+                      <div style={{ fontSize: '12.5px', color: '#047857', marginTop: '2px', fontWeight: 600 }}>
+                        ✓ CV attached successfully {formData.cv_file_size ? `• ${(formData.cv_file_size / (1024 * 1024)).toFixed(2)} MB` : ''}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <a
+                      href={formData.cv_file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: '#FFFFFF',
+                        color: '#0B1B3A',
+                        border: '1px solid #D1D5DB',
+                        padding: '8px 14px',
+                        borderRadius: '2px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        display: 'inline-block',
+                      }}
+                    >
+                      Preview PDF ↗
+                    </a>
+                    <label
+                      htmlFor="cv-upload-input"
+                      style={{
+                        background: '#0B1B3A',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        padding: '8px 14px',
+                        borderRadius: '2px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-block',
+                      }}
+                    >
+                      Change File
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCv}
+                      style={{
+                        background: '#FEF2F2',
+                        color: '#B91C1C',
+                        border: '1px solid #FECACA',
+                        padding: '8px 14px',
+                        borderRadius: '2px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  border: fieldErrors.cv_file_url ? '2px dashed #E74C3C' : '2px dashed #C4A24C',
+                  padding: '28px',
+                  textAlign: 'center',
+                  borderRadius: '4px',
+                  background: '#FCFBF8',
+                }}>
+                  <label
+                    htmlFor="cv-upload-input"
+                    style={{
+                      display: 'inline-block',
+                      background: '#0B1B3A',
+                      color: '#FFFFFF',
+                      padding: '10px 24px',
+                      borderRadius: '2px',
+                      fontSize: '13.5px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Select PDF File
+                  </label>
+                  <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#6A728A' }}>
+                    PDF format only. Maximum size 15 MB.
+                  </p>
+                </div>
+              )}
+
               {fieldErrors.cv_file_url && <span style={errorTextStyle}>{fieldErrors.cv_file_url}</span>}
             </div>
           </div>
