@@ -1312,7 +1312,7 @@ function StepReview({ manuscript }) {
                   )}
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', display: 'grid', gap: '3px', marginTop: '5px' }}>
-                  <div>Email: {a.profile_email || a.email || 'Not provided'}</div>
+                  {(a.profile_email || a.email) && <div>Email: {a.profile_email || a.email}</div>}
                   {getAuthorField(a, 'institution') && <div>Institute: {getAuthorField(a, 'institution')}</div>}
                   {getAuthorField(a, 'college') && <div>College: {getAuthorField(a, 'college')}</div>}
                   {getAuthorField(a, 'department') && <div>Department: {getAuthorField(a, 'department')}</div>}

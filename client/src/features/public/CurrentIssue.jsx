@@ -243,13 +243,13 @@ function ArticleItem({ article, highlight, openAuthors }) {
                       {author.author_order === 1 && <span style={{ color: '#9A7B23', fontSize: '12px', marginLeft: '8px' }}>Primary author</span>}
                       {author.is_corresponding && <span style={{ color: '#2B7A4B', fontSize: '12px', marginLeft: '8px' }}>Corresponding</span>}
                     </div>
-                    <div>{author.email || 'Email not provided'}</div>
-                    <div>Institute: {author.institution || 'Not provided'}</div>
-                    <div>College: {author.college || 'Not provided'}</div>
-                    <div>Department: {author.department || 'Not provided'}</div>
-                    <div>State: {author.state || 'Not provided'}</div>
-                    <div>Country: {author.country || 'Not provided'}</div>
-                    <div>Course: {author.course || 'Not provided'}</div>
+                    {author.email && <div>{author.email}</div>}
+                    {author.institution && <div>Institute: {author.institution}</div>}
+                    {author.college && <div>College: {author.college}</div>}
+                    {author.department && <div>Department: {author.department}</div>}
+                    {author.state && <div>State: {author.state}</div>}
+                    {author.country && <div>Country: {author.country}</div>}
+                    {author.course && <div>Course: {author.course}</div>}
                   </div>
                 )
               })}

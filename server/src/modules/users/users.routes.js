@@ -44,7 +44,7 @@ router.get('/me', authenticate, async (req, res) => {
   if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' })
   let user = result.rows[0]
 
-  let profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
+  let profileComplete = user.institution && user.department && user.state && user.country
   if (!profileComplete) {
     const synced = await syncUserProfileFromEditorialApplication(pool, user.id, user.email)
     if (synced) {
@@ -56,7 +56,7 @@ router.get('/me', authenticate, async (req, res) => {
       )
       if (result.rows.length > 0) {
         user = result.rows[0]
-        profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
+        profileComplete = user.institution && user.department && user.state && user.country
       }
     }
   }
