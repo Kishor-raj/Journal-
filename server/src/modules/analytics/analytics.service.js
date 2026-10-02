@@ -23,7 +23,7 @@ export function isLikelyBot(userAgent) {
 async function ensureStatsRow(client) {
   await client.query(
     `INSERT INTO site_stats (id, total_visitors)
-     VALUES ($1, 0)
+     VALUES ($1, 1500)
      ON CONFLICT (id) DO NOTHING`,
     [SITE_STATS_ID]
   )

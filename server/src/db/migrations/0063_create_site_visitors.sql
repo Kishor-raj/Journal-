@@ -15,5 +15,5 @@ CREATE TABLE IF NOT EXISTS site_stats (
 );
 
 INSERT INTO site_stats (id, total_visitors)
-VALUES (1, 0)
+VALUES (1, 1500)
 ON CONFLICT (id) DO NOTHING;
