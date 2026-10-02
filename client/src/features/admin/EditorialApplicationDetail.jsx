@@ -225,7 +225,7 @@ export default function EditorialApplicationDetail() {
   }
 
   return (
-    <div style={{ padding: 'clamp(16px, 2.5vw, 32px)', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ fontFamily: 'var(--font-body)', padding: 'clamp(20px, 3vw, 40px)', maxWidth: '1200px', margin: '0 auto' }}>
       
       {/* Back Link */}
       <div style={{ marginBottom: '20px' }}>
@@ -250,7 +250,7 @@ export default function EditorialApplicationDetail() {
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: '16px', fontWeight: 700, color: '#9A7B23' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 700, color: '#9A7B23' }}>
               {application.application_number}
             </span>
             {application.editor_id && (
@@ -263,6 +263,7 @@ export default function EditorialApplicationDetail() {
                 fontSize: '11.5px',
                 fontWeight: 700,
                 letterSpacing: '0.04em',
+                fontFamily: 'var(--font-mono)',
               }} title="Assigned Editor ID">
                 Editor ID: {application.editor_id}
               </span>
@@ -286,7 +287,7 @@ export default function EditorialApplicationDetail() {
             </span>
           </div>
 
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '28px', fontWeight: 600, color: '#0B1B3A', margin: '0 0 4px' }}>
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '28px', fontWeight: 600, color: '#0B1B3A', margin: '0 0 4px' }}>
             {application.full_name}
           </h1>
           <div style={{ fontSize: '14px', color: '#6A728A' }}>
@@ -339,7 +340,7 @@ export default function EditorialApplicationDetail() {
                   border: 'none',
                   padding: '10px 20px',
                   borderRadius: '2px',
-                  fontFamily: 'Jost, sans-serif',
+                  fontFamily: 'var(--font-body)',
                   fontSize: '13px',
                   fontWeight: 700,
                   letterSpacing: '0.04em',
@@ -359,7 +360,7 @@ export default function EditorialApplicationDetail() {
                   border: '1px solid #E74C3C',
                   padding: '10px 16px',
                   borderRadius: '2px',
-                  fontFamily: 'Jost, sans-serif',
+                  fontFamily: 'var(--font-body)',
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -377,7 +378,7 @@ export default function EditorialApplicationDetail() {
                   border: '1px solid #F59E0B',
                   padding: '10px 16px',
                   borderRadius: '2px',
-                  fontFamily: 'Jost, sans-serif',
+                  fontFamily: 'var(--font-body)',
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -399,7 +400,7 @@ export default function EditorialApplicationDetail() {
                 border: '1px solid #C4A24C',
                 padding: '10px 16px',
                 borderRadius: '2px',
-                fontFamily: 'Jost, sans-serif',
+                fontFamily: 'var(--font-body)',
                 fontSize: '13px',
                 fontWeight: 600,
                 cursor: resending ? 'not-allowed' : 'pointer',
@@ -815,6 +816,7 @@ export default function EditorialApplicationDetail() {
                     borderRadius: '2px',
                     fontSize: '13px',
                     fontWeight: 600,
+                    fontFamily: 'var(--font-body)',
                     cursor: savingVerification ? 'not-allowed' : 'pointer',
                   }}
                 >
@@ -835,7 +837,7 @@ export default function EditorialApplicationDetail() {
                   <div key={log.id} style={{ fontSize: '12.5px', borderBottom: '1px solid #F0ECE3', paddingBottom: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0B1B3A', fontWeight: 600 }}>
                       <span>{log.action.replace(/_/g, ' ')}</span>
-                      <span style={{ fontSize: '11px', color: '#888' }}>{new Date(log.created_at).toLocaleString()}</span>
+                      <span style={{ fontSize: '11px', color: '#888', fontFamily: 'var(--font-mono)' }}>{new Date(log.created_at).toLocaleString()}</span>
                     </div>
                     {log.actor_name && <div style={{ color: '#6A728A', fontSize: '11.5px' }}>By: {log.actor_name}</div>}
                   </div>
@@ -852,7 +854,7 @@ export default function EditorialApplicationDetail() {
       {showApproveModal && (
         <div style={modalOverlayStyle}>
           <div style={modalBoxStyle}>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', margin: '0 0 14px', color: '#0B1B3A' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', margin: '0 0 14px', color: '#0B1B3A' }}>
               Approve Editorial Board Application
             </h2>
             <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.6, marginBottom: '20px' }}>
@@ -924,14 +926,14 @@ export default function EditorialApplicationDetail() {
                 <button
                   type="button"
                   onClick={() => setShowApproveModal(false)}
-                  style={{ background: '#F0ECE3', border: 'none', padding: '8px 16px', borderRadius: '2px', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: '#F0ECE3', border: 'none', padding: '8px 16px', borderRadius: '2px', cursor: 'pointer', fontWeight: 600, fontFamily: 'var(--font-body)' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={approving}
-                  style={{ background: '#047857', color: '#FFFFFF', border: 'none', padding: '8px 20px', borderRadius: '2px', cursor: approving ? 'not-allowed' : 'pointer', fontWeight: 700 }}
+                  style={{ background: '#047857', color: '#FFFFFF', border: 'none', padding: '8px 20px', borderRadius: '2px', cursor: approving ? 'not-allowed' : 'pointer', fontWeight: 700, fontFamily: 'var(--font-body)' }}
                 >
                   {approving ? 'Processing Approval...' : 'Confirm & Approve →'}
                 </button>
@@ -945,7 +947,7 @@ export default function EditorialApplicationDetail() {
       {showClarificationModal && (
         <div style={modalOverlayStyle}>
           <div style={modalBoxStyle}>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', margin: '0 0 12px', color: '#0B1B3A' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', margin: '0 0 12px', color: '#0B1B3A' }}>
               Request Clarification from Applicant
             </h2>
             <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.6, marginBottom: '16px' }}>
@@ -969,14 +971,14 @@ export default function EditorialApplicationDetail() {
                 <button
                   type="button"
                   onClick={() => setShowClarificationModal(false)}
-                  style={{ background: '#F0ECE3', border: 'none', padding: '8px 16px', borderRadius: '2px', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: '#F0ECE3', border: 'none', padding: '8px 16px', borderRadius: '2px', cursor: 'pointer', fontWeight: 600, fontFamily: 'var(--font-body)' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={requestingClarification}
-                  style={{ background: '#B45309', color: '#FFFFFF', border: 'none', padding: '8px 20px', borderRadius: '2px', cursor: requestingClarification ? 'not-allowed' : 'pointer', fontWeight: 700 }}
+                  style={{ background: '#B45309', color: '#FFFFFF', border: 'none', padding: '8px 20px', borderRadius: '2px', cursor: requestingClarification ? 'not-allowed' : 'pointer', fontWeight: 700, fontFamily: 'var(--font-body)' }}
                 >
                   {requestingClarification ? 'Sending...' : 'Send Clarification Request →'}
                 </button>
@@ -990,7 +992,7 @@ export default function EditorialApplicationDetail() {
       {showRejectModal && (
         <div style={modalOverlayStyle}>
           <div style={modalBoxStyle}>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '24px', margin: '0 0 12px', color: '#C0392B' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '24px', margin: '0 0 12px', color: '#C0392B' }}>
               Reject Editorial Board Application
             </h2>
             <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.6, marginBottom: '16px' }}>
@@ -1024,14 +1026,14 @@ export default function EditorialApplicationDetail() {
                 <button
                   type="button"
                   onClick={() => setShowRejectModal(false)}
-                  style={{ background: '#F0ECE3', border: 'none', padding: '8px 16px', borderRadius: '2px', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: '#F0ECE3', border: 'none', padding: '8px 16px', borderRadius: '2px', cursor: 'pointer', fontWeight: 600, fontFamily: 'var(--font-body)' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={rejecting}
-                  style={{ background: '#C0392B', color: '#FFFFFF', border: 'none', padding: '8px 20px', borderRadius: '2px', cursor: rejecting ? 'not-allowed' : 'pointer', fontWeight: 700 }}
+                  style={{ background: '#C0392B', color: '#FFFFFF', border: 'none', padding: '8px 20px', borderRadius: '2px', cursor: rejecting ? 'not-allowed' : 'pointer', fontWeight: 700, fontFamily: 'var(--font-body)' }}
                 >
                   {rejecting ? 'Processing...' : 'Confirm Rejection'}
                 </button>
@@ -1051,10 +1053,11 @@ const cardStyle = {
   borderRadius: '4px',
   padding: '22px 24px',
   boxShadow: '0 2px 8px rgba(11,27,58,0.02)',
+  fontFamily: 'var(--font-body)',
 }
 
 const cardTitleStyle = {
-  fontFamily: "'Cormorant Garamond', serif",
+  fontFamily: 'var(--font-heading)',
   fontSize: '20px',
   fontWeight: 600,
   color: '#0B1B3A',
@@ -1068,6 +1071,7 @@ const detailRowStyle = {
   marginBottom: '8px',
   fontSize: '13.5px',
   lineHeight: 1.5,
+  fontFamily: 'var(--font-body)',
 }
 
 const detailLabelStyle = {
@@ -1075,11 +1079,13 @@ const detailLabelStyle = {
   color: '#6A728A',
   fontWeight: 600,
   flexShrink: 0,
+  fontFamily: 'var(--font-body)',
 }
 
 const detailValueStyle = {
   color: '#0B1B3A',
   flex: 1,
+  fontFamily: 'var(--font-body)',
 }
 
 const tagLinkStyle = {
@@ -1090,6 +1096,7 @@ const tagLinkStyle = {
   borderRadius: '3px',
   fontSize: '12px',
   fontWeight: 600,
+  fontFamily: 'var(--font-body)',
 }
 
 const checkLabelStyle = {
@@ -1099,6 +1106,7 @@ const checkLabelStyle = {
   fontSize: '13px',
   color: '#3A4157',
   cursor: 'pointer',
+  fontFamily: 'var(--font-body)',
 }
 
 const checkInputStyle = {
@@ -1115,6 +1123,7 @@ const labelStyle = {
   fontWeight: 600,
   color: '#3A4157',
   marginBottom: '4px',
+  fontFamily: 'var(--font-body)',
 }
 
 const inputStyle = {
@@ -1124,6 +1133,7 @@ const inputStyle = {
   borderRadius: '3px',
   fontSize: '13.5px',
   boxSizing: 'border-box',
+  fontFamily: 'var(--font-body)',
 }
 
 const textareaStyle = {
@@ -1132,7 +1142,7 @@ const textareaStyle = {
   border: '1px solid #D1D5DB',
   borderRadius: '3px',
   fontSize: '13.5px',
-  fontFamily: 'inherit',
+  fontFamily: 'var(--font-body)',
   boxSizing: 'border-box',
 }
 
@@ -1157,4 +1167,5 @@ const modalBoxStyle = {
   width: '100%',
   padding: '28px',
   boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+  fontFamily: 'var(--font-body)',
 }
