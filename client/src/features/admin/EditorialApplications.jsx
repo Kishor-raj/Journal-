@@ -128,15 +128,15 @@ export default function EditorialApplications() {
   }
 
   return (
-    <div style={{ padding: 'clamp(16px, 2.5vw, 32px)', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ fontFamily: 'var(--font-body)', padding: 'clamp(20px, 3vw, 40px)', maxWidth: '1200px', margin: '0 auto' }}>
       
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
         <div>
-          <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#9A7B23', marginBottom: '4px' }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-citation-gold-dark, #9A7B23)', marginBottom: '4px', fontWeight: 600 }}>
             Editorial Administration
           </div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '28px', fontWeight: 600, color: '#0B1B3A', margin: 0 }}>
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 'var(--text-xl, 28px)', fontWeight: 700, color: 'var(--color-ink-navy)', margin: 0 }}>
             Editorial Board Applications
           </h1>
         </div>
@@ -150,7 +150,7 @@ export default function EditorialApplications() {
               border: 'none',
               padding: '8px 18px',
               borderRadius: '3px',
-              fontFamily: 'Jost, sans-serif',
+              fontFamily: 'var(--font-body)',
               fontSize: '13px',
               fontWeight: 700,
               cursor: 'pointer',
@@ -167,7 +167,7 @@ export default function EditorialApplications() {
               border: 'none',
               padding: '8px 18px',
               borderRadius: '3px',
-              fontFamily: 'Jost, sans-serif',
+              fontFamily: 'var(--font-body)',
               fontSize: '13px',
               fontWeight: 700,
               cursor: 'pointer',
@@ -214,7 +214,7 @@ export default function EditorialApplications() {
       </div>
 
       {errorMsg && (
-        <div style={{ background: '#FDEDEC', color: '#C0392B', padding: '12px 16px', borderRadius: '4px', marginBottom: '20px' }}>
+        <div style={{ background: '#FDEDEC', color: '#C0392B', padding: '12px 16px', borderRadius: '4px', marginBottom: '20px', fontFamily: 'var(--font-body)' }}>
           {errorMsg}
         </div>
       )}
@@ -247,6 +247,7 @@ export default function EditorialApplications() {
                   border: '1px solid #D1D5DB',
                   borderRadius: '3px',
                   fontSize: '14px',
+                  fontFamily: 'var(--font-body)',
                 }}
               />
               <button
@@ -260,6 +261,7 @@ export default function EditorialApplications() {
                   cursor: 'pointer',
                   fontWeight: 600,
                   fontSize: '13px',
+                  fontFamily: 'var(--font-body)',
                 }}
               >
                 Search
@@ -305,7 +307,7 @@ export default function EditorialApplications() {
             overflowX: 'auto',
             boxShadow: '0 2px 8px rgba(11,27,58,0.02)',
           }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px', fontFamily: 'var(--font-body)' }}>
               <thead>
                 <tr style={{ background: '#F8F9FB', borderBottom: '1px solid #E6E1D6' }}>
                   <th style={thStyle}>Reference</th>
@@ -335,7 +337,7 @@ export default function EditorialApplications() {
                   applications.map((app) => (
                     <tr key={app.id} style={{ borderBottom: '1px solid #F0ECE3' }}>
                       <td style={tdStyle}>
-                        <div style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontWeight: 700, color: '#0B1B3A' }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#0B1B3A' }}>
                           {app.application_number}
                         </div>
                         {app.editor_id && (
@@ -401,6 +403,7 @@ export default function EditorialApplications() {
                             borderRadius: '2px',
                             fontSize: '12.5px',
                             fontWeight: 600,
+                            fontFamily: 'var(--font-body)',
                             display: 'inline-block',
                           }}
                         >
@@ -452,7 +455,7 @@ export default function EditorialApplications() {
           overflowX: 'auto',
           boxShadow: '0 2px 8px rgba(11,27,58,0.02)',
         }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px', fontFamily: 'var(--font-body)' }}>
             <thead>
               <tr style={{ background: '#F8F9FB', borderBottom: '1px solid #E6E1D6' }}>
                 <th style={thStyle}>Order</th>
@@ -533,6 +536,7 @@ export default function EditorialApplications() {
                           borderRadius: '12px',
                           fontSize: '11.5px',
                           fontWeight: 700,
+                          fontFamily: 'var(--font-body)',
                           cursor: 'pointer',
                           background: m.is_published ? '#ECFDF5' : '#F3F4F6',
                           color: m.is_published ? '#047857' : '#6B7280',
@@ -553,6 +557,7 @@ export default function EditorialApplications() {
                           borderRadius: '2px',
                           fontSize: '12px',
                           fontWeight: 600,
+                          fontFamily: 'var(--font-body)',
                           cursor: 'pointer',
                         }}
                       >
@@ -580,16 +585,17 @@ const metricCardStyle = {
 }
 
 const metricLabelStyle = {
-  fontFamily: 'Jost, sans-serif',
+  fontFamily: 'var(--font-body)',
   fontSize: '11px',
-  letterSpacing: '0.08em',
+  letterSpacing: '0.06em',
   textTransform: 'uppercase',
   color: '#6A728A',
   marginBottom: '6px',
+  fontWeight: 600,
 }
 
 const metricValueStyle = {
-  fontFamily: "'Cormorant Garamond', serif",
+  fontFamily: 'var(--font-heading)',
   fontSize: '28px',
   fontWeight: 700,
   lineHeight: 1,
@@ -602,13 +608,14 @@ const filterSelectStyle = {
   fontSize: '13.5px',
   color: '#0B1B3A',
   background: '#FFFFFF',
+  fontFamily: 'var(--font-body)',
 }
 
 const thStyle = {
   padding: '12px 16px',
-  fontFamily: 'Jost, sans-serif',
+  fontFamily: 'var(--font-body)',
   fontSize: '11.5px',
-  letterSpacing: '0.06em',
+  letterSpacing: '0.05em',
   textTransform: 'uppercase',
   color: '#6A728A',
   fontWeight: 700,
@@ -617,6 +624,7 @@ const thStyle = {
 const tdStyle = {
   padding: '14px 16px',
   verticalAlign: 'middle',
+  fontFamily: 'var(--font-body)',
 }
 
 const paginationBtnStyle = {
@@ -627,4 +635,5 @@ const paginationBtnStyle = {
   cursor: 'pointer',
   fontSize: '13px',
   fontWeight: 600,
+  fontFamily: 'var(--font-body)',
 }
