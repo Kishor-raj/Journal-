@@ -19,6 +19,7 @@ export function sanitizeHtmlContent(html) {
 export function sanitizePlainText(text) {
   if (!text || typeof text !== 'string') return ''
   return text
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .slice(0, EMAIL_BODY_MAX_LENGTH)
 }
@@ -26,6 +27,7 @@ export function sanitizePlainText(text) {
 export function sanitizeSubject(subject) {
   if (!subject || typeof subject !== 'string') return ''
   return subject
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .replace(/\r?\n/g, ' ')
     .trim()

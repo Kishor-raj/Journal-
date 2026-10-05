@@ -48,6 +48,15 @@ export async function exchangeCode(code) {
   return ticket.getPayload()
 }
 
+export function isUserProfileComplete(user) {
+  if (!user) return false
+  const inst = typeof user.institution === 'string' ? user.institution.trim() : ''
+  const dept = typeof user.department === 'string' ? user.department.trim() : ''
+  const state = typeof user.state === 'string' ? user.state.trim() : ''
+  const country = typeof user.country === 'string' ? user.country.trim() : ''
+  return Boolean(inst && dept && state && country)
+}
+
 export function parseNameParts(fullName = '', academicTitle = '') {
   let clean = String(fullName || '').replace(/\bundefined\b/g, '').trim()
   if (!clean) return { firstName: null, lastName: null, displayName: null }

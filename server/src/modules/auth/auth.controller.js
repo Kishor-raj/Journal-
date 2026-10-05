@@ -13,6 +13,7 @@ import {
   resetPassword as resetUserPassword,
   validateInvitationToken,
   syncUserProfileFromEditorialApplication,
+  isUserProfileComplete,
 } from './auth.service.js'
 import crypto from 'crypto'
 import pool from '../../config/db.js'
@@ -100,7 +101,7 @@ export async function logout(req, res) {
 
 export async function getMe(req, res) {
   let user = req.user
-  let profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
+  let profileComplete = isUserProfileComplete(user)
 
   if (!profileComplete && (user.uid || user.id || user.email)) {
     const synced = await syncUserProfileFromEditorialApplication(pool, user.uid || user.id, user.email)
@@ -113,7 +114,7 @@ export async function getMe(req, res) {
       )
       if (refreshed.rows.length > 0) {
         user = { ...user, ...refreshed.rows[0], uid: user.uid || user.id }
-        profileComplete = user.institution && user.college && user.department && user.state && user.country && user.course
+        profileComplete = isUserProfileComplete(user)
       }
     }
   }

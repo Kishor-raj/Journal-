@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/authenticate.js'
 import { requireRole } from '../../middleware/authorize.js'
 import pool from '../../config/db.js'
 import cloudinary from '../../config/cloudinary.js'
-import { syncUserProfileFromEditorialApplication } from '../auth/auth.service.js'
+import { syncUserProfileFromEditorialApplication, isUserProfileComplete } from '../auth/auth.service.js'
 
 const router = Router()
 
@@ -44,7 +44,7 @@ router.get('/me', authenticate, async (req, res) => {
   if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' })
   let user = result.rows[0]
 
-  let profileComplete = user.institution && user.department && user.state && user.country
+  let profileComplete = isUserProfileComplete(user)
   if (!profileComplete) {
     const synced = await syncUserProfileFromEditorialApplication(pool, user.id, user.email)
     if (synced) {
@@ -56,7 +56,7 @@ router.get('/me', authenticate, async (req, res) => {
       )
       if (result.rows.length > 0) {
         user = result.rows[0]
-        profileComplete = user.institution && user.department && user.state && user.country
+        profileComplete = isUserProfileComplete(user)
       }
     }
   }
