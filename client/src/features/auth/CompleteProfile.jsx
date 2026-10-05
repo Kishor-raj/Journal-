@@ -117,8 +117,9 @@ export default function CompleteProfile() {
     }
 
     getMyProfile()
-      .then((profile) => {
+      .then(async (profile) => {
         if (profile.profile_complete) {
+          await refetchUser()
           navigate('/dashboard', { replace: true })
           return
         }
@@ -154,7 +155,7 @@ export default function CompleteProfile() {
         }
       })
       .finally(() => setLoading(false))
-  }, [user, navigate])
+  }, [user, navigate, refetchUser])
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))

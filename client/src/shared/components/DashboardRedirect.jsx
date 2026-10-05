@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom'
 const ROLE_DASHBOARDS = {
   admin: '/admin/dashboard',
   author: '/author/dashboard',
-  moderator: '/moderator/screening',
+  moderator: '/moderator/dashboard',
   editor: '/editor/dashboard',
   reviewer: '/reviewer/dashboard',
 }
