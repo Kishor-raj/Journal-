@@ -253,7 +253,7 @@ export default function EditorialApplicationDetail() {
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 700, color: '#9A7B23' }}>
               {application.application_number}
             </span>
-            {application.editor_id && (
+            {application.reviewer_id && (
               <span style={{
                 background: '#0D1B3E',
                 color: '#C4922E',
@@ -264,8 +264,8 @@ export default function EditorialApplicationDetail() {
                 fontWeight: 700,
                 letterSpacing: '0.04em',
                 fontFamily: 'var(--font-mono)',
-              }} title="Assigned Editor ID">
-                Editor ID: {application.editor_id}
+              }} title="Assigned Reviewer ID">
+                Reviewer ID: {application.reviewer_id}
               </span>
             )}
             <span style={{
@@ -288,7 +288,9 @@ export default function EditorialApplicationDetail() {
           </div>
 
           <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '28px', fontWeight: 600, color: '#0B1B3A', margin: '0 0 4px' }}>
-            {application.full_name}
+            {application.academic_title && !application.full_name?.toLowerCase().startsWith(application.academic_title.toLowerCase())
+              ? `${application.academic_title} ${application.full_name}`
+              : application.full_name}
           </h1>
           <div style={{ fontSize: '14px', color: '#6A728A' }}>
             {application.designation} • {application.department}, {application.institution}, {application.country}
@@ -507,6 +509,13 @@ export default function EditorialApplicationDetail() {
                   <div style={detailRowStyle}>
                     <span style={detailLabelStyle}>Phone:</span>
                     <span style={detailValueStyle}>{application.phone}</span>
+                  </div>
+                )}
+
+                {application.academic_title && (
+                  <div style={detailRowStyle}>
+                    <span style={detailLabelStyle}>Academic Title:</span>
+                    <span style={detailValueStyle}><strong>{application.academic_title}</strong></span>
                   </div>
                 )}
 
@@ -859,9 +868,9 @@ export default function EditorialApplicationDetail() {
             </h2>
             <p style={{ fontSize: '14px', color: '#555', lineHeight: 1.6, marginBottom: '20px' }}>
               {application.existing_user_id ? (
-                <span>An active user account exists for <strong>{application.email}</strong>. Approving will promote this user to the <strong>Editor</strong> role and establish their appointment.</span>
+                <span>An active user account exists for <strong>{application.email}</strong>. Approving will appoint this user to the <strong>Reviewer</strong> role and establish their Editorial Board appointment.</span>
               ) : (
-                <span>No user account currently exists for <strong>{application.email}</strong>. Approving will create a secure single-use invitation grant and dispatch an invitation email with setup instructions.</span>
+                <span>No user account currently exists for <strong>{application.email}</strong>. Approving will create a secure single-use invitation grant for a <strong>Reviewer</strong> account and dispatch an invitation email with setup instructions.</span>
               )}
             </p>
 

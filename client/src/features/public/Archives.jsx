@@ -282,32 +282,20 @@ export default function Archives() {
     }
 
     const code = art.code || 'IJIDCR-26'
-    showToast(`Downloading original manuscript [${code}]...`, 'success')
 
     try {
-      // If the article has an original uploaded file on Cloudinary / server
       if (art.pdfUrl && art.pdfUrl.startsWith('http')) {
+        showToast(`Downloading publication PDF [${code}]...`, 'success')
         const a = document.createElement('a')
         a.href = art.pdfUrl
         a.target = '_blank'
         a.rel = 'noopener noreferrer'
-        a.download = art.originalFilename || `${code}-manuscript.pdf`
+        a.download = art.originalFilename || `${code}-published.pdf`
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
       } else {
-        // Fallback: Generate compliant, valid academic PDF
-        triggerPdfDownload({
-          title: art.title,
-          code: art.code,
-          date: art.date,
-          category: art.category,
-          authors: art.authors,
-          abstract: art.abstract,
-          keywords: art.keywords,
-          volTitle,
-          issueName,
-        }, `${code}-manuscript.pdf`)
+        showToast('The official publication PDF is currently being prepared for this article. Please check back shortly.', 'warning')
       }
     } catch (err) {
       console.error('Manuscript download error:', err)

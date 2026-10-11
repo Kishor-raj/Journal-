@@ -102,13 +102,13 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-page-card">
-        <span className="auth-page-eyebrow">Asgard Publications</span>
+        <span className="auth-page-eyebrow">Asgard International Research Publication</span>
         <h1 className="auth-page-title">Create your account</h1>
         <p className="auth-page-text">
           {invitationData ? (
-            <span>Welcome to the IJIDCR Editorial Board! Please set up your password to activate your <strong>Editor</strong> account.</span>
+            <span>Welcome to the IJIDCR Editorial Board! Please set up your password to activate your <strong>Reviewer</strong> account.</span>
           ) : (
-            <span>Join Asgard Publications to submit and track your manuscripts.</span>
+            <span>Join Asgard International Research Publication to submit and track your manuscripts.</span>
           )}
         </p>
 
@@ -123,7 +123,7 @@ export default function Register() {
             marginBottom: '16px',
             lineHeight: 1.5,
           }}>
-            <strong>Editorial Appointment Invitation:</strong> You are registering as <strong>{invitationData.preferred_role || 'Editor'}</strong> ({invitationData.section || 'General Section'}). Once verified, your account will have Editor privileges.
+            <strong>Editorial Appointment Invitation:</strong> You are registering as <strong>{invitationData.preferred_role || 'Reviewer'}</strong> ({invitationData.section || 'General Section'}). Once verified, your account will have Reviewer privileges.
           </div>
         )}
 

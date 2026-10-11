@@ -1,4 +1,10 @@
-import apiClient from './apiClient'
+import apiClient, { getStoredToken } from './apiClient'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+
+export function getAdminRoles() {
+  return apiClient.get('/admin/roles')
+}
 
 export function getUsers(params = {}) {
   const query = new URLSearchParams()
@@ -10,6 +16,48 @@ export function getUsers(params = {}) {
 
   const qs = query.toString()
   return apiClient.get(`/admin/users${qs ? `?${qs}` : ''}`)
+}
+
+export async function exportUsersCsv(params = {}) {
+  const query = new URLSearchParams()
+  if (params.role && params.role !== 'all') query.append('role', params.role)
+  if (params.status && params.status !== 'all') query.append('status', params.status)
+  if (params.search && params.search.trim()) query.append('search', params.search.trim())
+
+  const qs = query.toString()
+  const token = getStoredToken()
+  const response = await fetch(`${API_BASE_URL}/admin/users/export${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    let errorMsg = `Export failed (HTTP ${response.status})`
+    try {
+      const errJson = await response.json()
+      if (errJson && errJson.error) errorMsg = errJson.error
+    } catch {
+      // response might not be json
+    }
+    const error = new Error(errorMsg)
+    error.status = response.status
+    throw error
+  }
+
+  let filename = `users_export_${new Date().toISOString().split('T')[0]}.csv`
+  const disposition = response.headers.get('Content-Disposition')
+  if (disposition && disposition.includes('filename=')) {
+    const match = disposition.match(/filename=["']?([^"';]+)["']?/)
+    if (match && match[1]) {
+      filename = match[1].trim()
+    }
+  }
+
+  const blob = await response.blob()
+  return { blob, filename }
 }
 
 export function getUser(id) {

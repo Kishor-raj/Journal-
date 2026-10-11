@@ -225,7 +225,9 @@ export default function EditorialStatus() {
                   {application.application_number}
                 </div>
                 <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '26px', fontWeight: 600, color: '#0B1B3A', margin: '4px 0' }}>
-                  {application.full_name}
+                  {application.academic_title && !application.full_name?.toLowerCase().startsWith(application.academic_title.toLowerCase())
+                    ? `${application.academic_title} ${application.full_name}`
+                    : application.full_name}
                 </h2>
                 <div style={{ fontSize: '14px', color: '#6A728A' }}>
                   Applied for: <strong>{application.preferred_role}</strong> — Section: <em>{application.preferred_editorial_section}</em>
@@ -358,10 +360,18 @@ export default function EditorialStatus() {
                 color: '#1E4620',
               }}>
                 <h3 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 8px' }}>
-                  Application Approved
+                  Application Approved — Appointed as Reviewer
                 </h3>
-                <p style={{ fontSize: '15px', lineHeight: 1.6, margin: '0 0 14px' }}>
-                  Congratulations! Your application has been approved. If you already have an account, your role has been updated to Editor. If you received an invitation link via email, please complete your registration to activate Editor privileges.
+                <p style={{ fontSize: '15px', lineHeight: 1.6, margin: '0 0 10px' }}>
+                  Congratulations! Your Editorial Board application has been approved. You have been appointed as a <strong>Reviewer</strong> on the IJIDCR Editorial Board for the <strong>{application.preferred_editorial_section || 'designated'}</strong> section.
+                </p>
+                {application.reviewer_id && (
+                  <div style={{ marginBottom: '14px', fontSize: '14px', fontWeight: 600 }}>
+                    Reviewer ID: <span style={{ fontFamily: 'ui-monospace, monospace', background: '#0B1B3A', color: '#C4A24C', padding: '2px 8px', borderRadius: '3px' }}>{application.reviewer_id}</span>
+                  </div>
+                )}
+                <p style={{ fontSize: '14px', color: '#274E29', margin: '0 0 14px' }}>
+                  If you already have an account, you can log in to access your Reviewer Workspace. If you received an email invitation, please follow the link to complete your account setup.
                 </p>
                 <Link
                   to="/login"
@@ -376,7 +386,7 @@ export default function EditorialStatus() {
                     textDecoration: 'none',
                   }}
                 >
-                  Log In to Workspace →
+                  Log In to Reviewer Workspace →
                 </Link>
               </div>
             )}

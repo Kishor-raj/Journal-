@@ -298,7 +298,7 @@ export default function Login() {
             </svg>
             <div>
               <strong>Asgard</strong>
-              <span>Publications</span>
+              <span>International Research Publication</span>
             </div>
           </div>
 
@@ -412,7 +412,7 @@ export default function Login() {
                   stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
                 <path d="M24 19.2v11.4" stroke="currentColor" strokeWidth="1.2" />
               </svg>
-              <span>Asgard Publications</span>
+              <span>Asgard International Research Publication</span>
             </div>
 
             <h2 className="lp-card-h2 lp-rise" style={{ '--d': '0.12s' }}>Welcome back</h2>

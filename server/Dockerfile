@@ -4,6 +4,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+RUN apk add --no-cache \
+    libreoffice \
+    ttf-dejavu \
+    ttf-liberation \
+    font-noto
+
 COPY package.json package-lock.json ./
 COPY client/package.json ./client/package.json
 COPY server/package.json ./server/package.json
