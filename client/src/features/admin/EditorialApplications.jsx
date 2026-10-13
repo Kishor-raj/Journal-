@@ -238,7 +238,7 @@ export default function EditorialApplications() {
             <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '10px', flex: '1 1 300px' }}>
               <input
                 type="text"
-                placeholder="Search by name, email, Reviewer ID (e.g. AIRJ0001), institution, reference..."
+                placeholder="Search by name, email, Editor ID (e.g. AIRJ0001), institution, reference..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
@@ -340,7 +340,7 @@ export default function EditorialApplications() {
                         <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#0B1B3A' }}>
                           {app.application_number}
                         </div>
-                        {app.reviewer_id && (
+                        {app.editor_id && (
                           <div style={{ marginTop: '3px' }}>
                             <span style={{
                               display: 'inline-flex',
@@ -353,18 +353,14 @@ export default function EditorialApplications() {
                               fontSize: '11px',
                               fontWeight: 700,
                               letterSpacing: '0.03em',
-                            }} title={`Reviewer ID: ${app.reviewer_id}`}>
-                              {app.reviewer_id}
+                            }} title={`Editor ID: ${app.editor_id}`}>
+                              {app.editor_id}
                             </span>
                           </div>
                         )}
                       </td>
                       <td style={tdStyle}>
-                        <div style={{ fontWeight: 600, color: '#0B1B3A' }}>
-                          {app.academic_title && !app.full_name?.toLowerCase().startsWith(app.academic_title.toLowerCase())
-                            ? `${app.academic_title} ${app.full_name}`
-                            : app.full_name}
-                        </div>
+                        <div style={{ fontWeight: 600, color: '#0B1B3A' }}>{app.full_name}</div>
                         <div style={{ fontSize: '12px', color: '#6A728A' }}>{app.email}</div>
                       </td>
                       <td style={tdStyle}>
@@ -502,7 +498,7 @@ export default function EditorialApplications() {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 600, color: '#0B1B3A' }}>{m.name}</span>
-                            {m.reviewer_id && (
+                            {m.editor_id && (
                               <span style={{
                                 background: '#0D1B3E',
                                 color: '#C4922E',
@@ -511,8 +507,8 @@ export default function EditorialApplications() {
                                 padding: '1px 6px',
                                 fontSize: '10.5px',
                                 fontWeight: 700,
-                              }} title={`Reviewer ID: ${m.reviewer_id}`}>
-                                {m.reviewer_id}
+                              }}>
+                                {m.editor_id}
                               </span>
                             )}
                           </div>

@@ -35,27 +35,12 @@ router.get('/search', authenticate, requireRole('author'), async (req, res) => {
 })
 
 router.get('/me', authenticate, async (req, res) => {
-  const queryStr = `
-    SELECT u.*,
-           COALESCE(u.cv_file_url, ea.cv_file_url) AS cv_file_url,
-           COALESCE(u.cv_file_name, ea.cv_file_name) AS cv_file_name,
-           COALESCE(u.cv_file_size, ea.cv_file_size) AS cv_file_size,
-           COALESCE(u.cv_mime_type, ea.cv_mime_type, 'application/pdf') AS cv_mime_type,
-           COALESCE(u.cv_updated_at, ea.updated_at, u.updated_at) AS cv_updated_at,
-           COALESCE(r.name, 'author') as role_name
-    FROM users u
-    LEFT JOIN roles r ON r.id = u.role_id
-    LEFT JOIN LATERAL (
-      SELECT cv_file_url, cv_file_name, cv_file_size, cv_mime_type, updated_at
-      FROM editorial_applications
-      WHERE user_id = u.id OR LOWER(email::text) = LOWER(u.email::text)
-      ORDER BY created_at DESC
-      LIMIT 1
-    ) ea ON true
-    WHERE u.id = $1
-  `
-
-  let result = await pool.query(queryStr, [req.user.uid])
+  let result = await pool.query(
+    `SELECT u.*, COALESCE(r.name, 'author') as role_name
+     FROM users u LEFT JOIN roles r ON r.id = u.role_id
+     WHERE u.id = $1`,
+    [req.user.uid]
+  )
   if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' })
   let user = result.rows[0]
 
@@ -63,7 +48,12 @@ router.get('/me', authenticate, async (req, res) => {
   if (!profileComplete) {
     const synced = await syncUserProfileFromEditorialApplication(pool, user.id, user.email)
     if (synced) {
-      result = await pool.query(queryStr, [req.user.uid])
+      result = await pool.query(
+        `SELECT u.*, COALESCE(r.name, 'author') as role_name
+         FROM users u LEFT JOIN roles r ON r.id = u.role_id
+         WHERE u.id = $1`,
+        [req.user.uid]
+      )
       if (result.rows.length > 0) {
         user = result.rows[0]
         profileComplete = isUserProfileComplete(user)
@@ -106,62 +96,6 @@ router.post('/me/photo-signature', authenticate, async (req, res) => {
   }
 })
 
-router.post('/me/cv-signature', authenticate, async (req, res) => {
-  try {
-    const timestamp = Math.round(Date.now() / 1000)
-    const randomSuffix = crypto.randomBytes(8).toString('hex')
-    const folder = 'editorial-board/cv'
-    const publicId = `cv_user_${req.user.uid}_${timestamp}_${randomSuffix}`
-
-    const paramsToSign = {
-      timestamp,
-      folder,
-      public_id: publicId,
-    }
-
-    const signature = cloudinary.utils.api_sign_request(paramsToSign, process.env.CLOUDINARY_API_SECRET)
-
-    res.json({
-      signature,
-      timestamp,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      folder,
-      public_id: publicId,
-    })
-  } catch (err) {
-    console.error('[USERS] Error generating CV signature:', err.message)
-    res.status(500).json({ error: 'Failed to generate CV upload signature' })
-  }
-})
-
-router.get('/me/cv', authenticate, async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT COALESCE(u.cv_file_url, ea.cv_file_url) AS cv_file_url,
-              COALESCE(u.cv_file_name, ea.cv_file_name, 'Academic_CV.pdf') AS cv_file_name
-       FROM users u
-       LEFT JOIN LATERAL (
-         SELECT cv_file_url, cv_file_name
-         FROM editorial_applications
-         WHERE user_id = u.id OR LOWER(email::text) = LOWER(u.email::text)
-         ORDER BY created_at DESC
-         LIMIT 1
-       ) ea ON true
-       WHERE u.id = $1`,
-      [req.user.uid]
-    )
-    const user = result.rows[0]
-    if (!user || !user.cv_file_url) {
-      return res.status(404).json({ error: 'No CV document found.' })
-    }
-    res.redirect(user.cv_file_url)
-  } catch (err) {
-    console.error('[USERS] Error fetching user CV:', err.message)
-    res.status(500).json({ error: 'Failed to access CV document' })
-  }
-})
-
 router.delete('/me/photo', authenticate, async (req, res) => {
   try {
     await pool.query(
@@ -186,10 +120,7 @@ router.patch('/me/profile', authenticate, async (req, res) => {
     first_name, last_name, display_name, phone, institution,
     college, department, state, country, course, bio, orcid_id,
     profile_image_url,
-    cv_file_url, cv_file_name, cv_file_public_id, cv_file_size, cv_mime_type,
   } = req.body
-
-  const parsedCvSize = cv_file_size !== undefined && cv_file_size !== null ? parseInt(cv_file_size, 10) : null
 
   const result = await pool.query(
     `UPDATE users SET
@@ -206,63 +137,17 @@ router.patch('/me/profile', authenticate, async (req, res) => {
        bio = COALESCE($11, bio),
        orcid_id = COALESCE($12, orcid_id),
        profile_image_url = CASE
-         WHEN $13::text = '__REMOVE__' THEN NULL
-         WHEN $13::text IS NOT NULL THEN $13::text
+         WHEN $13 = '__REMOVE__' THEN NULL
+         WHEN $13 IS NOT NULL THEN $13
          ELSE profile_image_url
        END,
-       cv_file_url = CASE
-         WHEN $14::text = '__REMOVE__' THEN NULL
-         WHEN $14::text IS NOT NULL THEN $14::text
-         ELSE cv_file_url
-       END,
-       cv_file_name = CASE
-         WHEN $14::text = '__REMOVE__' THEN NULL
-         WHEN $15::text IS NOT NULL THEN $15::character varying
-         ELSE cv_file_name
-       END,
-       cv_file_public_id = CASE
-         WHEN $14::text = '__REMOVE__' THEN NULL
-         WHEN $16::text IS NOT NULL THEN $16::text
-         ELSE cv_file_public_id
-       END,
-       cv_file_size = CASE
-         WHEN $14::text = '__REMOVE__' THEN NULL
-         WHEN $17::integer IS NOT NULL THEN $17::integer
-         ELSE cv_file_size
-       END,
-       cv_mime_type = CASE
-         WHEN $14::text = '__REMOVE__' THEN NULL
-         WHEN $18::text IS NOT NULL THEN $18::character varying
-         ELSE cv_mime_type
-       END,
-       cv_updated_at = CASE
-         WHEN $14::text = '__REMOVE__' THEN NULL
-         WHEN $14::text IS NOT NULL THEN now()
-         ELSE cv_updated_at
-       END,
        updated_at = now()
-     WHERE id = $19
+     WHERE id = $14
      RETURNING *`,
     [
-      first_name ?? null,
-      last_name ?? null,
-      display_name ?? null,
-      phone ?? null,
-      institution ?? null,
-      college ?? null,
-      department ?? null,
-      state ?? null,
-      country ?? null,
-      course ?? null,
-      bio ?? null,
-      orcid_id ?? null,
-      profile_image_url ?? null,
-      cv_file_url ?? null,
-      cv_file_name ?? null,
-      cv_file_public_id ?? null,
-      parsedCvSize,
-      cv_mime_type ?? null,
-      req.user.uid,
+      first_name, last_name, display_name, phone, institution,
+      college, department, state, country, course, bio, orcid_id,
+      profile_image_url, req.user.uid,
     ]
   )
 
@@ -272,30 +157,6 @@ router.patch('/me/profile', authenticate, async (req, res) => {
       `UPDATE editorial_members SET profile_image_url = $1, updated_at = now() WHERE user_id = $2`,
       [photoVal, req.user.uid]
     ).catch(() => {})
-  }
-
-  if (cv_file_url !== undefined) {
-    const cvUrlVal = cv_file_url === '__REMOVE__' ? null : cv_file_url
-    await pool.query(
-      `UPDATE editorial_applications
-       SET cv_file_url = $1::text,
-           cv_file_name = COALESCE($2::character varying, cv_file_name),
-           cv_file_public_id = COALESCE($3::text, cv_file_public_id),
-           cv_file_size = COALESCE($4::integer, cv_file_size),
-           cv_mime_type = COALESCE($5::character varying, cv_mime_type),
-           updated_at = now()
-       WHERE user_id = $6 OR LOWER(email::text) = (SELECT LOWER(email::text) FROM users WHERE id = $6)`,
-      [
-        cvUrlVal,
-        cv_file_name ?? null,
-        cv_file_public_id ?? null,
-        parsedCvSize,
-        cv_mime_type ?? null,
-        req.user.uid,
-      ]
-    ).catch((err) => {
-      console.warn('[USERS] Could not sync CV to editorial_applications:', err.message)
-    })
   }
 
   res.json(result.rows[0])

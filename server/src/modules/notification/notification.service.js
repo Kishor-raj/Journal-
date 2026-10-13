@@ -46,16 +46,6 @@ function buildEventKey(templateKey, variables) {
   if (templateKey === NotificationEvents.PUBLICATION_CERTIFICATE && manuscriptId) {
     return EventKeys.publicationCertificate(manuscriptId, variables?.author_id)
   }
-  if (templateKey === NotificationEvents.REVIEWER_INVITATION) {
-    const assignmentId = variables?.assignmentId || variables?.assignment_id
-    const invitationId = variables?.invitationId || variables?.invitation_id
-    if (assignmentId && invitationId) {
-      return EventKeys.reviewerInvitation(assignmentId, invitationId)
-    }
-    if (invitationId) {
-      return `review-invite:${invitationId}`
-    }
-  }
   return null
 }
 
@@ -388,7 +378,7 @@ const SAMPLE_VARIABLES = {
   verificationUrl: buildAppUrl('/verify-email', { token: 'sample-verification-token' }),
   resetPasswordUrl: buildAppUrl('/reset-password', { token: 'sample-reset-token' }),
   invitationUrl: buildAppUrl('/reviewer/invitations/sample', {}),
-  journalName: 'Asgard International Research Publication',
+  journalName: 'Asgard Publications',
   journalUrl: buildAppUrl('/', {}),
   reminderAfterDays: 3,
 }

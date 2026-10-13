@@ -152,49 +152,4 @@ describe('enqueueNotification idempotency & retry logic', () => {
     expect(result.skipped).toBe(true)
     expect(result.reason).toBe('template_not_found')
   })
-
-  it('enqueues reviewer_invitation notification with correct variables and template key', async () => {
-    const reviewerTemplate = {
-      id: 2,
-      template_key: 'reviewer_invitation',
-      subject: 'Review Invitation: {{manuscript_title}}',
-      body_html: '<p>Dear {{reviewer_name}}, please review {{manuscript_title}} by {{review_deadline}}. Link: {{invitation_url}}</p>',
-      body_text: 'Dear {{reviewer_name}}, please review {{manuscript_title}}.',
-      is_active: true,
-    }
-
-    pool.query.mockResolvedValueOnce({ rows: [] }) // attempt lookup
-    pool.query.mockResolvedValueOnce({ rows: [reviewerTemplate] }) // template
-    pool.query.mockResolvedValueOnce({ rows: [{ id: 'rev-user-1', email: 'reviewer@example.com', display_name: 'Dr. Reviewer' }] }) // user
-    pool.query.mockResolvedValueOnce(happyPool()) // workflow_log
-    pool.query.mockResolvedValueOnce({ rows: [] }) // upsert select
-    pool.query.mockResolvedValueOnce(happyPool()) // upsert insert
-
-    sendEmail.mockResolvedValueOnce({
-      success: true,
-      providerMessageId: 'msg_reviewer_inv_123',
-    })
-
-    const result = await enqueueNotification('reviewer_invitation', 'rev-user-1', {
-      manuscript_id: 'm1',
-      assignment_id: 'asg-1',
-      invitation_id: 'inv-1',
-      recipient_email: 'reviewer@example.com',
-      reviewer_name: 'Dr. Reviewer',
-      editor_name: 'Dr. Chief Editor',
-      manuscript_title: 'Quantum Machine Learning in Cybersecurity',
-      submission_number: 'IJIDCR-2026-0001',
-      journal_name: 'IJIDCR',
-      review_deadline: '2026-11-15',
-      invitation_url: 'https://ijidcr-asgard.in/reviewer/invitations/inv-1?token=secure123',
-    })
-
-    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
-      to: 'reviewer@example.com',
-      subject: 'Review Invitation: Quantum Machine Learning in Cybersecurity',
-      html: expect.stringContaining('Quantum Machine Learning in Cybersecurity'),
-    }))
-    expect(result.success).toBe(true)
-    expect(result.provider_message_id).toBe('msg_reviewer_inv_123')
-  })
 })

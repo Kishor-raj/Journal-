@@ -142,9 +142,12 @@ function SectionCard({ id, title, subtitle, children }) {
 }
 
 function NavPill({ id, title }) {
+  const [hovered, setHovered] = useState(false)
   return (
     <a
       href={`#${id}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         fontFamily: 'Jost, sans-serif',
         fontSize: '12px',
@@ -153,8 +156,8 @@ function NavPill({ id, title }) {
         fontWeight: 600,
         padding: '7px 14px',
         borderRadius: '2px',
-        background: '#C4A24C',
-        color: '#071228',
+        background: hovered ? '#C4A24C' : 'rgba(196, 162, 76, 0.1)',
+        color: hovered ? '#071228' : '#0B1B3A',
         textDecoration: 'none',
         whiteSpace: 'nowrap',
         transition: 'all 0.15s ease',
@@ -181,7 +184,7 @@ export default function CallForPapers() {
       }}>
         <div style={{ width: '100%', maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(28px, 3.5vw, 44px) var(--layout-pad)' }}>
           <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '14px' }}>
-            Asgard International Research Publication
+            Asgard Research Publication
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(32px, 5.2vw, 54px)', margin: '0 0 14px', lineHeight: 1.15 }}>
             Call for Papers
@@ -190,7 +193,7 @@ export default function CallForPapers() {
             Submit Your Research for Publication
           </p>
           <p style={{ fontSize: 'clamp(14.5px, 1.35vw, 16.5px)', color: '#C3CBDC', margin: 0, maxWidth: '880px', lineHeight: 1.7 }}>
-            Asgard International Research Publication invites researchers, academicians, scientists, industry professionals, and postgraduate scholars to submit original, high-quality research manuscripts for publication in our peer-reviewed academic journals.
+            Asgard Research Publication invites researchers, academicians, scientists, industry professionals, and postgraduate scholars to submit original, high-quality research manuscripts for publication in our peer-reviewed academic journals.
           </p>
         </div>
       </div>
@@ -245,7 +248,7 @@ export default function CallForPapers() {
         <SectionCard id="overview" title="Invitation to Authors" subtitle="Advancing Knowledge Through Scholarly Publishing">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))', gap: '24px' }}>
             <p style={{ fontSize: 'clamp(15.5px, 1.4vw, 17px)', lineHeight: 1.8, color: '#3A4157', margin: 0 }}>
-              Asgard International Research Publication invites researchers, academicians, scientists, industry professionals, and postgraduate scholars to submit original, high-quality research manuscripts for publication in our peer-reviewed academic journals.
+              Asgard Research Publication invites researchers, academicians, scientists, industry professionals, and postgraduate scholars to submit original, high-quality research manuscripts for publication in our peer-reviewed academic journals.
             </p>
             <p style={{ fontSize: 'clamp(15.5px, 1.4vw, 17px)', lineHeight: 1.8, color: '#3A4157', margin: 0 }}>
               We welcome contributions that present novel research findings, innovative methodologies, theoretical advancements, practical applications, and comprehensive review articles across a broad range of disciplines.
@@ -667,7 +670,7 @@ export default function CallForPapers() {
 
           <SectionCard id="community" title="Join Our Global Research Community" subtitle="Excellence in Scholarly Publishing">
             <p style={{ fontSize: 'clamp(15.5px, 1.4vw, 17px)', lineHeight: 1.8, color: '#3A4157', margin: '0 0 20px' }}>
-              Publish your research with Asgard International Research Publication and contribute to the advancement of knowledge through high-quality, ethical, and impactful scholarly publishing.
+              Publish your research with Asgard Research Publication and contribute to the advancement of knowledge through high-quality, ethical, and impactful scholarly publishing.
             </p>
             <div style={{
               padding: '18px 22px',
@@ -680,7 +683,7 @@ export default function CallForPapers() {
               fontSize: 'clamp(15px, 1.35vw, 16.5px)',
               lineHeight: 1.6,
             }}>
-              Asgard International Research Publication – Publishing Knowledge with Integrity and Excellence.
+              Asgard Research Publication – Publishing Knowledge with Integrity and Excellence.
             </div>
           </SectionCard>
         </div>

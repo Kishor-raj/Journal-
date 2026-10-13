@@ -137,7 +137,7 @@ export async function getMe(req, res) {
     name: cleanName,
     role: user.role_name || user.account_role_name || 'author',
     account_status: user.account_status,
-    reviewer_id: user.reviewer_id || null,
+    editor_id: user.editor_id || null,
     institution: user.institution,
     college: user.college,
     department: user.department,

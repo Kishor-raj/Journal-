@@ -10,7 +10,7 @@ const JOURNAL_INFO = {
   issue: 'Issue 1',
   year: '2026',
   frequency: 'Quarterly',
-  issnOnline: '2654-6725',
+  issnOnline: '2977-4418',
   issnPrint: 'To be Assigned',
   doiPrefix: '10.xxxx/ijidcr.2026',
   status: 'Published · Open Access',
@@ -62,8 +62,6 @@ function toArticle(m, idx) {
     doi: '',
     status: 'Published',
     citation,
-    download_url: m.download_url || null,
-    view_url: m.view_url || null,
   }
 }
 
@@ -273,27 +271,6 @@ function ArticleItem({ article, highlight, openAuthors }) {
         <ActionButton onClick={handleAuthors} active={showAuthors}>
           {showAuthors ? 'Close Authors' : 'Authors'}
         </ActionButton>
-        {article.download_url && (
-          <a
-            href={article.download_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              textDecoration: 'none',
-              color: '#0B1B3A',
-              fontWeight: 600,
-              fontSize: '12.5px',
-              fontFamily: 'Jost, sans-serif',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
-            <i className="fas fa-file-pdf" style={{ color: '#E11D48' }} /> Download PDF
-          </a>
-        )}
       </div>
     </article>
   )
@@ -367,7 +344,7 @@ export default function CurrentIssue() {
           {/* Cover Image Box */}
           <div style={{ border: '1px solid #E6E1D6', borderBottom: 'none', padding: '10px', background: '#FFFFFF', boxShadow: '0 2px 10px rgba(11,27,58,0.04)' }}>
             <img
-              src="/cover-back.png"
+              src="/cover-front.jpeg"
               alt="Current issue cover"
               style={{ width: '100%', display: 'block', aspectRatio: '3/4', objectFit: 'cover' }}
             />
@@ -410,7 +387,7 @@ export default function CurrentIssue() {
           {/* Welcome message */}
           <div style={{ marginBottom: '32px' }}>
             <p style={{ fontSize: 'clamp(15.5px, 1.5vw, 17px)', lineHeight: 1.8, color: '#3A4157', margin: 0 }}>
-              Welcome to the <strong>Current Issue</strong> section of Asgard International Research Publication. This page provides full access to the latest published articles from our peer-reviewed journals. The current issue features original research articles, comprehensive review papers, and scholarly contributions from leading researchers worldwide.
+              Welcome to the <strong>Current Issue</strong> section of Asgard Research Publication. This page provides full access to the latest published articles from our peer-reviewed journals. The current issue features original research articles, comprehensive review papers, and scholarly contributions from leading researchers worldwide.
             </p>
           </div>
 
@@ -506,7 +483,7 @@ export default function CurrentIssue() {
 
           {/* Disclaimer */}
           <div style={{ marginTop: '28px', fontSize: '13.5px', color: '#6B7288', lineHeight: 1.6, borderTop: '1px solid #E6E1D6', paddingTop: '16px' }}>
-            <strong>Disclaimer:</strong> The opinions and findings expressed in published articles are those of the respective authors and do not necessarily reflect the official views or policies of the Editorial Board or Asgard International Research Publication.
+            <strong>Disclaimer:</strong> The opinions and findings expressed in published articles are those of the respective authors and do not necessarily reflect the official views or policies of the Editorial Board or Asgard Research Publication.
           </div>
         </div>
       </div>

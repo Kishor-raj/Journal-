@@ -56,14 +56,14 @@ export default function Privacy() {
             Privacy Policy
           </h1>
           <p style={{ fontSize: 'clamp(15.5px, 1.6vw, 18px)', color: '#C3CBDC', margin: 0 }}>
-            How Asgard International Research Publication handles your information
+            How Asgard Research Publication handles your information
           </p>
         </div>
       </div>
 
       <div style={{ maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(24px, 4vw, 40px) var(--layout-pad) clamp(56px, 8vw, 90px)' }}>
         <p style={{ fontSize: 'clamp(16px, 1.5vw, 17.5px)', lineHeight: 1.8, color: '#3A4157', maxWidth: '860px', margin: '0 0 44px' }}>
-          <strong>Asgard International Research Publication</strong> respects your privacy. This policy explains what
+          <strong>Asgard Research Publication</strong> respects your privacy. This policy explains what
           information the website collects, how it is used, and the choices you have regarding
           analytics and cookies.
         </p>

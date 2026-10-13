@@ -100,7 +100,7 @@ router.post('/',
           html,
           text,
           replyTo: validation.data.email,
-          from: `${env.EMAIL_FROM_NAME || 'Asgard International Research Publication'} <${fromEmail}>`,
+          from: `${env.EMAIL_FROM_NAME || 'Asgard Publications'} <${fromEmail}>`,
           headers: {
             'X-Journal-Source': 'contact-form',
             'X-Visitor-Email': validation.data.email,

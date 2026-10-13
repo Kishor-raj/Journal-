@@ -3,7 +3,7 @@ import {
   validateApplicationInput,
   normalizeEmail,
   generateApplicationNumber,
-  generateReviewerId,
+  generateEditorId,
   submitApplication,
   getApplicationStatus,
   submitClarificationResponse,
@@ -228,7 +228,7 @@ describe('Editorial Board Application Workflow', () => {
     expect(status.admin_remarks).toBeUndefined()
   })
 
-  it('approveApplication appoints existing account as Reviewer role', async () => {
+  it('approveApplication promotes existing account to editor role', async () => {
     const mockClient = {
       query: vi.fn(),
       release: vi.fn(),
@@ -242,31 +242,31 @@ describe('Editorial Board Application Workflow', () => {
           id: 'app-1',
           email: 'jane@stanford.edu',
           full_name: 'Dr. Jane Smith',
-          preferred_role: 'Reviewer',
+          preferred_role: 'National Editorial Board',
           preferred_editorial_section: 'Artificial Intelligence',
           status: 'UNDER_REVIEW',
-          reviewer_id: 'AIRJ0001',
+          editor_id: 'AIRJ0001',
         }],
       }) // SELECT application
-      .mockResolvedValueOnce({ rows: [{ id: 'user-123', email: 'jane@stanford.edu', role_id: 'author-role-id', reviewer_id: 'AIRJ0001' }] }) // SELECT user
-      .mockResolvedValueOnce({ rows: [{ id: 'reviewer-role-id' }] }) // SELECT reviewer role
-      .mockResolvedValueOnce({}) // UPDATE users SET role_id = reviewer
+      .mockResolvedValueOnce({ rows: [{ id: 'user-123', email: 'jane@stanford.edu', role_id: 'author-role-id', editor_id: 'AIRJ0001' }] }) // SELECT user
+      .mockResolvedValueOnce({ rows: [{ id: 'editor-role-id' }] }) // SELECT editor role
+      .mockResolvedValueOnce({}) // UPDATE users SET role_id = editor
       .mockResolvedValueOnce({}) // INSERT user_roles
       .mockResolvedValueOnce({}) // UPDATE editorial_applications
-      .mockResolvedValueOnce({}) // INSERT audit log user appointed
+      .mockResolvedValueOnce({}) // INSERT audit log user promoted
       .mockResolvedValueOnce({ rows: [{ id: 'appointment-1' }] }) // INSERT editorial_appointments
       .mockResolvedValueOnce({}) // INSERT editorial_members
       .mockResolvedValueOnce({}) // INSERT audit log approved
       .mockResolvedValueOnce({}) // COMMIT
 
-    const result = await approveApplication('app-1', { position: 'Editorial Board Member' }, 'admin-uuid', '127.0.0.1', 'Vitest')
+    const result = await approveApplication('app-1', { position: 'National Editorial Board' }, 'admin-uuid', '127.0.0.1', 'Vitest')
     expect(result.success).toBe(true)
     expect(result.user_exists).toBe(true)
     expect(result.user_id).toBe('user-123')
-    expect(result.reviewer_id).toBe('AIRJ0001')
+    expect(result.editor_id).toBe('AIRJ0001')
   })
 
-  it('approveApplication generates role grant and assigns reviewer_id for applicant without account', async () => {
+  it('approveApplication generates role grant and assigns editor_id for applicant without account', async () => {
     const mockClient = {
       query: vi.fn(),
       release: vi.fn(),
@@ -280,14 +280,14 @@ describe('Editorial Board Application Workflow', () => {
           id: 'app-2',
           email: 'newapplicant@oxford.edu',
           full_name: 'Dr. John Doe',
-          preferred_role: 'Reviewer',
+          preferred_role: 'Editorial Board Member',
           preferred_editorial_section: 'Data Science',
           status: 'UNDER_REVIEW',
-          reviewer_id: 'AIRJ0002',
+          editor_id: 'AIRJ0002',
         }],
       }) // SELECT application
       .mockResolvedValueOnce({ rows: [] }) // SELECT user (none exists)
-      .mockResolvedValueOnce({ rows: [{ id: 'reviewer-role-id' }] }) // SELECT reviewer role
+      .mockResolvedValueOnce({ rows: [{ id: 'editor-role-id' }] }) // SELECT editor role
       .mockResolvedValueOnce({}) // UPDATE old role grants to REVOKED
       .mockResolvedValueOnce({ rows: [{ id: 'grant-123' }] }) // INSERT editorial_role_grants
       .mockResolvedValueOnce({}) // UPDATE editorial_applications
@@ -301,27 +301,27 @@ describe('Editorial Board Application Workflow', () => {
     expect(result.success).toBe(true)
     expect(result.user_exists).toBe(false)
     expect(result.role_grant_id).toBe('grant-123')
-    expect(result.reviewer_id).toBe('AIRJ0002')
+    expect(result.editor_id).toBe('AIRJ0002')
   })
 
-  it('generateReviewerId generates sequential AIRJ formatted IDs', async () => {
+  it('generateEditorId generates sequential AIRJ formatted IDs', async () => {
     const mockDb = {
       query: vi.fn()
         .mockResolvedValueOnce({ rows: [{ max_num: 5 }] })
         .mockResolvedValueOnce({ rows: [] }),
     }
-    const reviewerId = await generateReviewerId(mockDb)
-    expect(reviewerId).toBe('AIRJ0006')
+    const editorId = await generateEditorId(mockDb)
+    expect(editorId).toBe('AIRJ0006')
   })
 
-  it('generateReviewerId defaults to AIRJ0001 when no prior IDs exist', async () => {
+  it('generateEditorId defaults to AIRJ0001 when no prior IDs exist', async () => {
     const mockDb = {
       query: vi.fn()
         .mockResolvedValueOnce({ rows: [{ max_num: null }] })
         .mockResolvedValueOnce({ rows: [] }),
     }
-    const reviewerId = await generateReviewerId(mockDb)
-    expect(reviewerId).toBe('AIRJ0001')
+    const editorId = await generateEditorId(mockDb)
+    expect(editorId).toBe('AIRJ0001')
   })
 
   it('validateInvitationToken correctly validates active pending token', async () => {
@@ -332,12 +332,12 @@ describe('Editorial Board Application Workflow', () => {
       rows: [
         {
           id: 'grant-1',
-          email: 'reviewer@example.com',
-          role: 'reviewer',
+          email: 'editor@example.com',
+          role: 'editor',
           status: 'PENDING',
           token_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           full_name: 'Dr. Alice',
-          preferred_role: 'Reviewer',
+          preferred_role: 'Editor',
           preferred_editorial_section: 'Cyber Security',
         },
       ],
@@ -345,8 +345,8 @@ describe('Editorial Board Application Workflow', () => {
 
     const result = await validateInvitationToken(rawToken)
     expect(result.valid).toBe(true)
-    expect(result.email).toBe('reviewer@example.com')
-    expect(result.role).toBe('reviewer')
+    expect(result.email).toBe('editor@example.com')
+    expect(result.role).toBe('editor')
   })
 
   it('validateInvitationToken rejects expired or used token', async () => {

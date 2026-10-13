@@ -84,11 +84,3 @@ export function revokeCertificate(certificateId, reason) {
   return apiClient.post(`/publications/certificates/${certificateId}/revoke`, { reason })
 }
 
-export function reprocessPublishedDocument(manuscriptId) {
-  return apiClient.post(`/editorial/manuscripts/${manuscriptId}/reprocess-document`, {})
-}
-
-export function getPublishedDocumentStatus(manuscriptId) {
-  return apiClient.get(`/editorial/manuscripts/${manuscriptId}/published-document-status`)
-}
-

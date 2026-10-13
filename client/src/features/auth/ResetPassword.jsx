@@ -105,7 +105,7 @@ export default function ResetPassword() {
   return (
     <div className="auth-page">
       <div className="auth-page-card">
-        <span className="auth-page-eyebrow">Asgard International Research Publication</span>
+        <span className="auth-page-eyebrow">Asgard Publications</span>
         <h1 className="auth-page-title">Choose a new password</h1>
         <p className="auth-page-text">Enter a new password for your account.</p>
 

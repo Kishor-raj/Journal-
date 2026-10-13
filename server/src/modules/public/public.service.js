@@ -55,10 +55,15 @@ export async function getPublishedArticles() {
           'mime_type', mf.mime_type
         )
         FROM manuscript_files mf
-        WHERE mf.manuscript_id = m.id
-          AND mf.file_type = 'published_manuscript'
-          AND mf.is_accessible = true
-        ORDER BY mf.uploaded_at DESC
+        WHERE mf.manuscript_id = m.id AND mf.is_accessible = true
+        ORDER BY 
+          CASE 
+            WHEN LOWER(mf.format) = 'pdf' OR LOWER(mf.original_filename) LIKE '%.pdf' THEN 1
+            WHEN mf.file_type = 'main_manuscript' THEN 2
+            WHEN mf.file_type = 'manuscript' THEN 3
+            ELSE 4
+          END ASC,
+          mf.uploaded_at DESC
         LIMIT 1
       ) AS primary_file
     FROM manuscripts m
@@ -118,10 +123,15 @@ export async function getFeaturedArticles(limit = 6) {
           'mime_type', mf.mime_type
         )
         FROM manuscript_files mf
-        WHERE mf.manuscript_id = m.id
-          AND mf.file_type = 'published_manuscript'
-          AND mf.is_accessible = true
-        ORDER BY mf.uploaded_at DESC
+        WHERE mf.manuscript_id = m.id AND mf.is_accessible = true
+        ORDER BY 
+          CASE 
+            WHEN LOWER(mf.format) = 'pdf' OR LOWER(mf.original_filename) LIKE '%.pdf' THEN 1
+            WHEN mf.file_type = 'main_manuscript' THEN 2
+            WHEN mf.file_type = 'manuscript' THEN 3
+            ELSE 4
+          END ASC,
+          mf.uploaded_at DESC
         LIMIT 1
       ) AS primary_file
     FROM manuscripts m

@@ -128,15 +128,9 @@ export async function syncUserProfileFromEditorialApplication(dbOrClient, userId
          bio = COALESCE(NULLIF(bio, ''), $11),
          orcid_id = COALESCE(NULLIF(orcid_id, ''), $12),
          profile_image_url = COALESCE(NULLIF(profile_image_url, ''), $13),
-         reviewer_id = COALESCE(reviewer_id, $14),
-         cv_file_url = COALESCE(cv_file_url, $15),
-         cv_file_name = COALESCE(cv_file_name, $16),
-         cv_file_public_id = COALESCE(cv_file_public_id, $17),
-         cv_file_size = COALESCE(cv_file_size, $18),
-         cv_mime_type = COALESCE(cv_mime_type, $19),
-         cv_updated_at = COALESCE(cv_updated_at, $20),
+         editor_id = COALESCE(editor_id, $14),
          updated_at = now()
-       WHERE id = $21`,
+       WHERE id = $15`,
       [
         nameParts.firstName,
         nameParts.lastName,
@@ -151,13 +145,7 @@ export async function syncUserProfileFromEditorialApplication(dbOrClient, userId
         bioVal,
         app.orcid_id,
         app.profile_image_url,
-        app.reviewer_id || null,
-        app.cv_file_url || null,
-        app.cv_file_name || null,
-        app.cv_file_public_id || null,
-        app.cv_file_size || null,
-        app.cv_mime_type || 'application/pdf',
-        app.updated_at || app.created_at || null,
+        app.editor_id || null,
         targetUserId,
       ]
     )
@@ -363,7 +351,7 @@ export async function destroySession(tokenHash) {
 export async function findSession(tokenHash) {
   const result = await pool.query(
     `SELECT s.*, u.id as uid, u.email, u.first_name, u.last_name, u.display_name,
-            u.role_id, u.reviewer_id, u.account_status, u.profile_image_url,
+            u.role_id, u.editor_id, u.account_status, u.profile_image_url,
             u.institution, u.college, u.department, u.state, u.country, u.course,
             COALESCE(r.name, ur.name, 'author') AS role_name,
             ur.name AS account_role_name,
@@ -498,29 +486,19 @@ export async function registerUser({ email, password, first_name, last_name }) {
       displayName = displayName || normalizedEmail.split('@')[0]
     }
 
-    const reviewerIdVal = app?.reviewer_id || null
-    const cvUrlVal = app?.cv_file_url || null
-    const cvPublicIdVal = app?.cv_file_public_id || null
-    const cvNameVal = app?.cv_file_name || null
-    const cvSizeVal = app?.cv_file_size || null
-    const cvMimeVal = app?.cv_mime_type || 'application/pdf'
-    const cvUpdatedAtVal = app?.updated_at || app?.created_at || null
-
     const newUser = await client.query(
       `INSERT INTO users (
-         role_id, reviewer_id, email, first_name, last_name, display_name,
+         role_id, email, first_name, last_name, display_name,
          phone, institution, college, department, state, country, course,
          bio, orcid_id, profile_image_url,
-         cv_file_url, cv_file_public_id, cv_file_name, cv_file_size, cv_mime_type, cv_updated_at,
          is_email_verified, account_status
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, false, 'active')
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, false, 'active')
        RETURNING id`,
       [
-        authorRoleId, reviewerIdVal, normalizedEmail, firstNameValue, lastNameValue, displayName,
+        authorRoleId, normalizedEmail, firstNameValue, lastNameValue, displayName,
         phoneVal, instVal, collegeVal, deptVal, stateVal, countryVal, courseVal,
-        bioVal, orcidVal, profileImageUrlVal,
-        cvUrlVal, cvPublicIdVal, cvNameVal, cvSizeVal, cvMimeVal, cvUpdatedAtVal,
+        bioVal, orcidVal, profileImageUrlVal
       ]
     )
 
@@ -907,18 +885,17 @@ export async function processPendingRoleGrants(client, userId, userEmail, ip, us
     if (grantRes.rows.length === 0) return false
 
     const grant = grantRes.rows[0]
-    const roleToGrant = grant.role || 'reviewer'
-    const targetRoleRes = await client.query("SELECT id FROM roles WHERE name = $1", [roleToGrant])
-    const targetRoleId = targetRoleRes.rows[0]?.id
+    const editorRoleRes = await client.query("SELECT id FROM roles WHERE name = 'editor'")
+    const editorRoleId = editorRoleRes.rows[0]?.id
 
-    if (targetRoleId) {
+    if (editorRoleId) {
       await client.query(
         `UPDATE users SET role_id = $1, updated_at = now() WHERE id = $2`,
-        [targetRoleId, userId]
+        [editorRoleId, userId]
       )
       await client.query(
         `INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT (user_id, role_id) DO NOTHING`,
-        [userId, targetRoleId]
+        [userId, editorRoleId]
       )
     }
 
@@ -933,12 +910,6 @@ export async function processPendingRoleGrants(client, userId, userEmail, ip, us
     const appRes = await client.query('SELECT * FROM editorial_applications WHERE id = $1', [grant.application_id])
     if (appRes.rows.length > 0) {
       const app = appRes.rows[0]
-      if (app.reviewer_id) {
-        await client.query(
-          `UPDATE users SET reviewer_id = COALESCE(reviewer_id, $1) WHERE id = $2`,
-          [app.reviewer_id, userId]
-        )
-      }
       if (app.profile_image_url) {
         await client.query(
           `UPDATE users SET profile_image_url = COALESCE(profile_image_url, $1) WHERE id = $2`,
@@ -961,11 +932,11 @@ export async function processPendingRoleGrants(client, userId, userEmail, ip, us
 
     await client.query(
       `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_values, ip_address, user_agent)
-       VALUES ($1, 'editorial_reviewer_role_grant_consumed', 'editorial_role_grants', $2, $3, $4, $5)`,
+       VALUES ($1, 'editorial_role_grant_consumed', 'editorial_role_grants', $2, $3, $4, $5)`,
       [
         userId,
         grant.id,
-        JSON.stringify({ application_id: grant.application_id, user_id: userId, role: roleToGrant }),
+        JSON.stringify({ application_id: grant.application_id, user_id: userId }),
         ip || null,
         userAgent || null,
       ]

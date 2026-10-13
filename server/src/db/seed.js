@@ -108,16 +108,15 @@ export async function seed(poolOverride, options = {}) {
     // Seed journal
     const contactEmail = process.env.CONTACT_RECIPIENT_EMAIL || process.env.EMAIL_FROM_ADDRESS || adminEmail
     await client.query(
-      `INSERT INTO journals (name, short_name, description, publisher_name, contact_email, website_url)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO journals (name, short_name, description, publisher_name, contact_email)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT DO NOTHING`,
       [
-        'INTERNATIONAL JOURNAL OF INTELLIGENT DIGITAL COMPUTING RESEARCH (IJIDCR)',
-        'IJIDCR',
+        'Journal of Advanced Research',
+        'JAR',
         'A peer-reviewed journal dedicated to publishing high-quality research across multiple disciplines.',
-        'ASGARD INTERNATIONAL RESEARCH PUBLICATION',
+        'Academic Publishing House',
         contactEmail,
-        'https://ijidcr-asgard.in/',
       ]
     )
     console.log('✓ Journal seeded')
@@ -145,8 +144,7 @@ export async function seed(poolOverride, options = {}) {
     await client.query(
       `INSERT INTO submission_guidelines (journal_id, title, content, is_published, published_at)
        SELECT id, 'Submission Guidelines', 'Please follow these guidelines when submitting your manuscript.', true, now()
-       FROM journals WHERE short_name IN ('IJIDCR', 'JAR')
-       LIMIT 1
+       FROM journals WHERE short_name = 'JAR'
        ON CONFLICT DO NOTHING`
     )
     console.log('✓ Submission guidelines seeded')
@@ -166,7 +164,7 @@ export async function seed(poolOverride, options = {}) {
         body_text: `Dear {{author_name}},\n\nThank you for submitting your manuscript to {{journal_name}}. After careful consideration during the initial screening, we regret to inform you that your manuscript has not been accepted for further review.\n\nSubmission Number: {{submission_number}}\nTitle: {{manuscript_title}}\n\nReason: {{decision_reason}}\nAdditional Notes: {{moderation_notes_to_author}}\n\nWe encourage you to consider the feedback provided and may submit a revised manuscript in the future if appropriate.\n\nView your submission: {{manuscript_url}}\n\nIf you have any questions, please contact the editorial office.\n\nThank you,\n{{journal_name}}`,
       },
       {
-        key: 'reviewer_invitation',
+        key: 'reviewer_invited',
         subject: 'You are invited to review a manuscript for {{journal_name}}',
         body_html: `<p>Dear {{reviewer_name}},</p><p>You have been invited to review the following manuscript for {{journal_name}}:</p><p><strong>Title:</strong> {{manuscript_title}}<br/><strong>Submission:</strong> {{submission_number}}<br/><strong>Review deadline:</strong> {{review_deadline}}</p><p>Please review the invitation and respond using the secure link below:</p><p><a href="{{invitation_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">View Review Invitation</a></p><p>If the button does not work, copy and paste this link into your browser:<br/>{{invitation_url}}</p><p>Thank you,<br/>{{journal_name}}</p>`,
         body_text: `Dear {{reviewer_name}},\n\nYou have been invited to review the following manuscript for {{journal_name}}:\n\nTitle: {{manuscript_title}}\nSubmission: {{submission_number}}\nReview deadline: {{review_deadline}}\n\nPlease review the invitation and respond using the secure link below:\n\n{{invitation_url}}\n\nIf the button does not work, copy and paste this link into your browser.\n\nThank you,\n{{journal_name}}`,
@@ -204,8 +202,8 @@ export async function seed(poolOverride, options = {}) {
       {
         key: 'account_verification',
         subject: 'Verify your email address',
-        body_html: `<p>Hello {{first_name}},</p><p>Thank you for creating an account with Asgard International Research Publication. Please verify your email address by clicking the button below.</p><p><a href="{{verification_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Verify Email</a></p><p>This link will expire in {{expires_in}}.</p><p>If you did not create this account, you can safely ignore this email.</p>`,
-        body_text: `Hello {{first_name}},\n\nThank you for creating an account with Asgard International Research Publication. Please verify your email address by visiting:\n\n{{verification_url}}\n\nThis link will expire in {{expires_in}}.\n\nIf you did not create this account, you can safely ignore this email.`,
+        body_html: `<p>Hello {{first_name}},</p><p>Thank you for creating an account with Asgard Publications. Please verify your email address by clicking the button below.</p><p><a href="{{verification_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Verify Email</a></p><p>This link will expire in {{expires_in}}.</p><p>If you did not create this account, you can safely ignore this email.</p>`,
+        body_text: `Hello {{first_name}},\n\nThank you for creating an account with Asgard Publications. Please verify your email address by visiting:\n\n{{verification_url}}\n\nThis link will expire in {{expires_in}}.\n\nIf you did not create this account, you can safely ignore this email.`,
       },
       {
         key: 'password_reset',
@@ -230,8 +228,7 @@ export async function seed(poolOverride, options = {}) {
       await client.query(
         `INSERT INTO email_templates (journal_id, template_key, subject, body_html, body_text)
          SELECT id, $1, $2, $3, $4
-         FROM journals WHERE short_name IN ('IJIDCR', 'JAR')
-         LIMIT 1
+         FROM journals WHERE short_name = 'JAR'
          ON CONFLICT (journal_id, template_key) DO NOTHING`,
         [t.key, t.subject, t.body_html || '<p>Placeholder</p>', t.body_text || 'Placeholder']
       )

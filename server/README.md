@@ -114,29 +114,13 @@ Email is delivered through **Resend** (configured in Phase 1). The server requir
 EMAIL_ENABLED=true
 EMAIL_PROVIDER=resend
 RESEND_API_KEY=...
-EMAIL_FROM_NAME=Asgard International Research Publication
+EMAIL_FROM_NAME=Asgard Publications
 EMAIL_FROM_ADDRESS=...
 EMAIL_REPLY_TO=...
 PUBLIC_APP_ORIGIN=http://localhost:5173
 ```
 
 Set `EMAIL_ENABLED=false` in development to skip actual delivery while still tracking the workflow. For production, use a real `RESEND_API_KEY` and a verified sender domain, and point `PUBLIC_APP_ORIGIN`/`CLIENT_ORIGIN` at the production HTTPS client origin.
-
-## Published Manuscript Branding & PDF Generation
-
-When an accepted manuscript is published by an editor:
-1. Headless LibreOffice converts the source DOCX manuscript into a high-fidelity PDF inside an isolated temporary user profile (`-env:UserInstallation`).
-2. `pdf-lib` stamps Page 1 with the journal header (logo, journal name, publisher name, ISSN, manuscript ID, certificate number) and Pages 2+ with a compact running header (logo, ISSN, manuscript ID, certificate number, thin rule) plus page numbers in the footer (`Page X of Y`).
-3. The branded PDF is uploaded to Cloudinary under `published-manuscripts/{year}/{submissionNumber}`.
-4. An entry is stored in `manuscript_files` with `file_type = 'published_manuscript'`.
-5. Public downloads exclusively serve this branded PDF (`file_type = 'published_manuscript'`), never exposing author original DOCX files.
-
-### Backfill CLI
-
-To generate branded PDFs for existing published manuscripts:
-```bash
-npm run backfill:published-docs --workspace=server
-```
 
 ## Security Notes
 

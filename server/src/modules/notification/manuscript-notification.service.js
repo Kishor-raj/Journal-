@@ -73,7 +73,7 @@ async function loadManuscriptContext(manuscriptId) {
     ? ([user.first_name, user.last_name].filter(Boolean).join(' ') || user.display_name || 'Author')
     : 'Author'
 
-  const journalName = manuscript.journal_name || 'Asgard International Research Publication'
+  const journalName = manuscript.journal_name || 'Asgard Publications'
 
   return {
     ...manuscript,

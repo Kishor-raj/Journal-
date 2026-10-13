@@ -6,8 +6,6 @@ import {
   updateUserStatus,
   getUserActivity,
   deleteUser,
-  getAdminRoles,
-  exportUsersCsv,
 } from '../../services/adminService'
 import Table from '../../shared/components/Table'
 import Button from '../../shared/components/Button'
@@ -182,80 +180,6 @@ export default function UserManagement() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Available roles (fetched dynamically from backend with fallback)
-  const [availableRoles, setAvailableRoles] = useState(ROLES)
-
-  // Export states
-  const [exportLoading, setExportLoading] = useState(false)
-  const [exportError, setExportError] = useState('')
-  const [exportSuccess, setExportSuccess] = useState('')
-
-  // Fetch dynamic roles on mount
-  useEffect(() => {
-    let mounted = true
-    getAdminRoles()
-      .then((roles) => {
-        if (mounted && Array.isArray(roles) && roles.length > 0) {
-          const names = roles.map((r) => r.name.toLowerCase())
-          setAvailableRoles(names)
-        }
-      })
-      .catch((err) => {
-        console.warn('Could not fetch roles dynamically, using fallback:', err?.message)
-      })
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  const handleExportCsv = async () => {
-    if (total === 0) {
-      const roleText = roleFilter
-        ? `for role "${roleFilter.charAt(0).toUpperCase() + roleFilter.slice(1)}"`
-        : 'matching the selected filters'
-      setExportError(`No users found ${roleText}. CSV export was cancelled to prevent generating an empty file.`)
-      setExportSuccess('')
-      return
-    }
-
-    setExportLoading(true)
-    setExportError('')
-    setExportSuccess('')
-    try {
-      const { blob, filename } = await exportUsersCsv({
-        role: roleFilter || undefined,
-        status: statusFilter || undefined,
-        search: search.trim() || undefined,
-      })
-
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.URL.revokeObjectURL(url)
-
-      const scopeLabel = roleFilter
-        ? `${roleFilter.charAt(0).toUpperCase() + roleFilter.slice(1)}s`
-        : 'All Roles'
-      setExportSuccess(`Successfully downloaded "${filename}" (${scopeLabel}, ${total} total records).`)
-    } catch (err) {
-      console.error('Export CSV error:', err)
-      if (err.status === 404) {
-        const roleText = roleFilter
-          ? `for role "${roleFilter.charAt(0).toUpperCase() + roleFilter.slice(1)}"`
-          : 'matching the selected criteria'
-        setExportError(`No users found ${roleText}. CSV export was cancelled to prevent generating an empty file.`)
-      } else {
-        setExportError(err.message || 'Failed to download CSV export. Please try again.')
-      }
-    } finally {
-      setExportLoading(false)
-    }
-  }
-
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
@@ -382,7 +306,7 @@ export default function UserManagement() {
             <span style={{ fontWeight: 600, color: 'var(--color-ink-navy)' }}>
               {val || `${row.first_name || ''} ${row.last_name || ''}`.trim() || '—'}
             </span>
-            {row.reviewer_id && (
+            {row.editor_id && (
               <span
                 style={{
                   display: 'inline-flex',
@@ -396,9 +320,9 @@ export default function UserManagement() {
                   fontWeight: 700,
                   letterSpacing: '0.03em',
                 }}
-                title={`Reviewer ID: ${row.reviewer_id}`}
+                title={`Editor ID: ${row.editor_id}`}
               >
-                {row.reviewer_id}
+                {row.editor_id}
               </span>
             )}
           </div>
@@ -460,7 +384,7 @@ export default function UserManagement() {
         <div style={styles.searchBox}>
           <input
             type="text"
-            placeholder="Search by name, email, or Reviewer ID (e.g. AIRJ0001)..."
+            placeholder="Search by name, email, or Editor ID (e.g. AIRJ0001)..."
             style={styles.input}
             value={search}
             onChange={(e) => {
@@ -476,13 +400,10 @@ export default function UserManagement() {
           onChange={(e) => {
             setRoleFilter(e.target.value)
             setPage(1)
-            setExportError('')
-            setExportSuccess('')
           }}
-          aria-label="Filter by role"
         >
           <option value="">All Roles</option>
-          {availableRoles.map((r) => (
+          {ROLES.map((r) => (
             <option key={r} value={r}>
               {r.charAt(0).toUpperCase() + r.slice(1)}
             </option>
@@ -495,10 +416,7 @@ export default function UserManagement() {
           onChange={(e) => {
             setStatusFilter(e.target.value)
             setPage(1)
-            setExportError('')
-            setExportSuccess('')
           }}
-          aria-label="Filter by account status"
         >
           <option value="">All Statuses</option>
           {STATUSES.map((s) => (
@@ -507,84 +425,7 @@ export default function UserManagement() {
             </option>
           ))}
         </select>
-
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleExportCsv}
-          loading={exportLoading}
-          disabled={exportLoading}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
-          title={`Download ${roleFilter ? roleFilter.toUpperCase() : 'ALL ROLES'} dataset as CSV`}
-        >
-          <i className="fa-solid fa-download" style={{ color: 'var(--color-citation-gold-dark)' }} />
-          <span>
-            Download CSV {roleFilter ? `(${roleFilter.charAt(0).toUpperCase() + roleFilter.slice(1)})` : '(All Roles)'}
-          </span>
-        </Button>
       </div>
-
-      {/* Export Success Feedback */}
-      {exportSuccess && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 16px',
-            marginBottom: '20px',
-            borderRadius: 'var(--radius-sm)',
-            background: '#EAF7F0',
-            border: '1px solid #C3E6CB',
-            color: 'var(--color-success)',
-            fontSize: 'var(--text-sm)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <i className="fa-solid fa-circle-check" />
-            <span>{exportSuccess}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setExportSuccess('')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: '18px', lineHeight: 1 }}
-            aria-label="Dismiss success message"
-          >
-            &times;
-          </button>
-        </div>
-      )}
-
-      {/* Export Error / Empty Feedback */}
-      {exportError && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 16px',
-            marginBottom: '20px',
-            borderRadius: 'var(--radius-sm)',
-            background: '#FDEDEC',
-            border: '1px solid #F5C6CB',
-            color: 'var(--color-danger)',
-            fontSize: 'var(--text-sm)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <i className="fa-solid fa-triangle-exclamation" />
-            <span>{exportError}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setExportError('')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: '18px', lineHeight: 1 }}
-            aria-label="Dismiss error message"
-          >
-            &times;
-          </button>
-        </div>
-      )}
 
       {/* Table */}
       {loading ? (
@@ -649,11 +490,11 @@ export default function UserManagement() {
                       {selectedUser.role_name}
                     </span>
                   </div>
-                  {selectedUser.reviewer_id && (
+                  {selectedUser.editor_id && (
                     <div>
-                      <div style={styles.infoLabel}>Reviewer ID</div>
+                      <div style={styles.infoLabel}>Editor ID</div>
                       <div style={{ ...styles.infoVal, color: '#C4922E', fontWeight: 700, letterSpacing: '0.04em' }}>
-                        {selectedUser.reviewer_id}
+                        {selectedUser.editor_id}
                       </div>
                     </div>
                   )}
@@ -700,7 +541,7 @@ export default function UserManagement() {
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
                 >
-                  {availableRoles.map((r) => (
+                  {ROLES.map((r) => (
                     <option key={r} value={r}>
                       {r.charAt(0).toUpperCase() + r.slice(1)}
                     </option>

@@ -11,7 +11,7 @@ const NAV_LINKS = [
 ]
 
 const ABOUT_PARAGRAPHS = [
-  'Asgard International Research Publication is an international scholarly publishing platform committed to advancing knowledge through the publication of high-quality, peer-reviewed research. We provide a trusted forum for researchers, academicians, scientists, industry professionals, and students to share innovative ideas and original research with the global academic community.',
+  'Asgard Research Publication is an international scholarly publishing platform committed to advancing knowledge through the publication of high-quality, peer-reviewed research. We provide a trusted forum for researchers, academicians, scientists, industry professionals, and students to share innovative ideas and original research with the global academic community.',
   'Our publishing process is founded on academic excellence, ethical standards, transparency, and rigorous peer review. We strive to ensure that every published article contributes meaningfully to the advancement of science, technology, engineering, management, and the humanities.',
 ]
 
@@ -100,9 +100,12 @@ function SectionCard({ id, title, subtitle, children }) {
 }
 
 function NavPill({ id, title }) {
+  const [hovered, setHovered] = useState(false)
   return (
     <a
       href={`#${id}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         fontFamily: 'Jost, sans-serif',
         fontSize: '12px',
@@ -111,8 +114,8 @@ function NavPill({ id, title }) {
         fontWeight: 600,
         padding: '7px 14px',
         borderRadius: '2px',
-        background: '#C4A24C',
-        color: '#071228',
+        background: hovered ? '#C4A24C' : 'rgba(196, 162, 76, 0.1)',
+        color: hovered ? '#071228' : '#0B1B3A',
         textDecoration: 'none',
         whiteSpace: 'nowrap',
         transition: 'all 0.15s ease',
@@ -139,7 +142,7 @@ export default function About() {
       }}>
         <div style={{ width: '100%', maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(28px, 3.5vw, 42px) var(--layout-pad)' }}>
           <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '16px' }}>
-            Asgard International Research Publication
+            Asgard Research Publication
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(30px, 5.4vw, 52px)', margin: '0 0 14px' }}>
             About Us
@@ -197,7 +200,7 @@ export default function About() {
         gap: '36px',
       }}>
         {/* Full-width Welcome / About Us Card */}
-        <SectionCard id="about-us" title="About Us" subtitle="Welcome to Asgard International Research Publication">
+        <SectionCard id="about-us" title="About Us" subtitle="Welcome to Asgard Research Publication">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))', gap: '20px' }}>
             {ABOUT_PARAGRAPHS.map((p, idx) => (
               <p key={idx} style={{ fontSize: 'clamp(15.5px, 1.4vw, 17px)', lineHeight: 1.8, color: '#3A4157', margin: 0 }}>
@@ -290,7 +293,7 @@ export default function About() {
           gap: '32px',
           alignItems: 'stretch',
         }}>
-          <SectionCard id="why-choose-us" title="Why Choose Asgard International Research Publication?">
+          <SectionCard id="why-choose-us" title="Why Choose Asgard Research Publication?">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '12px' }}>
               {WHY_CHOOSE_ITEMS.map((item, idx) => (
                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14.5px', lineHeight: 1.5, color: '#3A4157' }}>
@@ -315,7 +318,7 @@ export default function About() {
 
           <SectionCard id="commitment" title="Our Commitment">
             <p style={{ fontSize: 'clamp(15.5px, 1.4vw, 17px)', lineHeight: 1.78, color: '#3A4157', margin: '0 0 20px' }}>
-              At Asgard International Research Publication, we are committed to creating a professional, ethical, and inclusive publishing environment. We believe that quality research has the power to solve real-world challenges and inspire future innovations. Our goal is to help authors disseminate their work to a global audience while maintaining the highest standards of academic publishing.
+              At Asgard Research Publication, we are committed to creating a professional, ethical, and inclusive publishing environment. We believe that quality research has the power to solve real-world challenges and inspire future innovations. Our goal is to help authors disseminate their work to a global audience while maintaining the highest standards of academic publishing.
             </p>
             <div style={{
               padding: '16px 20px',
@@ -328,7 +331,7 @@ export default function About() {
               fontSize: 'clamp(14.5px, 1.3vw, 16px)',
               lineHeight: 1.6,
             }}>
-              Asgard International Research Publication – Publishing Knowledge, Inspiring Innovation, Empowering Researchers.
+              Asgard Research Publication – Publishing Knowledge, Inspiring Innovation, Empowering Researchers.
             </div>
           </SectionCard>
         </div>

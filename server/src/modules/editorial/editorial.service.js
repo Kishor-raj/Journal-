@@ -11,15 +11,6 @@ import {
   generateCertificatesForManuscript,
 } from '../publications/publication.service.js'
 import {
-  generatePublishedManuscriptPdf,
-  reprocessPublishedManuscript,
-  getPublishedManuscriptStatus,
-} from '../publications/published-manuscript.service.js'
-import {
-  getPublishedManuscriptDownloadUrl,
-  getPublishedManuscriptViewUrl,
-} from '../publications/published-manuscript.storage.js'
-import {
   sendEditorialAccepted,
   sendEditorialRejected,
   sendMinorRevisionRequested,
@@ -98,7 +89,7 @@ async function buildInvitationEmailContext(manuscriptId, reviewerId, invitationI
 
   const reviewerName = reviewer.display_name || [reviewer.first_name, reviewer.last_name].filter(Boolean).join(' ') || reviewer.email?.split('@')[0] || 'Reviewer'
   const editorName = editor.display_name || [editor.first_name, editor.last_name].filter(Boolean).join(' ') || 'Editor'
-  const journalName = journal.name || 'Asgard International Research Publication'
+  const journalName = journal.name || 'Asgard Publications'
   const due = new Date(dueAt)
   const reviewDeadline = isNaN(due.getTime())
     ? String(dueAt)
@@ -560,29 +551,6 @@ export async function getManuscript(manuscriptId) {
     [manuscriptId]
   )
 
-  const publicationResult = await pool.query(
-    `SELECT p.*,
-            mf.public_id AS document_public_id,
-            mf.original_filename AS document_filename,
-            mf.file_size_bytes AS document_file_size
-     FROM publications p
-     LEFT JOIN manuscript_files mf ON mf.id = p.document_file_id
-     WHERE p.manuscript_id = $1`,
-    [manuscriptId]
-  )
-
-  const publication = publicationResult.rows[0]
-    ? {
-        ...publicationResult.rows[0],
-        document_download_url: publicationResult.rows[0].document_public_id
-          ? getPublishedManuscriptDownloadUrl(publicationResult.rows[0].document_public_id)
-          : null,
-        document_view_url: publicationResult.rows[0].document_public_id
-          ? getPublishedManuscriptViewUrl(publicationResult.rows[0].document_public_id)
-          : null,
-      }
-    : null
-
   return {
     ...manuscript,
     authors: authorsResult.rows,
@@ -593,7 +561,6 @@ export async function getManuscript(manuscriptId) {
       reviewer_responses: commentResponsesResult.rows.filter((cr) => cr.revision_request_id === rev.id),
     })),
     versions: versionsResult.rows,
-    publication,
   }
 }
 
@@ -1444,14 +1411,6 @@ export async function publishManuscript(manuscriptId, editorId, publicationData 
       console.error(`[EDITORIAL] Certificate generation post-publish failed for manuscript ${manuscriptId}:`, err.message)
     }
 
-    let document_generation = { success: false, document_status: 'pending' }
-    try {
-      document_generation = await generatePublishedManuscriptPdf(manuscriptId, editorId)
-    } catch (err) {
-      console.error(`[EDITORIAL] Document generation post-publish failed for manuscript ${manuscriptId}:`, err.message)
-      document_generation = { success: false, document_status: 'failed', error: err.message }
-    }
-
     return {
       success: true,
       manuscript_id: manuscriptId,
@@ -1462,10 +1421,6 @@ export async function publishManuscript(manuscriptId, editorId, publicationData 
       status: newStatus,
       certificates_created: certificates.length,
       certificates_generated,
-      document_status: document_generation.document_status || (document_generation.success ? 'ready' : 'failed'),
-      document_file_id: document_generation.file_id || null,
-      document_error: document_generation.error || null,
-      document_download_url: document_generation.download_url || null,
     }
   } catch (err) {
     await client.query('ROLLBACK')
@@ -1484,37 +1439,13 @@ export async function getAcceptedManuscripts() {
             m.current_status,
             m.updated_at AS acceptance_date,
             COALESCE(u.display_name, TRIM(CONCAT(u.first_name, ' ', u.last_name)), u.email) AS primary_author,
-            u.email AS author_email,
-            p.id AS publication_id,
-            p.volume,
-            p.issue,
-            p.publication_year,
-            p.document_status,
-            p.document_error,
-            p.document_generated_at,
-            mf.id AS document_file_id,
-            mf.public_id AS document_public_id
+            u.email AS author_email
      FROM manuscripts m
      LEFT JOIN users u ON u.id = m.submitted_by
-     LEFT JOIN publications p ON p.manuscript_id = m.id
-     LEFT JOIN manuscript_files mf ON mf.id = p.document_file_id
      WHERE m.current_status IN ('accepted', 'published')
      ORDER BY m.updated_at DESC`
   )
-  return result.rows.map(row => ({
-    ...row,
-    document_download_url: row.document_public_id ? getPublishedManuscriptDownloadUrl(row.document_public_id) : null,
-    document_view_url: row.document_public_id ? getPublishedManuscriptViewUrl(row.document_public_id) : null,
-  }))
+  return result.rows
 }
-
-export async function reprocessPublishedManuscriptDocument(manuscriptId, editorId) {
-  return reprocessPublishedManuscript(manuscriptId, editorId)
-}
-
-export async function getPublishedDocumentStatus(manuscriptId) {
-  return getPublishedManuscriptStatus(manuscriptId)
-}
-
 
 

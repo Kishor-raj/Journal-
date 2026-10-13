@@ -79,7 +79,6 @@ import ExtensionRequest from '../features/reviewer/ExtensionRequest'
 import ExtensionRequests from '../features/reviewer/ExtensionRequests'
 import ReviewerDashboard from '../features/reviewer/ReviewerDashboard'
 import ReviewerProfile from '../features/reviewer/ReviewerProfile'
-import NotFound from '../features/public/NotFound'
 
 function AppRouter() {
   return (
@@ -120,7 +119,7 @@ function AppRouter() {
         <Route path="/dashboard" element={<DashboardRedirect />} />
         
         {/* Admin Routes */}
-        <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin/dashboard" replace /></ProtectedRoute>} />
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>} />
         <Route path="/admin/editorial-applications" element={<ProtectedRoute allowedRoles={['admin']}><EditorialApplications /></ProtectedRoute>} />
@@ -136,7 +135,7 @@ function AppRouter() {
         <Route path="/admin/journal-settings" element={<ProtectedRoute allowedRoles={['admin']}><JournalSettings /></ProtectedRoute>} />
 
         {/* Author Routes */}
-        <Route path="/author" element={<ProtectedRoute allowedRoles={['author']} requireProfileComplete={false}><Navigate to="/author/dashboard" replace /></ProtectedRoute>} />
+        <Route path="/author" element={<Navigate to="/author/dashboard" replace />} />
         <Route path="/author/dashboard" element={<ProtectedRoute allowedRoles={['author']} requireProfileComplete={false}><AuthorDashboard /></ProtectedRoute>} />
         <Route path="/author/submit/new" element={<ProtectedRoute allowedRoles={['author']}><NewSubmissionRedirect /></ProtectedRoute>} />
         <Route path="/author/submit/:id" element={<ProtectedRoute allowedRoles={['author']}><SubmissionWizard /></ProtectedRoute>} />
@@ -153,7 +152,7 @@ function AppRouter() {
         <Route path="/author/help" element={<ProtectedRoute allowedRoles={['author']}><AuthorHelp /></ProtectedRoute>} />
 
         {/* Moderator Routes */}
-        <Route path="/moderator" element={<ProtectedRoute allowedRoles={['moderator']}><Navigate to="/moderator/dashboard" replace /></ProtectedRoute>} />
+        <Route path="/moderator" element={<Navigate to="/moderator/dashboard" replace />} />
         <Route path="/moderator/dashboard" element={<ProtectedRoute allowedRoles={['moderator']}><ModeratorDashboard /></ProtectedRoute>} />
         <Route path="/moderator/screening" element={<ProtectedRoute allowedRoles={['moderator']}><ScreeningQueue /></ProtectedRoute>} />
         <Route path="/moderator/screening/:id" element={<ProtectedRoute allowedRoles={['moderator']}><ChecklistForm /></ProtectedRoute>} />
@@ -161,7 +160,6 @@ function AppRouter() {
         <Route path="/moderator/notifications" element={<ProtectedRoute allowedRoles={['moderator']}><ModeratorNotifications /></ProtectedRoute>} />
 
         {/* Editor Routes */}
-        <Route path="/editor" element={<ProtectedRoute allowedRoles={['editor']}><Navigate to="/editor/dashboard" replace /></ProtectedRoute>} />
         <Route path="/editor/dashboard" element={<ProtectedRoute allowedRoles={['editor']}><EditorDashboard /></ProtectedRoute>} />
         <Route path="/editor/queue" element={<ProtectedRoute allowedRoles={['editor']}><EditorialQueue /></ProtectedRoute>} />
         <Route path="/editor/reviewers" element={<ProtectedRoute allowedRoles={['editor']}><ReviewerManagement /></ProtectedRoute>} />
@@ -173,7 +171,6 @@ function AppRouter() {
         <Route path="/editor/manuscripts/:id/decision" element={<ProtectedRoute allowedRoles={['editor']}><DecisionPanel /></ProtectedRoute>} />
 
         {/* Reviewer Routes */}
-        <Route path="/reviewer" element={<ProtectedRoute allowedRoles={['reviewer']}><Navigate to="/reviewer/dashboard" replace /></ProtectedRoute>} />
         <Route path="/reviewer/dashboard" element={<ProtectedRoute allowedRoles={['reviewer']}><ReviewerDashboard /></ProtectedRoute>} />
         <Route path="/reviewer/invitations" element={<ProtectedRoute allowedRoles={['reviewer']}><Invitations /></ProtectedRoute>} />
         <Route path="/reviewer/assignments" element={<ProtectedRoute allowedRoles={['reviewer']}><Assignments /></ProtectedRoute>} />
@@ -186,7 +183,7 @@ function AppRouter() {
       </Route>
 
       <Route path="/profile/complete" element={<ProtectedRoute requireProfileComplete={false}><CompleteProfile /></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>
     </>
   )

@@ -12,7 +12,6 @@ import {
   handleExtension,
   publishManuscript,
   getLatestPublicationMeta,
-  reprocessPublishedDocument,
 } from '../../services/editorialService'
 import { getFileAccess } from '../../services/fileService'
 import { formatDate } from '../../shared/utils/formatDate'
@@ -294,23 +293,6 @@ export default function ManuscriptDetail() {
     setPublishModal(true)
   }
 
-  const [reprocessingDoc, setReprocessingDoc] = useState(false)
-  const [reprocessDocError, setReprocessDocError] = useState(null)
-
-  const handleReprocessDoc = async () => {
-    setReprocessingDoc(true)
-    setReprocessDocError(null)
-    try {
-      await reprocessPublishedDocument(id)
-      const updated = await getManuscript(id)
-      setManuscript(updated)
-    } catch (err) {
-      setReprocessDocError(err.message || 'Failed to generate published PDF')
-    } finally {
-      setReprocessingDoc(false)
-    }
-  }
-
   const handleConfirmPublish = async () => {
     setPublishing(true)
     try {
@@ -319,12 +301,7 @@ export default function ManuscriptDetail() {
         issue: publishForm.issue,
         doi: publishForm.doi,
       })
-      const updated = await getManuscript(id).catch(() => null)
-      if (updated) {
-        setManuscript(updated)
-      } else {
-        setManuscript((prev) => prev ? { ...prev, current_status: 'published' } : prev)
-      }
+      setManuscript((prev) => prev ? { ...prev, current_status: 'published' } : prev)
       setPublishSuccess(true)
       setPublishModal(false)
       setTimeout(() => setPublishSuccess(false), 6000)
@@ -485,112 +462,6 @@ export default function ManuscriptDetail() {
         </div>
       )}
 
-      {manuscript.current_status === 'published' && (
-        <div style={styles.section}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-            <h2 style={{ ...styles.sectionTitle, margin: 0, color: '#0B1B3A', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <i className="fas fa-certificate" style={{ color: '#C4A24C' }} /> Publication &amp; Official Document
-            </h2>
-            <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: '#1A7F4B', background: '#EAF7F0', padding: '3px 8px', borderRadius: '4px' }}>
-              Live in Issue
-            </span>
-          </div>
-
-          <div style={{ background: '#F8F9FA', border: '1px solid var(--color-rule-grey)', borderRadius: 'var(--radius-sm)', padding: '16px', marginBottom: '12px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '14px' }}>
-              <div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Issue / Volume</span>
-                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-ink-navy)', marginTop: '2px' }}>
-                  Vol. {manuscript.publication?.volume || 1}, Issue {manuscript.publication?.issue || 1} ({manuscript.publication?.publication_year || new Date().getFullYear()})
-                </div>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Branded PDF Status</span>
-                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: '2px', color: manuscript.publication?.document_status === 'ready' ? '#1A7F4B' : manuscript.publication?.document_status === 'failed' ? '#B91C1C' : '#D97706' }}>
-                  {manuscript.publication?.document_status === 'ready' ? '✅ Ready for Download' : manuscript.publication?.document_status === 'failed' ? '❌ Generation Failed' : '⏳ Processing'}
-                </div>
-              </div>
-              {manuscript.publication?.doi && (
-                <div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>DOI</span>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-black)', marginTop: '2px' }}>
-                    {manuscript.publication.doi}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {manuscript.publication?.document_error && (
-              <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '10px 12px', borderRadius: '4px', fontSize: 'var(--text-xs)', marginBottom: '12px' }}>
-                <strong>Error:</strong> {manuscript.publication.document_error}
-              </div>
-            )}
-
-            {reprocessDocError && (
-              <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', padding: '10px 12px', borderRadius: '4px', fontSize: 'var(--text-xs)', marginBottom: '12px' }}>
-                <strong>Retry Error:</strong> {reprocessDocError}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              {manuscript.publication?.document_download_url && (
-                <a
-                  href={manuscript.publication.document_download_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    background: '#0B1B3A',
-                    color: '#FFFFFF',
-                    border: '1px solid #C4A24C',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '6px 14px',
-                    fontSize: 'var(--text-sm)',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <i className="fas fa-file-pdf" style={{ color: '#D9A94A' }} /> Download Official Branded PDF
-                </a>
-              )}
-              {manuscript.publication?.document_view_url && (
-                <a
-                  href={manuscript.publication.document_view_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    background: '#FFFFFF',
-                    color: 'var(--color-ink-navy)',
-                    border: '1px solid var(--color-rule-grey)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '6px 14px',
-                    fontSize: 'var(--text-sm)',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <i className="fas fa-eye" /> View in Browser
-                </a>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                loading={reprocessingDoc}
-                onClick={handleReprocessDoc}
-              >
-                <i className="fas fa-rotate" style={{ marginRight: '6px' }} />
-                {manuscript.publication?.document_status === 'failed' ? 'Retry PDF Generation' : 'Regenerate Branded PDF'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {manuscript.files && manuscript.files.length > 0 && (
         <div style={styles.section}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
@@ -671,11 +542,7 @@ export default function ManuscriptDetail() {
                             <i className="fas fa-check" style={{ fontSize: '9px' }} /> Latest Version
                           </span>
                         )}
-                        {file.file_type === 'published_manuscript' ? (
-                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: '#0B1B3A', color: '#D9A94A' }}>
-                            <i className="fas fa-file-pdf" style={{ marginRight: '4px' }} /> Official Published PDF
-                          </span>
-                        ) : file.file_type === 'main_manuscript' || file.file_type === 'manuscript' ? (
+                        {file.file_type === 'main_manuscript' || file.file_type === 'manuscript' ? (
                           <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', background: '#F1F5F9', color: '#475569' }}>
                             Main Manuscript
                           </span>

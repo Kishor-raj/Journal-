@@ -141,16 +141,16 @@ export default function PublicLayout() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'clamp(16px, 2vw, 24px)',
+              gap: 'clamp(8px, 1vw, 14px)',
               cursor: 'pointer',
               flex: isCompact ? '1 1 auto' : '0 0 auto',
               minWidth: 0,
             }}
           >
             <img
-              src="/asgard-logo.png"
-              alt="Asgard International Research Publication"
-              style={{ height: isCompact ? '60px' : 'clamp(68px, 5.5vw, 85px)', width: 'auto', mixBlendMode: 'multiply', flexShrink: 0, marginLeft: isCompact ? '-4px' : '-12px' }}
+              src="/asgard-logo.jpg"
+              alt="Asgard Publications"
+              style={{ height: isCompact ? '48px' : 'clamp(54px, 4.5vw, 70px)', width: 'auto', mixBlendMode: 'multiply', flexShrink: 0 }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: isCompact ? 'flex-start' : 'center', minWidth: 0 }}>
               <span style={{
@@ -377,7 +377,7 @@ export default function PublicLayout() {
               ASGARD
             </div>
             <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '12px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '20px' }}>
-              International Research Publication
+              Publications
             </div>
             <p style={{ fontSize: '15.5px', lineHeight: 1.75, color: '#96A0B8', margin: 0, maxWidth: '300px' }}>
               An independent academic publisher committed to open, rigorous, and globally accessible scholarship.
@@ -422,7 +422,7 @@ export default function PublicLayout() {
           letterSpacing: '0.03em',
           flexWrap: 'wrap',
         }}>
-          <span>© 2026 Asgard International Research Publication. All rights reserved.</span>
+          <span>© 2026 Asgard Publications. All rights reserved.</span>
           <span>Content licensed under CC BY 4.0 · ISSN 2654-6725</span>
         </div>
       </footer>

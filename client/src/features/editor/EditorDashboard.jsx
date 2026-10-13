@@ -214,6 +214,24 @@ export default function EditorDashboard() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
             <h1 style={{ ...S.title, margin: 0 }}>Editor Dashboard</h1>
+            {user?.editor_id && (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: '#1B2A4A',
+                color: '#C4922E',
+                border: '1px solid #C4922E',
+                borderRadius: '999px',
+                padding: '2px 10px',
+                fontSize: '12px',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+              }} title="Your Editor ID">
+                <i className="fas fa-id-badge" style={{ fontSize: '11px' }} />
+                Editor ID: {user.editor_id}
+              </span>
+            )}
           </div>
           <p style={{ fontSize: '14px', color: '#8B8F9A', margin: 0 }}>
             Your editorial queue, deadlines, and review progress at a glance

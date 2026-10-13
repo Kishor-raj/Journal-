@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -308,47 +308,9 @@ export default function DashboardLayout() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  // 1. Initial auth check in progress — render clean neutral loader, NEVER leak dashboard UI
-  if (loading && !user) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        width: '100vw',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#0F1A30',
-        color: '#fff',
-      }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: '50%',
-          border: '3px solid rgba(196,146,46,0.2)',
-          borderTopColor: '#C4922E',
-          animation: 'auth-spin 0.8s linear infinite',
-        }} />
-        <style>{`@keyframes auth-spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
-  }
-
-  // 2. Unauthenticated user — immediately redirect to login with returnTo
-  if (!user) {
-    const returnTo = location.pathname && location.pathname !== '/login'
-      ? `?returnTo=${encodeURIComponent(location.pathname + location.search)}`
-      : ''
-    return <Navigate to={`/login${returnTo}`} replace />
-  }
-
-  // 3. User authenticated — strictly use verified user.role, never sniff from URL
-  const cfg = NAV[user.role] ?? null
-
-  if (!cfg) {
-    return <Navigate to="/login" replace />
-  }
-
+  // Predict role from URL if user is not loaded yet, to avoid sidebar flash
+  const predictedRole = user?.role || location.pathname.split('/')[1]
+  const cfg = NAV[predictedRole] ?? NAV[user?.role] ?? null
   const isCollapsed = !isMobile && collapsed
 
   async function handleLogout() {
@@ -512,8 +474,9 @@ export default function DashboardLayout() {
               className="bell-shake"
               aria-label="Notifications" 
               onClick={() => {
-                if (user?.role) {
-                  const notifyPath = user.role === 'reviewer' ? '/reviewer/dashboard' : `/${user.role}/notifications`;
+                if (predictedRole) {
+                  const notifyPath = predictedRole === 'reviewer' ? '/reviewer/dashboard' : `/${predictedRole}/notifications`;
+                  // We add viewTransition inside navigate for react-router v7 if we want smooth transition, but global viewTransition is often on links.
                   navigate(notifyPath, { viewTransition: true });
                 }
               }}
@@ -558,9 +521,17 @@ export default function DashboardLayout() {
 
         {/* Page outlet */}
         <main style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', viewTransitionName: 'dashboard-main' }}>
-          <div style={{ animation: 'fade-in 0.3s ease-out' }}>
-            <Outlet />
-          </div>
+          {loading ? (
+            <div style={{ height: '100%', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid rgba(196,146,46,0.2)', borderTopColor: '#C4922E', animation: 'auth-spin 0.8s linear infinite' }} />
+            </div>
+          ) : !user ? (
+            <Navigate to="/login" replace />
+          ) : (
+            <div style={{ animation: 'fade-in 0.3s ease-out' }}>
+              <Outlet />
+            </div>
+          )}
         </main>
       </div>
     </div>

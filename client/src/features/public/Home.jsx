@@ -16,8 +16,8 @@ const FACTS = [
   { k: 'Review model', v: 'Double-blind' },
   { k: 'Access', v: 'Fully open' },
   { k: 'Licence', v: 'CC BY 4.0' },
+  { k: 'APC', v: 'Yes' },
   { k: 'Founded', v: '2026' },
-  { k: 'ISSN', v: '2654-6725' },
 ]
 
 const INDEXES = ['Scopus', 'Web of Science', 'DOAJ', 'ERIC', 'JSTOR']
@@ -67,8 +67,8 @@ function Book3D() {
         {/* book-3d is a custom element registered by book-3d.js */}
         {/* eslint-disable-next-line react/no-unknown-property */}
         <book-3d
-          front="/cover-front.png"
-          back="/cover-back.png"
+          front="/cover-front.jpeg"
+          back="/cover-back.jpeg"
           speed="0.45"
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
         />
@@ -383,7 +383,7 @@ export default function Home() {
                 textTransform: 'uppercase',
                 color: '#E3CB86',
               }}>
-                ASGARD INTERNATIONAL RESEARCH PUBLICATION · VOLUME 1, NUMBER 1
+                ASGARD PUBLICATIONS · VOLUME 1, NUMBER 1
               </span>
             </div>
 

@@ -1,4 +1,4 @@
-# Journal- (IJIDCR / Asgard International Research Publication) — Production Deployment Guide
+# Journal- (IJIDCR / Asgard Publications) — Production Deployment Guide
 
 > **Who this is for:** You have a fresh Hostinger **KVM 2** VPS and the domain
 > **`ijidcr-asgard.in`** (also registered/managed through Hostinger). Every command is
@@ -298,7 +298,7 @@ CLOUDINARY_UPLOAD_PRESET=
 RESEND_API_KEY=
 EMAIL_PROVIDER=resend
 EMAIL_ENABLED=true
-EMAIL_FROM_NAME=Asgard International Research Publication
+EMAIL_FROM_NAME=Asgard Publications
 EMAIL_FROM_ADDRESS=no-reply@ijidcr-asgard.in
 CONTACT_RECIPIENT_EMAIL=ceo@ijidcr-asgard.in
 HOSTINGER_MAIL_API_KEY=
@@ -521,9 +521,6 @@ docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate nginx
 # Run migrations manually
 docker compose -f docker-compose.prod.yml exec backend node src/db/migrate.js
 
-# Backfill branded published PDFs for existing manuscripts
-docker compose -f docker-compose.prod.yml exec backend npm run backfill:published-docs
-
 # Update an env var
 nano /var/www/journal/server/.env
 docker compose -f docker-compose.prod.yml restart backend
@@ -621,7 +618,6 @@ day or two with no issues:
 | Manual deploy | `git pull && npm run build (client) && docker compose -f docker-compose.prod.yml up --build -d backend` |
 | Database backup | `docker compose -f docker-compose.prod.yml exec postgres pg_dump -U journal journal_prod > backup.sql` |
 | Run migrations | `docker compose -f docker-compose.prod.yml exec backend node src/db/migrate.js` |
-| Backfill published PDFs | `docker compose -f docker-compose.prod.yml exec backend npm run backfill:published-docs` |
 | Reload nginx (config-only change) | `docker compose -f docker-compose.prod.yml exec nginx nginx -s reload` |
 | Recreate nginx (after a new client build) | `docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate nginx` |
 | Stop everything | `docker compose -f docker-compose.prod.yml down` |

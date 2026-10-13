@@ -235,7 +235,7 @@ export default function PublicationEthics() {
 
       <div style={{ maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(24px, 4vw, 40px) var(--layout-pad) clamp(56px, 8vw, 90px)' }}>
         <p style={{ fontSize: 'clamp(16px, 1.5vw, 17.5px)', lineHeight: 1.8, color: '#3A4157', maxWidth: '860px', margin: '0 0 44px' }}>
-          <strong>Asgard International Research Publication</strong> is committed to maintaining the highest standards of academic integrity, transparency, and ethical publishing. Authors, editors, reviewers, and publishers are expected to follow internationally recognized principles of research and publication ethics throughout the publication process.
+          <strong>Asgard Research Publication</strong> is committed to maintaining the highest standards of academic integrity, transparency, and ethical publishing. Authors, editors, reviewers, and publishers are expected to follow internationally recognized principles of research and publication ethics throughout the publication process.
         </p>
 
         <section style={{ marginBottom: '52px', background: '#F8F9FB', border: '1px solid #EAECEF', borderLeft: '4px solid #C4A24C', padding: 'clamp(24px, 4vw, 36px)', borderRadius: '0 4px 4px 0' }}>
@@ -256,7 +256,7 @@ export default function PublicationEthics() {
         <section style={{ marginBottom: '56px' }}>
           <SectionHeading>Responsibilities of Authors</SectionHeading>
           <p style={{ fontSize: '15.5px', lineHeight: 1.75, color: '#555E75', margin: '0 0 24px' }}>
-            Authors submitting manuscripts to <strong>Asgard International Research Publication</strong> must:
+            Authors submitting manuscripts to <strong>Asgard Research Publication</strong> must:
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
             {AUTHOR_GROUPS.map(group => (
@@ -376,7 +376,7 @@ export default function PublicationEthics() {
             Our Commitment
           </h2>
           <p style={{ fontSize: 'clamp(15.5px, 1.5vw, 17px)', lineHeight: 1.7, margin: 0 }}>
-            <strong>Asgard International Research Publication</strong> is dedicated to promoting ethical research, responsible publishing, and academic excellence. We strive to provide a transparent, fair, and trustworthy publishing environment for researchers around the world.
+            <strong>Asgard Research Publication</strong> is dedicated to promoting ethical research, responsible publishing, and academic excellence. We strive to provide a transparent, fair, and trustworthy publishing environment for researchers around the world.
           </p>
         </div>
       </div>

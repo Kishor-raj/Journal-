@@ -99,16 +99,6 @@ router.post('/manuscripts/:id/publish', authenticate, requireRole('editor'), asy
   res.json(result)
 })
 
-router.post('/manuscripts/:id/reprocess-document', authenticate, requireRole('editor'), async (req, res) => {
-  const result = await editorialService.reprocessPublishedManuscriptDocument(req.params.id, req.user.uid)
-  res.json(result)
-})
-
-router.get('/manuscripts/:id/published-document-status', authenticate, requireRole('editor'), async (req, res) => {
-  const status = await editorialService.getPublishedDocumentStatus(req.params.id)
-  res.json(status)
-})
-
 router.get('/accepted', authenticate, requireRole('editor'), async (req, res) => {
   const manuscripts = await editorialService.getAcceptedManuscripts(req.user.uid)
   res.json(manuscripts)
