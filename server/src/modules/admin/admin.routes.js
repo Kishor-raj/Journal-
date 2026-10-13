@@ -2,9 +2,17 @@ import { Router } from 'express'
 import { authenticate } from '../../middleware/authenticate.js'
 import { requireRole } from '../../middleware/authorize.js'
 import pool from '../../config/db.js'
-import { generateEditorId } from '../editorial-board/editorial-board.service.js'
+import { generateUsersCsv, getExportFilename } from './admin.csv.js'
 
 const router = Router()
+
+// Dynamic roles endpoint for admin dropdowns
+router.get('/roles', authenticate, requireRole('admin'), async (req, res) => {
+  const result = await pool.query(
+    'SELECT id, name, description FROM roles WHERE is_active = true ORDER BY name ASC'
+  )
+  res.json(result.rows)
+})
 
 router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
   const { page = 1, limit = 20, role, status, search } = req.query
@@ -22,7 +30,7 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
   }
   if (search) {
     params.push(`%${search}%`)
-    conditions.push(`(u.email ILIKE $${params.length} OR u.display_name ILIKE $${params.length} OR u.editor_id ILIKE $${params.length})`)
+    conditions.push(`(u.email ILIKE $${params.length} OR u.display_name ILIKE $${params.length} OR u.reviewer_id ILIKE $${params.length})`)
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -36,7 +44,7 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
   params.push(offset)
 
   const result = await pool.query(
-    `SELECT u.id, u.email, u.first_name, u.last_name, u.display_name, u.editor_id,
+    `SELECT u.id, u.email, u.first_name, u.last_name, u.display_name, u.reviewer_id,
             u.account_status, u.created_at, COALESCE(r.name, 'author') as role_name
      FROM users u
      LEFT JOIN roles r ON r.id = u.role_id
@@ -52,6 +60,59 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
     page: parseInt(page),
     limit: parseInt(limit),
   })
+})
+
+// Dynamic bulk CSV export across all matching records (respects role, status, search filters)
+router.get('/users/export', authenticate, requireRole('admin'), async (req, res) => {
+  const { role, status, search } = req.query
+  const conditions = []
+  const params = []
+
+  if (role && role !== 'all') {
+    params.push(role)
+    conditions.push(`LOWER(r.name) = LOWER($${params.length})`)
+  }
+  if (status && status !== 'all') {
+    params.push(status)
+    conditions.push(`u.account_status = $${params.length}`)
+  }
+  if (search && search.trim()) {
+    params.push(`%${search.trim()}%`)
+    conditions.push(`(u.email ILIKE $${params.length} OR u.display_name ILIKE $${params.length} OR u.reviewer_id ILIKE $${params.length})`)
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+  const result = await pool.query(
+    `SELECT u.id, u.email, u.first_name, u.last_name, u.display_name, u.reviewer_id,
+            u.account_status, u.is_email_verified, u.phone, u.institution, u.college,
+            u.department, u.state, u.country, u.course, u.orcid_id, u.bio,
+            u.created_at, u.updated_at,
+            COALESCE(r.name, 'author') AS role_name,
+            sess.last_login
+     FROM users u
+     LEFT JOIN roles r ON r.id = u.role_id
+     LEFT JOIN LATERAL (
+       SELECT MAX(last_seen_at) AS last_login
+       FROM user_sessions
+       WHERE user_id = u.id
+     ) sess ON true
+     ${where}
+     ORDER BY u.created_at DESC`,
+    params
+  )
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ error: 'No users found matching the selected criteria to export.' })
+  }
+
+  const filename = getExportFilename(role)
+  const csvContent = generateUsersCsv(result.rows)
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
+  return res.status(200).send(csvContent)
 })
 
 router.get('/users/:id', authenticate, requireRole('admin'), async (req, res) => {
@@ -77,11 +138,10 @@ router.patch('/users/:id/role', authenticate, requireRole('admin'), async (req, 
   if (roleResult.rows.length === 0) return res.status(400).json({ error: 'Invalid role' })
 
   const newRoleId = roleResult.rows[0].id
-  const userResult = await pool.query('SELECT role_id, editor_id FROM users WHERE id = $1', [userId])
+  const userResult = await pool.query('SELECT role_id FROM users WHERE id = $1', [userId])
   if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' })
 
   const oldRoleId = userResult.rows[0].role_id
-  const existingEditorId = userResult.rows[0].editor_id
 
   const client = await pool.connect()
   try {
@@ -91,16 +151,7 @@ router.patch('/users/:id/role', authenticate, requireRole('admin'), async (req, 
       [userId, oldRoleId, newRoleId, req.user.uid, reason]
     )
 
-    let assignedEditorId = null
-    if (role_name === 'editor' && !existingEditorId) {
-      assignedEditorId = await generateEditorId(client)
-    }
-
-    if (assignedEditorId) {
-      await client.query('UPDATE users SET role_id = $1, editor_id = $2, updated_at = now() WHERE id = $3', [newRoleId, assignedEditorId, userId])
-    } else {
-      await client.query('UPDATE users SET role_id = $1, updated_at = now() WHERE id = $2', [newRoleId, userId])
-    }
+    await client.query('UPDATE users SET role_id = $1, updated_at = now() WHERE id = $2', [newRoleId, userId])
 
     await client.query('DELETE FROM user_roles WHERE user_id = $1', [userId])
     await client.query(
@@ -115,11 +166,11 @@ router.patch('/users/:id/role', authenticate, requireRole('admin'), async (req, 
     await client.query(
       `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, old_values, new_values, ip_address)
        VALUES ($1, 'role_changed', 'users', $2, $3, $4, $5)`,
-      [req.user.uid, userId, JSON.stringify({ role_id: oldRoleId }), JSON.stringify({ role_id: newRoleId, role_name, editor_id: assignedEditorId || existingEditorId }), req.ip]
+      [req.user.uid, userId, JSON.stringify({ role_id: oldRoleId }), JSON.stringify({ role_id: newRoleId, role_name }), req.ip]
     )
 
     await client.query('COMMIT')
-    res.json({ message: 'Role updated', editor_id: assignedEditorId || existingEditorId || null })
+    res.json({ message: 'Role updated' })
   } catch (err) {
     await client.query('ROLLBACK')
     throw err

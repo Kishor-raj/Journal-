@@ -202,9 +202,8 @@ export function validateApplicationInput(body = {}) {
   data.editorial_experiences = Array.isArray(editorialExp) ? editorialExp : []
 
   // 6. Preferred Role & Availability
-  const preferredRole = String(body.preferred_role || body.preferredRole || '').trim()
-  if (!preferredRole) errors.push('Preferred editorial role is required.')
-  data.preferred_role = preferredRole
+  // Effective role is always normalized to Reviewer for Editorial Board applications
+  data.preferred_role = 'Reviewer'
 
   data.review_capacity = String(body.review_capacity || body.reviewCapacity || '').trim() || '3–5 manuscripts/month'
   data.preferred_review_period = String(body.preferred_review_period || body.preferredReviewPeriod || '').trim() || '14 days'
@@ -270,31 +269,31 @@ export async function generateApplicationNumber() {
   return `EB-${year}-${String(count).padStart(4, '0')}-${randomSuffix}`
 }
 
-export async function generateEditorId(db = pool) {
+export async function generateReviewerId(db = pool) {
   const res = await db.query(`
     SELECT MAX(num) as max_num FROM (
-      SELECT NULLIF(SUBSTRING(editor_id FROM '^AIRJ([0-9]+)$'), '')::integer AS num FROM users WHERE editor_id IS NOT NULL
+      SELECT NULLIF(SUBSTRING(reviewer_id FROM '^AIRJ([0-9]+)$'), '')::integer AS num FROM users WHERE reviewer_id IS NOT NULL
       UNION ALL
-      SELECT NULLIF(SUBSTRING(editor_id FROM '^AIRJ([0-9]+)$'), '')::integer AS num FROM editorial_members WHERE editor_id IS NOT NULL
+      SELECT NULLIF(SUBSTRING(reviewer_id FROM '^AIRJ([0-9]+)$'), '')::integer AS num FROM editorial_members WHERE reviewer_id IS NOT NULL
       UNION ALL
-      SELECT NULLIF(SUBSTRING(editor_id FROM '^AIRJ([0-9]+)$'), '')::integer AS num FROM editorial_applications WHERE editor_id IS NOT NULL
+      SELECT NULLIF(SUBSTRING(reviewer_id FROM '^AIRJ([0-9]+)$'), '')::integer AS num FROM editorial_applications WHERE reviewer_id IS NOT NULL
     ) sub
   `)
   const maxNum = parseInt(res?.rows?.[0]?.max_num || 0, 10)
   let nextNum = isNaN(maxNum) ? 1 : maxNum + 1
-  let editorId = `AIRJ${String(nextNum).padStart(4, '0')}`
+  let reviewerId = `AIRJ${String(nextNum).padStart(4, '0')}`
 
   while (true) {
     const exists = await db.query(
-      `SELECT 1 FROM users WHERE editor_id = $1 UNION SELECT 1 FROM editorial_members WHERE editor_id = $1`,
-      [editorId]
+      `SELECT 1 FROM users WHERE reviewer_id = $1 UNION SELECT 1 FROM editorial_members WHERE reviewer_id = $1 UNION SELECT 1 FROM editorial_applications WHERE reviewer_id = $1`,
+      [reviewerId]
     )
     if (!exists?.rows || exists.rows.length === 0) break
     nextNum++
-    editorId = `AIRJ${String(nextNum).padStart(4, '0')}`
+    reviewerId = `AIRJ${String(nextNum).padStart(4, '0')}`
   }
 
-  return editorId
+  return reviewerId
 }
 
 export async function submitApplication(rawInput, ip, userAgent) {
@@ -530,8 +529,8 @@ export async function getApplicationStatus(reference, email) {
 
   const cleanRef = String(reference).trim()
   let query = `
-    SELECT id, application_number, full_name, email, status, preferred_role,
-           preferred_editorial_section, primary_research_area, clarification_request,
+    SELECT id, application_number, full_name, academic_title, email, status, preferred_role,
+           preferred_editorial_section, primary_research_area, reviewer_id, clarification_request,
            clarification_requested_at, clarification_response, clarification_responded_at,
            decision_reason, reviewed_at, created_at, updated_at
     FROM editorial_applications
@@ -553,7 +552,9 @@ export async function getApplicationStatus(reference, email) {
   return {
     application_number: app.application_number,
     full_name: app.full_name,
+    academic_title: app.academic_title,
     status: app.status,
+    reviewer_id: ['APPROVED', 'ACTIVE_MEMBER'].includes(app.status) ? app.reviewer_id : null,
     preferred_role: app.preferred_role,
     preferred_editorial_section: app.preferred_editorial_section,
     primary_research_area: app.primary_research_area,
@@ -637,13 +638,24 @@ export async function submitClarificationResponse(reference, email, responseText
 
 export async function getPublicEditorialBoard() {
   const result = await pool.query(`
-    SELECT id, editor_id, name, academic_title, designation, department, institution,
-           country, role_title, editorial_section, research_areas,
-           profile_image_url, orcid, google_scholar, scopus, wos,
-           profile_link, display_order, created_at
-    FROM editorial_members
-    WHERE is_published = true
-    ORDER BY display_order ASC, created_at ASC
+    SELECT em.id, em.reviewer_id, em.name,
+           COALESCE(em.academic_title, ea.academic_title) AS academic_title,
+           em.designation, em.department, em.institution,
+           em.country,
+           CASE 
+             WHEN em.role_title = 'Reviewer' AND ap.position IS NOT NULL THEN ap.position
+             WHEN em.role_title = 'Reviewer' THEN 'Editorial Board Member'
+             ELSE em.role_title
+           END AS role_title,
+           em.editorial_section, em.research_areas,
+           em.profile_image_url, em.orcid, em.google_scholar, em.scopus, em.wos,
+           em.profile_link, em.display_order, em.created_at,
+           ap.position AS appointment_position, ap.section AS appointment_section
+    FROM editorial_members em
+    LEFT JOIN editorial_appointments ap ON ap.id = em.appointment_id
+    LEFT JOIN editorial_applications ea ON ea.id = em.application_id
+    WHERE em.is_published = true
+    ORDER BY em.display_order ASC, em.created_at ASC
   `)
 
   return result.rows
@@ -665,7 +677,7 @@ export async function getAdminApplications(filters = {}) {
   } = filters
 
   let query = `
-    SELECT ea.id, ea.application_number, COALESCE(ea.editor_id, u.editor_id) AS editor_id, ea.email, ea.full_name, ea.academic_title,
+    SELECT ea.id, ea.application_number, COALESCE(ea.reviewer_id, u.reviewer_id) AS reviewer_id, ea.email, ea.full_name, ea.academic_title,
            ea.designation, ea.department, ea.institution, ea.country, ea.phone,
            ea.profile_image_url, ea.orcid_id, ea.google_scholar_h_index,
            ea.highest_qualification, ea.specialization, ea.primary_research_area,
@@ -673,7 +685,7 @@ export async function getAdminApplications(filters = {}) {
            ea.verification_status, ea.cv_file_url, ea.cv_file_name,
            ea.created_at, ea.updated_at, ea.reviewed_at,
            u.id AS existing_user_id, u.is_email_verified AS user_email_verified,
-           u.editor_id AS user_editor_id,
+           u.reviewer_id AS user_reviewer_id,
            rg.status AS role_grant_status, rg.token_expires_at AS role_grant_expires_at
     FROM editorial_applications ea
     LEFT JOIN users u ON u.email = ea.email
@@ -689,8 +701,8 @@ export async function getAdminApplications(filters = {}) {
       ea.full_name ILIKE $${paramIdx} OR
       ea.email ILIKE $${paramIdx} OR
       ea.application_number ILIKE $${paramIdx} OR
-      ea.editor_id ILIKE $${paramIdx} OR
-      u.editor_id ILIKE $${paramIdx} OR
+      ea.reviewer_id ILIKE $${paramIdx} OR
+      u.reviewer_id ILIKE $${paramIdx} OR
       ea.institution ILIKE $${paramIdx} OR
       ea.country ILIKE $${paramIdx} OR
       ea.primary_research_area ILIKE $${paramIdx}
@@ -765,8 +777,8 @@ export async function getAdminApplications(filters = {}) {
       ea.full_name ILIKE $${cIdx} OR
       ea.email ILIKE $${cIdx} OR
       ea.application_number ILIKE $${cIdx} OR
-      ea.editor_id ILIKE $${cIdx} OR
-      u.editor_id ILIKE $${cIdx} OR
+      ea.reviewer_id ILIKE $${cIdx} OR
+      u.reviewer_id ILIKE $${cIdx} OR
       ea.institution ILIKE $${cIdx} OR
       ea.country ILIKE $${cIdx} OR
       ea.primary_research_area ILIKE $${cIdx}
@@ -822,10 +834,10 @@ export async function getAdminApplications(filters = {}) {
 export async function getAdminApplicationDetail(id) {
   const result = await pool.query(
     `SELECT ea.*,
-            COALESCE(ea.editor_id, u.editor_id, em.editor_id) AS editor_id,
+            COALESCE(ea.reviewer_id, u.reviewer_id, em.reviewer_id) AS reviewer_id,
             u.id AS existing_user_id, u.display_name AS user_display_name,
             u.is_email_verified AS user_email_verified, u.account_status AS user_account_status,
-            u.role_id AS user_role_id, u.editor_id AS user_editor_id,
+            u.role_id AS user_role_id, u.reviewer_id AS user_reviewer_id,
             reviewer.display_name AS reviewer_name,
             rg.id AS role_grant_id, rg.status AS role_grant_status,
             rg.token_expires_at AS role_grant_expires_at, rg.granted_at AS role_grant_granted_at,
@@ -833,7 +845,7 @@ export async function getAdminApplicationDetail(id) {
             ap.id AS appointment_id, ap.status AS appointment_status,
             ap.position AS appointment_position, ap.section AS appointment_section,
             ap.appointment_date, ap.term_start_date, ap.term_end_date,
-            em.id AS editorial_member_id, em.editor_id AS member_editor_id, em.is_published AS member_is_published,
+            em.id AS editorial_member_id, em.reviewer_id AS member_reviewer_id, em.is_published AS member_is_published,
             em.display_order AS member_display_order
      FROM editorial_applications ea
      LEFT JOIN users u ON u.email = ea.email
@@ -1021,12 +1033,12 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
     const userRes = await client.query('SELECT * FROM users WHERE email = $1', [app.email])
     const existingUser = userRes.rows[0]
 
-    // Resolve or generate unique Editor ID (e.g. AIRJ0001)
-    const editorId = existingUser?.editor_id || app.editor_id || await generateEditorId(client)
+    // Resolve or generate unique Reviewer ID (e.g. AIRJ0001)
+    const reviewerId = existingUser?.reviewer_id || app.reviewer_id || await generateReviewerId(client)
 
-    // Find editor role ID
-    const editorRoleRes = await client.query("SELECT id FROM roles WHERE name = 'editor'")
-    const editorRoleId = editorRoleRes.rows[0]?.id
+    // Find reviewer role ID
+    const reviewerRoleRes = await client.query("SELECT id FROM roles WHERE name = 'reviewer'")
+    const reviewerRoleId = reviewerRoleRes.rows[0]?.id
 
     let userId = null
     let roleGrantId = null
@@ -1035,8 +1047,8 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
     if (existingUser) {
       userId = existingUser.id
 
-      // 1. Promote user to editor and sync profile details
-      if (editorRoleId) {
+      // 1. Appoint user as reviewer and sync profile details
+      if (reviewerRoleId) {
         const nameParts = parseNameParts(app.full_name, app.academic_title)
         const inst = app.institution || app.university || 'Academic Institution'
         const dept = app.department || 'Academic Department'
@@ -1048,7 +1060,7 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
         await client.query(
           `UPDATE users
            SET role_id = $1,
-               editor_id = COALESCE(editor_id, $2),
+               reviewer_id = COALESCE(reviewer_id, $2),
                first_name = COALESCE(NULLIF(first_name, ''), $3),
                last_name = COALESCE(NULLIF(last_name, ''), $4),
                display_name = COALESCE(NULLIF(display_name, ''), $5),
@@ -1065,8 +1077,8 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
                updated_at = now()
            WHERE id = $16`,
           [
-            editorRoleId,
-            editorId,
+            reviewerRoleId,
+            reviewerId,
             nameParts.firstName,
             nameParts.lastName,
             app.full_name || nameParts.displayName,
@@ -1088,37 +1100,37 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
           `INSERT INTO user_roles (user_id, role_id)
            VALUES ($1, $2)
            ON CONFLICT (user_id, role_id) DO NOTHING`,
-          [userId, editorRoleId]
+          [userId, reviewerRoleId]
         )
       }
 
-      // Mark application as ACTIVE_MEMBER (or APPROVED)
+      // Mark application as APPROVED with reviewer_id
       await client.query(
         `UPDATE editorial_applications
          SET status = 'APPROVED',
-             editor_id = COALESCE(editor_id, $1),
+             reviewer_id = COALESCE(reviewer_id, $1),
              user_id = $2,
              reviewed_by = $3,
              reviewed_at = now(),
              decision_reason = $4,
              updated_at = now()
          WHERE id = $5`,
-        [editorId, userId, adminUserId, approvalData.notes || 'Application approved by editorial administration.', id]
+        [reviewerId, userId, adminUserId, approvalData.notes || 'Application approved by editorial administration.', id]
       )
 
       await client.query(
         `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_values, ip_address, user_agent)
-         VALUES ($1, 'user_promoted_to_editor', 'users', $2, $3, $4, $5)`,
+         VALUES ($1, 'editorial_board_reviewer_appointed', 'users', $2, $3, $4, $5)`,
         [
           adminUserId,
           userId,
-          JSON.stringify({ previous_role: existingUser.role_id, new_role: 'editor', application_id: id, editor_id: editorId }),
+          JSON.stringify({ previous_role: existingUser.role_id, new_role: 'reviewer', application_id: id, reviewer_id: reviewerId }),
           ip || null,
           userAgent || null,
         ]
       )
     } else {
-      // User does not exist -> create editorial_role_grants
+      // User does not exist -> create editorial_role_grants with role 'reviewer'
       invitationToken = crypto.randomBytes(32).toString('hex')
       const tokenHash = hashToken(invitationToken)
       const tokenExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days
@@ -1131,7 +1143,7 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
 
       const grantRes = await client.query(
         `INSERT INTO editorial_role_grants (application_id, email, role, status, invitation_token_hash, token_expires_at)
-         VALUES ($1, $2, 'editor', 'PENDING', $3, $4)
+         VALUES ($1, $2, 'reviewer', 'PENDING', $3, $4)
          RETURNING id`,
         [id, app.email, tokenHash, tokenExpiresAt]
       )
@@ -1140,42 +1152,42 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
       await client.query(
         `UPDATE editorial_applications
          SET status = 'APPROVED',
-             editor_id = COALESCE(editor_id, $1),
+             reviewer_id = COALESCE(reviewer_id, $1),
              reviewed_by = $2,
              reviewed_at = now(),
              decision_reason = $3,
              updated_at = now()
          WHERE id = $4`,
-        [editorId, adminUserId, approvalData.notes || 'Application approved. Invitation sent to create editor account.', id]
+        [reviewerId, adminUserId, approvalData.notes || 'Application approved. Invitation sent to create reviewer account.', id]
       )
 
       await client.query(
         `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, new_values, ip_address, user_agent)
-         VALUES ($1, 'editorial_role_grant_created', 'editorial_role_grants', $2, $3, $4, $5)`,
+         VALUES ($1, 'editorial_reviewer_role_grant_created', 'editorial_role_grants', $2, $3, $4, $5)`,
         [
           adminUserId,
           roleGrantId,
-          JSON.stringify({ application_id: id, email: app.email, expires_at: tokenExpiresAt, editor_id: editorId }),
+          JSON.stringify({ application_id: id, email: app.email, expires_at: tokenExpiresAt, reviewer_id: reviewerId }),
           ip || null,
           userAgent || null,
         ]
       )
     }
 
-    // 2. Create / update appointment
+    // 2. Create / update appointment with reviewer_id
     const appointmentRes = await client.query(
       `INSERT INTO editorial_appointments (
-         application_id, user_id, editor_id, position, section, appointment_date, term_start_date, term_end_date, status
+         application_id, user_id, reviewer_id, position, section, appointment_date, term_start_date, term_end_date, status
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'ACTIVE')
        RETURNING id`,
-      [id, userId, editorId, position, section, appointmentDate, termStartDate, termEndDate]
+      [id, userId, reviewerId, position, section, appointmentDate, termStartDate, termEndDate]
     )
     const appointmentId = appointmentRes.rows[0].id
 
-    // 3. Create / update public editorial_members profile
+    // 3. Create / update public editorial_members profile with category role_title (e.g. position) and reviewer_id
     await client.query(
       `INSERT INTO editorial_members (
-         user_id, appointment_id, application_id, editor_id, name, academic_title,
+         user_id, appointment_id, application_id, reviewer_id, name, academic_title,
          designation, department, institution, country, role_title,
          editorial_section, research_areas, profile_image_url,
          profile_image_public_id, orcid, google_scholar, scopus, wos,
@@ -1184,14 +1196,14 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
          $1, $2, $3, $4, $5,
          $6, $7, $8, $9, $10,
          $11, $12, $13,
-         $14, $15, $16, $17, $18,
-         $19, $20, $21
+         $14, $15, $16, $17, $18, $19,
+         $20, $21
        )`,
       [
         userId,
         appointmentId,
         id,
-        editorId,
+        reviewerId,
         app.full_name,
         app.academic_title,
         app.designation,
@@ -1225,7 +1237,7 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
           user_exists: Boolean(existingUser),
           user_id: userId,
           role_grant_id: roleGrantId,
-          editor_id: editorId,
+          reviewer_id: reviewerId,
         }),
         ip || null,
         userAgent || null,
@@ -1263,12 +1275,12 @@ export async function approveApplication(id, approvalData = {}, adminUserId, ip,
     return {
       success: true,
       message: existingUser
-        ? 'Application approved and existing user account promoted to Editor.'
+        ? 'Application approved and existing user account appointed as Reviewer.'
         : 'Application approved. Single-use invitation link sent to applicant email.',
       user_exists: Boolean(existingUser),
       user_id: userId,
       role_grant_id: roleGrantId,
-      editor_id: editorId,
+      reviewer_id: reviewerId,
     }
   } catch (err) {
     await client.query('ROLLBACK')
@@ -1396,7 +1408,7 @@ export async function resendRoleInvitation(id, adminUserId, ip, userAgent) {
 
 export async function listAllEditorialMembers() {
   const result = await pool.query(`
-    SELECT em.*, ea.application_number, COALESCE(em.editor_id, u.editor_id, ea.editor_id) AS editor_id, u.email AS user_email, u.display_name AS user_name
+    SELECT em.*, ea.application_number, COALESCE(em.reviewer_id, u.reviewer_id, ea.reviewer_id) AS reviewer_id, u.email AS user_email, u.display_name AS user_name
     FROM editorial_members em
     LEFT JOIN editorial_applications ea ON ea.id = em.application_id
     LEFT JOIN users u ON u.id = em.user_id
@@ -1413,7 +1425,7 @@ export async function updateEditorialMember(memberId, updateData, adminUserId, i
     'name', 'academic_title', 'designation', 'department', 'institution',
     'country', 'role_title', 'editorial_section', 'research_areas',
     'profile_image_url', 'orcid', 'google_scholar', 'scopus', 'wos',
-    'profile_link', 'display_order', 'is_published', 'editor_id',
+    'profile_link', 'display_order', 'is_published', 'reviewer_id',
   ]
 
   const sets = []

@@ -224,12 +224,12 @@ export async function sendEditorialApplicationApprovedEmail({ to, applicantName,
 
   const template = templateResult.rows[0] || {
     subject: 'Congratulations! Your IJIDCR Editorial Board Application Has Been Approved — {{application_number}}',
-    body_html: '<p>Dear {{applicant_name}},</p><p>We are delighted to inform you that your application to join the Editorial Board of the <strong>International Journal of Intelligent Digital Computing Research (IJIDCR)</strong> has been <strong>APPROVED</strong>.</p><p><strong>Appointment Position:</strong> {{position}}<br/><strong>Editorial Section:</strong> {{section}}<br/><strong>Appointment Date:</strong> {{appointment_date}}<br/><strong>Term Start:</strong> {{term_start_date}}</p><p>Your account has been granted Editor access.</p><p><a href="{{login_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Go to Editor Workspace</a></p>',
+    body_html: '<p>Dear {{applicant_name}},</p><p>We are delighted to inform you that your application to join the Editorial Board of the <strong>International Journal of Intelligent Digital Computing Research (IJIDCR)</strong> has been <strong>APPROVED</strong>.</p><p><strong>Appointment Position:</strong> {{position}}<br/><strong>Editorial Section:</strong> {{section}}<br/><strong>Appointment Date:</strong> {{appointment_date}}<br/><strong>Term Start:</strong> {{term_start_date}}</p><p>You have been appointed as a Reviewer on the Editorial Board.</p><p><a href="{{login_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Go to Reviewer Workspace</a></p>',
     body_text: 'Dear {{applicant_name}},\n\nYour IJIDCR Editorial Board application has been approved as {{position}} ({{section}}).\nLogin: {{login_url}}',
   }
 
   const vars = {
-    applicant_name: applicantName || 'Editor',
+    applicant_name: applicantName || 'Reviewer',
     application_number: applicationNumber,
     position: position || 'Editorial Board Member',
     section: section || 'General',
@@ -259,13 +259,13 @@ export async function sendEditorialRoleInvitationEmail({ to, applicantName, appl
 
   const template = templateResult.rows[0] || {
     subject: 'IJIDCR Editorial Board Application Approved — Create Your Account',
-    body_html: '<p>Dear {{applicant_name}},</p><p>Congratulations! Your application to join the Editorial Board of the <strong>International Journal of Intelligent Digital Computing Research (IJIDCR)</strong> has been <strong>APPROVED</strong> as <strong>{{position}}</strong> (Section: {{section}}).</p><p>To complete your appointment and activate your Editor privileges, please create your account using your approved email address (<strong>{{approved_email}}</strong>):</p><p><a href="{{invitation_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Set Up Your Editor Account</a></p><p><em>Note: This invitation link is personal and will expire in {{expires_in}}.</em></p>',
+    body_html: '<p>Dear {{applicant_name}},</p><p>Congratulations! Your application to join the Editorial Board of the <strong>International Journal of Intelligent Digital Computing Research (IJIDCR)</strong> has been <strong>APPROVED</strong> as <strong>{{position}}</strong> (Section: {{section}}).</p><p>To complete your appointment and activate your Reviewer account, please create your account using your approved email address (<strong>{{approved_email}}</strong>):</p><p><a href="{{invitation_url}}" style="background:#1f3b4d;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block">Set Up Your Reviewer Account</a></p><p><em>Note: This invitation link is personal and will expire in {{expires_in}}.</em></p>',
     body_text: 'Dear {{applicant_name}},\n\nYour application has been approved as {{position}} ({{section}}).\nSet up your account using {{approved_email}}: {{invitation_url}}\nExpires in: {{expires_in}}',
   }
 
   const expiresInDays = expiresAt ? Math.max(1, Math.round((new Date(expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000))) : 14
   const vars = {
-    applicant_name: applicantName || 'Editor',
+    applicant_name: applicantName || 'Reviewer',
     application_number: applicationNumber,
     position: position || 'Editorial Board Member',
     section: section || 'General',

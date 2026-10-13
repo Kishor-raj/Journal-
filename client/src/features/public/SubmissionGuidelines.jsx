@@ -60,10 +60,10 @@ const FORMATTING = [
   { k: 'File format', v: 'Microsoft Word (.doc or .docx)' },
   { k: 'Paper size', v: 'A4 standard' },
   { k: 'Typeface', v: 'Times New Roman' },
-  { k: 'Title size', v: '16 pt (Bold)' },
-  { k: 'Headings size', v: '14 pt (Bold)' },
-  { k: 'Body text size', v: '12 pt (Regular)' },
-  { k: 'Line spacing', v: '1.5 lines throughout' },
+  { k: 'Title size', v: '13 pt (Bold)' },
+  { k: 'Headings size', v: '11 pt (Bold)' },
+  { k: 'Body text size', v: '10 pt (Regular)' },
+  { k: 'Line spacing', v: '1.15 lines throughout' },
   { k: 'Margins', v: '1 inch (2.54 cm) on all sides' },
   { k: 'Page numbers', v: 'Bottom center consecutively' },
   { k: 'Figures & tables', v: 'Numbered consecutively with captions (min. 300 DPI)' },
@@ -89,10 +89,34 @@ const CHECKLIST = [
 ]
 
 const DOWNLOADS = [
-  { name: 'Manuscript Template (.docx)', ext: 'DOCX', desc: 'Standard Word formatting template with preconfigured styles' },
-  { name: 'Author Submission Checklist', ext: 'PDF', desc: 'Verification checklist to review before submitting' },
-  { name: 'Copyright Agreement Form', ext: 'PDF', desc: 'Open-access licensing and copyright assignment form' },
-  { name: 'Reference Style Guide', ext: 'PDF', desc: 'Detailed citation styling instructions and examples' },
+  {
+    name: 'Manuscript Template (.docx)',
+    ext: 'DOCX',
+    desc: 'Standard Word formatting template with preconfigured styles',
+    file: '/api/public/templates/download?name=manuscript-template',
+    fileName: '1.Manuscript Template.docx',
+  },
+  {
+    name: 'Author Submission Checklist',
+    ext: 'DOCX',
+    desc: 'Verification checklist to review before submitting',
+    file: '/api/public/templates/download?name=author-checklist',
+    fileName: '2.Author Submission Checklist.docx',
+  },
+  {
+    name: 'Copyright Agreement Form',
+    ext: 'DOCX',
+    desc: 'Open-access licensing and copyright assignment form',
+    file: '/api/public/templates/download?name=copyright-form',
+    fileName: '3.Copyright Agreement Form.docx',
+  },
+  {
+    name: 'Reference Style Guide',
+    ext: 'DOCX',
+    desc: 'Detailed citation styling instructions and examples',
+    file: '/api/public/templates/download?name=reference-style-guide',
+    fileName: '4.Reference Style Guide.docx',
+  },
 ]
 
 function SectionCard({ id, title, subtitle, children }) {
@@ -143,13 +167,38 @@ function SectionCard({ id, title, subtitle, children }) {
   )
 }
 
+/* ─── Rate Limiting Constants for Template Downloads (Max 10 per 15 min) ─── */
+const DOWNLOAD_RATE_LIMIT_MAX = 10
+const DOWNLOAD_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000 // 15 minute window
+
+function checkTemplateRateLimit() {
+  try {
+    const now = Date.now()
+    const stored = JSON.parse(localStorage.getItem('ijidcr_template_download_timestamps') || '[]')
+    const recent = stored.filter(t => typeof t === 'number' && now - t < DOWNLOAD_RATE_LIMIT_WINDOW_MS)
+
+    if (recent.length >= DOWNLOAD_RATE_LIMIT_MAX) {
+      const oldest = Math.min(...recent)
+      const remainingMinutes = Math.max(1, Math.ceil((oldest + DOWNLOAD_RATE_LIMIT_WINDOW_MS - now) / 60000))
+      return {
+        allowed: false,
+        remainingMinutes,
+        message: `Download rate limit reached: Maximum ${DOWNLOAD_RATE_LIMIT_MAX} downloads allowed per 15 minutes. Please wait ${remainingMinutes} minute(s) before trying again.`,
+      }
+    }
+
+    recent.push(now)
+    localStorage.setItem('ijidcr_template_download_timestamps', JSON.stringify(recent))
+    return { allowed: true }
+  } catch {
+    return { allowed: true }
+  }
+}
+
 function NavPill({ id, title }) {
-  const [hovered, setHovered] = useState(false)
   return (
     <a
       href={`#${id}`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       style={{
         fontFamily: 'Jost, sans-serif',
         fontSize: '12px',
@@ -158,8 +207,8 @@ function NavPill({ id, title }) {
         fontWeight: 600,
         padding: '7px 14px',
         borderRadius: '2px',
-        background: hovered ? '#C4A24C' : 'rgba(196, 162, 76, 0.1)',
-        color: hovered ? '#071228' : '#0B1B3A',
+        background: '#C4A24C',
+        color: '#071228',
         textDecoration: 'none',
         whiteSpace: 'nowrap',
         transition: 'all 0.15s ease',
@@ -171,10 +220,13 @@ function NavPill({ id, title }) {
   )
 }
 
-function DownloadItem({ name, ext, desc }) {
+function DownloadItem({ name, ext, desc, file, fileName, onDownloadClick }) {
   const [hovered, setHovered] = useState(false)
   return (
-    <div
+    <a
+      href={file || '#'}
+      download={fileName || name}
+      onClick={(e) => onDownloadClick && onDownloadClick(e, { name, file, fileName })}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -188,6 +240,7 @@ function DownloadItem({ name, ext, desc }) {
         justifyContent: 'space-between',
         gap: '16px',
         cursor: 'pointer',
+        textDecoration: 'none',
         transition: 'all 0.15s ease',
       }}
     >
@@ -206,14 +259,37 @@ function DownloadItem({ name, ext, desc }) {
         background: '#0B1B3A',
         padding: '5px 10px',
         borderRadius: '3px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        flexShrink: 0,
       }}>
+        <i className="fa-solid fa-download" style={{ fontSize: '10px' }} />
         {ext}
       </span>
-    </div>
+    </a>
   )
 }
 
 export default function SubmissionGuidelines() {
+  const [toast, setToast] = useState({ show: false, message: '', type: 'info' })
+
+  const showToast = (message, type = 'info') => {
+    setToast({ show: true, message, type })
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }))
+    }, 3800)
+  }
+
+  const handleDownloadClick = (e, item) => {
+    const rateCheck = checkTemplateRateLimit()
+    if (!rateCheck.allowed) {
+      e.preventDefault()
+      showToast(rateCheck.message, 'warning')
+      return
+    }
+    showToast(`Downloading "${item.name}"...`, 'success')
+  }
   return (
     <>
       {/* Page Hero */}
@@ -234,7 +310,7 @@ export default function SubmissionGuidelines() {
             Author Guidelines
           </h1>
           <p style={{ fontSize: 'clamp(15.5px, 1.6vw, 18px)', color: '#C3CBDC', margin: 0 }}>
-            Comprehensive instructions for preparing and submitting manuscripts to Asgard Research Publication
+            Comprehensive instructions for preparing and submitting manuscripts to Asgard International Research Publication
           </p>
         </div>
       </div>
@@ -318,7 +394,11 @@ export default function SubmissionGuidelines() {
           }}>
             <div style={{ display: 'grid', gap: '12px' }}>
               {DOWNLOADS.map(d => (
-                <DownloadItem key={d.name} {...d} />
+                <DownloadItem
+                  key={d.name}
+                  {...d}
+                  onDownloadClick={handleDownloadClick}
+                />
               ))}
             </div>
 
@@ -368,7 +448,7 @@ export default function SubmissionGuidelines() {
         {/* Section 2: Overview & Eligibility */}
         <SectionCard id="eligibility" title="1. Manuscript Eligibility" subtitle="Prerequisites for Submission">
           <p style={{ fontSize: 'clamp(15.5px, 1.4vw, 17px)', lineHeight: 1.8, color: '#3A4157', margin: '0 0 20px' }}>
-            Thank you for choosing <strong>Asgard Research Publication</strong> for your research publication. Authors are requested to carefully follow these guidelines before submitting their manuscripts. Adhering to these instructions will help ensure a smooth, transparent, and efficient review and publication process.
+            Thank you for choosing <strong>Asgard International Research Publication</strong> for your research publication. Authors are requested to carefully follow these guidelines before submitting their manuscripts. Adhering to these instructions will help ensure a smooth, transparent, and efficient review and publication process.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))', gap: '14px' }}>
             {ELIGIBILITY.map((r, idx) => (
@@ -490,7 +570,7 @@ export default function SubmissionGuidelines() {
         <SectionCard id="ethics" title="8. Plagiarism &amp; Publication Ethics" subtitle="Zero Tolerance Policy & Research Integrity">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))', gap: '20px' }}>
             <p style={{ fontSize: '15px', lineHeight: 1.75, color: '#3A4157', margin: 0 }}>
-              Asgard Research Publication maintains a strict zero-tolerance policy against plagiarism. All submitted manuscripts are screened using standard plagiarism detection software prior to peer review. Any form of verbatim copying without citation, paraphrasing without attribution, data falsification, or image manipulation will result in immediate rejection.
+              Asgard International Research Publication maintains a strict zero-tolerance policy against plagiarism. All submitted manuscripts are screened using standard plagiarism detection software prior to peer review. Any form of verbatim copying without citation, paraphrasing without attribution, data falsification, or image manipulation will result in immediate rejection.
             </p>
             <p style={{ fontSize: '15px', lineHeight: 1.75, color: '#3A4157', margin: 0 }}>
               Authors must ensure all co-authors contributed significantly, necessary institutional ethical clearances were obtained, and all funding bodies and potential conflicts of interest are disclosed.
@@ -553,6 +633,41 @@ export default function SubmissionGuidelines() {
           </SectionCard>
         </div>
       </div>
+
+      {/* ── Toast Notification for Rate Limiting / Feedback ── */}
+      {toast.show && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: toast.type === 'warning' ? '#4A1D0B' : '#071228',
+            color: '#FFFFFF',
+            padding: '12px 18px',
+            borderLeft: `3px solid ${toast.type === 'warning' ? '#E67E22' : '#C4A24C'}`,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            fontFamily: 'Jost, sans-serif',
+            fontSize: '13px',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            maxWidth: '400px',
+            lineHeight: 1.5,
+            borderRadius: '0 4px 4px 0',
+          }}
+        >
+          <i
+            className={
+              toast.type === 'warning'
+                ? 'fa-solid fa-triangle-exclamation'
+                : 'fa-solid fa-circle-check'
+            }
+            style={{ color: toast.type === 'warning' ? '#E67E22' : '#C4A24C', fontSize: '15px' }}
+          />
+          <span>{toast.message}</span>
+        </div>
+      )}
     </>
   )
 }

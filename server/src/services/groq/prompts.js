@@ -26,7 +26,7 @@ export function buildClassificationPrompt({ fromEmail, subject, bodyText, mailbo
     ? `\n## Available Journal Information (for reference only)\n${knowledgeContext}\n`
     : ''
 
-  return `You are an email classifier for a scholarly journal management system (Asgard Publications / IJIDCR).
+  return `You are an email classifier for a scholarly journal management system (Asgard International Research Publication / IJIDCR).
 
 Classify the following inbound email into exactly ONE category and extract structured information.
 

@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../../shared/components/PageHeader'
-import { getAcceptedManuscripts, publishManuscript, getLatestPublicationMeta } from '../../services/editorialService'
+import {
+  getAcceptedManuscripts,
+  publishManuscript,
+  getLatestPublicationMeta,
+  reprocessPublishedDocument,
+} from '../../services/editorialService'
 import { formatDate } from '../../shared/utils/formatDate'
 
 const styles = {
@@ -154,7 +159,7 @@ const styles = {
   },
 }
 
-function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
+function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryDoc, isReprocessing }) {
   const [hovered, setHovered] = useState(false)
   const isPublished = manuscript.current_status === 'published'
 
@@ -224,16 +229,70 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing }) {
         </button>
 
         {isPublished ? (
-          <span style={{
-            fontSize: 'var(--text-xs)',
-            fontWeight: 600,
-            color: '#1A7F4B',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-          }}>
-            <i className="fas fa-check-circle" /> Live on Site
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {manuscript.document_status === 'ready' && manuscript.document_download_url ? (
+              <a
+                href={manuscript.document_download_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  color: '#0B1B3A',
+                  background: '#F1F5F9',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '4px 10px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <i className="fas fa-file-pdf" style={{ color: '#E11D48' }} /> Download PDF
+              </a>
+            ) : manuscript.document_status === 'failed' ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRetryDoc(manuscript.id)
+                }}
+                disabled={isReprocessing}
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  color: '#B91C1C',
+                  background: '#FEF2F2',
+                  border: '1px solid #FECACA',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '4px 8px',
+                  cursor: isReprocessing ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <i className="fas fa-rotate-right" /> {isReprocessing ? 'Retrying...' : 'Retry PDF'}
+              </button>
+            ) : manuscript.document_status === 'processing' ? (
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                <i className="fas fa-spinner fa-spin" /> Generating PDF...
+              </span>
+            ) : null}
+
+            <span style={{
+              fontSize: 'var(--text-xs)',
+              fontWeight: 600,
+              color: '#1A7F4B',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}>
+              <i className="fas fa-check-circle" /> Live on Site
+            </span>
+          </div>
         ) : (
           <button
             style={{
@@ -269,6 +328,7 @@ export default function AcceptedManuscripts() {
   const [manuscripts, setManuscripts] = useState([])
   const [loading, setLoading] = useState(true)
   const [publishingId, setPublishingId] = useState(null)
+  const [reprocessingId, setReprocessingId] = useState(null)
   const [publishTarget, setPublishTarget] = useState(null)
   const [publishForm, setPublishForm] = useState({ volume: '', issue: '', doi: '' })
   const [successMessage, setSuccessMessage] = useState('')
@@ -284,6 +344,20 @@ export default function AcceptedManuscripts() {
   useEffect(() => {
     loadManuscripts()
   }, [])
+
+  const handleRetryDoc = async (id) => {
+    setReprocessingId(id)
+    try {
+      await reprocessPublishedDocument(id)
+      setSuccessMessage('Publication PDF successfully reprocessed and stamped with journal branding!')
+      loadManuscripts()
+      setTimeout(() => setSuccessMessage(''), 6000)
+    } catch (err) {
+      alert(err.message || 'Failed to reprocess published manuscript document')
+    } finally {
+      setReprocessingId(null)
+    }
+  }
 
   const handlePublish = async (id) => {
     try {
@@ -308,7 +382,13 @@ export default function AcceptedManuscripts() {
         result?.certificates_created > 0
           ? ` Certificate(s) prepared: ${result.certificates_created} (${result.certificates_generated ?? 0} generated).`
           : ''
-      setSuccessMessage(`Manuscript successfully published! It remains listed here with Published status and is live on the site.${certNote}`)
+      const docNote =
+        result?.document_status === 'ready'
+          ? ' Official branded PDF generated successfully.'
+          : result?.document_status === 'failed'
+          ? ` Branded PDF generation failed: ${result.document_error || 'Check server logs'}`
+          : ' Branded PDF generation in progress.'
+      setSuccessMessage(`Manuscript successfully published!${docNote}${certNote}`)
       loadManuscripts()
       setTimeout(() => setSuccessMessage(''), 6000)
     } catch (err) {
@@ -404,6 +484,8 @@ export default function AcceptedManuscripts() {
                 onClick={() => navigate(`/editor/manuscripts/${m.id}`)}
                 onPublish={handlePublish}
                 isPublishing={publishingId === m.id}
+                onRetryDoc={handleRetryDoc}
+                isReprocessing={reprocessingId === m.id}
               />
             ))}
           </div>

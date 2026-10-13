@@ -17,9 +17,6 @@ const EDITORIAL_SECTIONS = [
 ]
 
 const PREFERRED_ROLES = [
-  'Editorial Board Member',
-  'National Editorial Board',
-  'International Editorial Board',
   'Reviewer',
 ]
 
@@ -516,7 +513,7 @@ export default function EditorialApply() {
                   name="full_name"
                   value={formData.full_name}
                   onChange={handleChange}
-                  placeholder="e.g. Dr. Alexander Vance"
+                  placeholder="e.g. Alexander Vance"
                   style={{ ...inputStyle, borderColor: fieldErrors.full_name ? '#E74C3C' : '#D1D5DB' }}
                 />
                 {fieldErrors.full_name && <span style={errorTextStyle}>{fieldErrors.full_name}</span>}
@@ -1074,10 +1071,13 @@ export default function EditorialApply() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px', marginTop: '20px' }}>
               <div>
-                <label style={labelStyle}>Preferred Editorial Role *</label>
+                <label style={labelStyle}>Editorial Board Role *</label>
                 <select name="preferred_role" value={formData.preferred_role} onChange={handleChange} style={inputStyle}>
-                  {PREFERRED_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                  <option value="Reviewer">Reviewer (Editorial Board)</option>
                 </select>
+                <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', lineHeight: 1.4 }}>
+                  Approved Editorial Board applicants are appointed as peer Reviewers for their designated section.
+                </p>
               </div>
 
               <div>

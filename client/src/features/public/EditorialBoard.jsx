@@ -137,11 +137,33 @@ const ETHICAL_COMMITMENTS = [
   'Promote transparency, fairness, and academic integrity.',
 ]
 
+function formatMemberName(name, academicTitle) {
+  if (!name) return ''
+  const cleanName = String(name).trim()
+  if (!academicTitle) return cleanName
+  const cleanTitle = String(academicTitle).trim()
+  if (!cleanTitle) return cleanName
+
+  // If cleanName already starts with the title, don't duplicate
+  const lowerName = cleanName.toLowerCase()
+  const lowerTitle = cleanTitle.toLowerCase()
+  if (lowerName.startsWith(lowerTitle)) {
+    return cleanName
+  }
+
+  // Handle variations like "Dr." vs "Dr"
+  const titleWithoutDot = lowerTitle.replace(/\./g, '')
+  if (lowerName.startsWith(titleWithoutDot + ' ') || lowerName.startsWith(titleWithoutDot + '.')) {
+    return cleanName
+  }
+
+  return `${cleanTitle} ${cleanName}`
+}
+
 function BoardMemberCard({ member }) {
   const [hovered, setHovered] = useState(false)
 
-  const displayName = member.name
-  const roleLabel = member.role_title || member.role
+  const displayName = formatMemberName(member.name, member.academic_title)
   const affiliationText = member.affiliation || [member.designation, member.department, member.institution, member.country].filter(Boolean).join(', ')
 
   return (
@@ -195,26 +217,29 @@ function BoardMemberCard({ member }) {
           )}
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
-              <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23' }}>
-                {roleLabel}
-                {member.editorial_section ? ` • ${member.editorial_section}` : ''}
-              </span>
-              {member.editor_id && (
-                <span style={{
-                  background: '#0B1B3A',
-                  color: '#C4A24C',
-                  border: '1px solid rgba(196,162,76,0.6)',
-                  borderRadius: '999px',
-                  padding: '1px 6px',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  letterSpacing: '0.04em',
-                }} title="Editor ID">
-                  {member.editor_id}
-                </span>
-              )}
-            </div>
+            {(member.editorial_section || member.reviewer_id) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                {member.editorial_section && (
+                  <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: '#9A7B23', fontWeight: 600 }}>
+                    {member.editorial_section}
+                  </span>
+                )}
+                {member.reviewer_id && (
+                  <span style={{
+                    background: '#0B1B3A',
+                    color: '#C4A24C',
+                    border: '1px solid rgba(196,162,76,0.6)',
+                    borderRadius: '999px',
+                    padding: '1px 6px',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                  }} title="Reviewer ID">
+                    {member.reviewer_id}
+                  </span>
+                )}
+              </div>
+            )}
             <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(18px, 1.8vw, 21px)', color: '#0B1B3A', margin: 0 }}>
               {displayName}
             </h3>
@@ -307,19 +332,25 @@ export default function EditorialBoard() {
       })
   }, [])
 
-  // Partition dynamic members or fallback to hardcoded defaults
-  const editorInChief = dynamicMembers.find(m => m.role_title === 'Editor-in-Chief') || DEFAULT_EDITOR_IN_CHIEF
-  const leadershipMembers = dynamicMembers.filter(m => m.role_title === 'Editorial Leadership')
+  // Partition dynamic members or fallback to hardcoded defaults per category:
+  // If actual dynamic data exists for a category, display ONLY the actual data and remove dummy data.
+  const dynamicEditorInChief = dynamicMembers.find(m => m.role_title === 'Editor-in-Chief' || m.appointment_position === 'Editor-in-Chief')
+  const editorInChief = dynamicEditorInChief || DEFAULT_EDITOR_IN_CHIEF
+
+  const leadershipMembers = dynamicMembers.filter(m => m.role_title === 'Editorial Leadership' || m.appointment_position === 'Editorial Leadership')
   const activeLeadership = leadershipMembers.length > 0 ? leadershipMembers : DEFAULT_LEADERSHIP
 
-  const boardMembers = dynamicMembers.filter(m => ['Editorial Board Member', 'Associate Editor', 'Section Editor'].includes(m.role_title))
-  const activeBoardMembers = boardMembers.length > 0 ? boardMembers : DEFAULT_EDITORIAL_BOARD_MEMBERS
-
-  const nationalMembers = dynamicMembers.filter(m => m.role_title === 'National Editorial Board')
+  const nationalMembers = dynamicMembers.filter(m => m.role_title === 'National Editorial Board' || m.appointment_position === 'National Editorial Board')
   const activeNational = nationalMembers.length > 0 ? nationalMembers : DEFAULT_NATIONAL_BOARD
 
-  const internationalMembers = dynamicMembers.filter(m => m.role_title === 'International Editorial Board')
+  const internationalMembers = dynamicMembers.filter(m => m.role_title === 'International Editorial Board' || m.appointment_position === 'International Editorial Board')
   const activeInternational = internationalMembers.length > 0 ? internationalMembers : DEFAULT_INTERNATIONAL_BOARD
+
+  const boardMembers = dynamicMembers.filter(m =>
+    !['Editor-in-Chief', 'Editorial Leadership', 'National Editorial Board', 'International Editorial Board'].includes(m.role_title) &&
+    !['Editor-in-Chief', 'Editorial Leadership', 'National Editorial Board', 'International Editorial Board'].includes(m.appointment_position)
+  )
+  const activeBoardMembers = boardMembers.length > 0 ? boardMembers : DEFAULT_EDITORIAL_BOARD_MEMBERS
 
   return (
     <>
@@ -351,7 +382,7 @@ export default function EditorialBoard() {
         
         {/* Intro */}
         <p style={{ fontSize: 'clamp(16px, 1.5vw, 17.5px)', lineHeight: 1.8, color: '#3A4157', maxWidth: '820px', margin: '0 0 44px' }}>
-          The Editorial Board of Asgard Research Publication is committed to maintaining the highest standards of academic quality, integrity, and ethical publishing. Our editorial team consists of experienced researchers, academicians, and subject experts who oversee the peer-review process and ensure that every published article meets international scholarly standards.
+          The Editorial Board of Asgard International Research Publication is committed to maintaining the highest standards of academic quality, integrity, and ethical publishing. Our editorial team consists of experienced researchers, academicians, and subject experts who oversee the peer-review process and ensure that every published article meets international scholarly standards.
         </p>
 
         {/* Section: Editor-in-Chief */}
@@ -400,7 +431,7 @@ export default function EditorialBoard() {
                 {editorInChief.role_title || editorInChief.role}
               </div>
               <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(24px, 3vw, 32px)', color: '#0B1B3A', margin: '0 0 10px' }}>
-                {editorInChief.name}
+                {formatMemberName(editorInChief.name, editorInChief.academic_title)}
               </h3>
               <p style={{ fontSize: '15.5px', lineHeight: 1.7, color: '#3A4157', margin: '0 0 18px' }}>
                 {editorInChief.affiliation || [editorInChief.designation, editorInChief.department, editorInChief.institution, editorInChief.country].filter(Boolean).join(', ')}

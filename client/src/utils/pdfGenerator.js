@@ -59,7 +59,7 @@ export function generateAcademicPdfBlob({
   stream += '1 1 1 rg\n' // White text
   stream += 'BT /F2 10.5 Tf 55 788 Td (INTERNATIONAL JOURNAL OF INTELLIGENT DIGITAL COMPUTING RESEARCH) Tj ET\n'
   stream += '0.768 0.635 0.298 rg\n' // Gold text
-  stream += 'BT /F1 8.5 Tf 55 772 Td (ISSN: 2977-4418  |  OPEN ACCESS  |  PEER REVIEWED  |  ASGARD PUBLICATIONS) Tj ET\n'
+  stream += 'BT /F1 8.5 Tf 55 772 Td (ISSN: 2654-6725  |  OPEN ACCESS  |  PEER REVIEWED  |  ASGARD INTERNATIONAL RESEARCH PUBLICATION) Tj ET\n'
 
   // Gold accent rule
   stream += '0.768 0.635 0.298 RG 1.5 w\n'

@@ -123,18 +123,18 @@ export function resolveCertificateAuthorName(author = {}) {
 }
 
 /**
- * Certificate No. = ARFI-{YY}-{ARTICLE_NO}, reusing the existing Article No.
+ * Certificate No. = AIRP-{YY}-{ARTICLE_NO}, reusing the existing Article No.
  * (manuscripts.submission_number). No separate certificate sequence is used.
  *
  * Example: submission_number = IJIDCR-26-00001, year = 2026
- *          -> ARFI-26-IJIDCR-26-00001
+ *          -> AIRP-26-IJIDCR-26-00001
  */
 export function buildCertificateNumber(submissionNumber, publicationYear) {
   const articleNo = String(submissionNumber || '').trim()
   if (!articleNo) {
     throw new AppError('Article Number (submission_number) is missing.', 400)
   }
-  return `ARFI-${twoDigitYear(publicationYear)}-${articleNo}`
+  return `AIRP-${twoDigitYear(publicationYear)}-${articleNo}`
 }
 
 export function validatePublicationMetadata(metadata = {}) {

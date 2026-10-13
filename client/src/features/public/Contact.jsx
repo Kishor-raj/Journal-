@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { contactService } from '../../services/contactService'
 
 const CONTACTS = [
-  { k: 'Publication', v: 'Asgard Research Publication' },
+  { k: 'Publication', v: 'Asgard International Research Publication' },
   { k: 'Email', v: 'ceo@ijidcr-asgard.in', href: 'mailto:ceo@ijidcr-asgard.in' },
   { k: 'Support Email', v: 'support@ijidcr-asgard.in', href: 'mailto:support@ijidcr-asgard.in' },
   { k: 'Website', v: 'www.ijidcr-asgard.in', href: 'https://www.ijidcr-asgard.in' },
@@ -15,7 +15,7 @@ const OFFICE_HOURS = [
 ]
 
 const ADDRESS_LINES = [
-  'Asgard Research Publication',
+  'Asgard International Research Publication',
   'Editorial Office',
   'Office address details will be updated soon.',
 ]
@@ -229,7 +229,7 @@ export default function Contact() {
       }}>
         <div style={{ width: '100%', maxWidth: 'var(--layout-max)', margin: '0 auto', padding: 'clamp(28px, 3.5vw, 42px) var(--layout-pad)' }}>
           <div style={{ fontFamily: 'Jost, sans-serif', fontSize: '11.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C4A24C', marginBottom: '16px' }}>
-            Asgard Research Publication
+            Asgard International Research Publication
           </div>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, fontSize: 'clamp(30px, 5.4vw, 52px)', margin: '0 0 14px' }}>
             Contact Us
@@ -457,7 +457,7 @@ export default function Contact() {
             Follow Us
           </h2>
           <p style={{ fontSize: '16px', color: '#3A4157', lineHeight: 1.75, margin: '0 0 18px' }}>
-            Stay connected with Asgard Research Publication through our official communication channels for announcements, calls for papers, and publication updates.
+            Stay connected with Asgard International Research Publication through our official communication channels for announcements, calls for papers, and publication updates.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
             {SOCIALS.map(social => (
@@ -473,7 +473,7 @@ export default function Contact() {
             Important Notice
           </h2>
           <p style={{ fontSize: '16px', color: '#3A4157', lineHeight: 1.75, margin: '0 0 18px' }}>
-            Please use only the official communication channels listed on this page. Asgard Research Publication is not responsible for communications sent to unofficial email addresses or third-party websites.
+            Please use only the official communication channels listed on this page. Asgard International Research Publication is not responsible for communications sent to unofficial email addresses or third-party websites.
           </p>
           <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '20px', fontWeight: 600, color: '#0B1B3A', lineHeight: 1.45, margin: 0 }}>
             Publishing Knowledge with Integrity, Excellence, and Global Impact.

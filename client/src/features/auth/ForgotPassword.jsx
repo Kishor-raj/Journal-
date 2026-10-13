@@ -50,7 +50,7 @@ export default function ForgotPassword() {
   return (
     <div className="auth-page">
       <div className="auth-page-card">
-        <span className="auth-page-eyebrow">Asgard Publications</span>
+        <span className="auth-page-eyebrow">Asgard International Research Publication</span>
         <h1 className="auth-page-title">Forgot your password?</h1>
         <p className="auth-page-text">
           Enter your email and we&rsquo;ll send you a link to reset your password.
