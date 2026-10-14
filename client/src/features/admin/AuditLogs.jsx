@@ -10,7 +10,7 @@ import { formatDate } from '../../shared/utils/formatDate'
 const LOG_TABS = [
   { key: 'audit', label: 'Administrative Audit Logs' },
   { key: 'security', label: 'Security & Access Logs' },
-  { key: 'workflow', label: 'Workflow Event Logs' },
+  { key: 'workflow', label: 'Workflow Event Log' },
 ]
 
 const styles = {
