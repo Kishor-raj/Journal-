@@ -63,12 +63,10 @@ jobs:
             echo ">>> Rebuilding and restarting backend (migrations run automatically)..."
             docker compose -f docker-compose.prod.yml up --build -d backend
 
-            # Recreate rather than reload: client/dist is bind-mounted into
-            # nginx, and the build above replaced that directory. A plain
-            # `nginx -s reload` would keep serving the stale mount.
-            echo ">>> Restarting nginx..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate nginx
-
+            # No nginx service here — the shared reverse proxy in
+            # /var/www/proxy serves this site on 80/443 and bind-mounts
+            # client/dist directly, so the fresh build above is already
+            # live; nothing to restart on this side for static assets.
             echo ">>> Verifying backend is healthy..."
             BACKEND_ID="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
             if [ -z "$BACKEND_ID" ]; then
