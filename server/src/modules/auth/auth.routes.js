@@ -10,6 +10,7 @@ const router = Router()
 const ipLoginLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   limit: 5,
+  skipSuccessfulRequests: true, // only count failed (wrong password) attempts
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   handler: async (req, res, next, options) => {
@@ -27,6 +28,7 @@ const ipLoginLimiter = rateLimit({
 const emailLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 5,
+  skipSuccessfulRequests: true, // only count failed (wrong password) attempts
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   validate: { keyGeneratorIpFallback: false },
