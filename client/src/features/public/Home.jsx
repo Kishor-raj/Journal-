@@ -513,23 +513,7 @@ export default function Home() {
                 </span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  background: '#C4A24C',
-                  color: '#0B1B3A',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                }}>✓</span>
-                <span style={{ fontFamily: 'Jost, sans-serif', fontSize: '13px', color: '#C3CBDC', letterSpacing: '0.01em' }}>
-                  APC Charges
-                </span>
-              </div>
+
             </div>
           </div>
 
