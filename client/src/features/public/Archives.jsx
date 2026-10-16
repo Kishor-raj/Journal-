@@ -1,39 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { publicService } from '../../services/publicService.js'
-import { triggerPdfDownload } from '../../utils/pdfGenerator.js'
-
-/* ─── Rate Limiting Constants (Background Protection) ─── */
-const RATE_LIMIT_MAX = 3
-const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minute (60 seconds)
-
-/**
- * Checks and records user actions (view / download) in the background.
- * Rule: Maximum 3 actions per 1 minute window.
- */
-function checkRateLimit() {
-  try {
-    const now = Date.now()
-    const stored = JSON.parse(localStorage.getItem('ijidcr_user_action_timestamps') || '[]')
-    // Keep only timestamps within the last 60 seconds
-    const recent = stored.filter(t => typeof t === 'number' && now - t < RATE_LIMIT_WINDOW_MS)
-
-    if (recent.length >= RATE_LIMIT_MAX) {
-      const oldest = Math.min(...recent)
-      const remainingSeconds = Math.max(1, Math.ceil((oldest + RATE_LIMIT_WINDOW_MS - now) / 1000))
-      return {
-        allowed: false,
-        remainingSeconds,
-        message: `Rate limit reached: Maximum 3 views/downloads per minute allowed to protect server resources. Please wait ${remainingSeconds}s.`,
-      }
-    }
-
-    recent.push(now)
-    localStorage.setItem('ijidcr_user_action_timestamps', JSON.stringify(recent))
-    return { allowed: true }
-  } catch {
-    return { allowed: true }
-  }
-}
 
 /* ─── Default 2026 Volume 1 Issue 1 Archive Collection ─── */
 const INITIAL_ARCHIVE_DATA = [
@@ -131,11 +98,11 @@ const INITIAL_ARCHIVE_DATA = [
 ]
 
 export default function Archives() {
+  const navigate = useNavigate()
   const [archiveData, setArchiveData] = useState(INITIAL_ARCHIVE_DATA)
   const [searchQuery, setSearchQuery] = useState('')
   const [openIssues, setOpenIssues] = useState({ 'vol-1-iss-1': true })
   const [expandedAbstracts, setExpandedAbstracts] = useState({})
-  const [activeModalArticle, setActiveModalArticle] = useState(null)
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' })
   const [loading, setLoading] = useState(true)
 
@@ -258,57 +225,9 @@ export default function Archives() {
     }))
   }
 
-  // Handle View Article action with Rate Limiting logic
-  const handleViewArticle = (art, volTitle, issueName) => {
-    const rateCheck = checkRateLimit()
-    if (!rateCheck.allowed) {
-      showToast(rateCheck.message, 'warning')
-      return
-    }
-
-    setActiveModalArticle({
-      ...art,
-      volTitle,
-      issueName,
-    })
-  }
-
-  // Handle Download Manuscript (Direct Original File or Generated PDF)
-  const handleDownloadPdf = (art, volTitle = 'Volume 1 (2026)', issueName = 'Issue 1 (2026)') => {
-    const rateCheck = checkRateLimit()
-    if (!rateCheck.allowed) {
-      showToast(rateCheck.message, 'warning')
-      return
-    }
-
-    const code = art.code || 'IJIDCR-26'
-
-    try {
-      if (art.pdfUrl && art.pdfUrl.startsWith('http')) {
-        showToast(`Downloading publication PDF [${code}]...`, 'success')
-        const a = document.createElement('a')
-        a.href = art.pdfUrl
-        a.target = '_blank'
-        a.rel = 'noopener noreferrer'
-        a.download = art.originalFilename || `${code}-published.pdf`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-      } else {
-        showToast('The official publication PDF is currently being prepared for this article. Please check back shortly.', 'warning')
-      }
-    } catch (err) {
-      console.error('Manuscript download error:', err)
-      showToast('Error downloading manuscript. Please try again.', 'warning')
-    }
-  }
-
-  // Copy APA Citation helper
-  const handleCopyCitation = (art) => {
-    const authorsStr = (art.authors || []).map(a => a.name || a).join(', ')
-    const citation = `${authorsStr} (2026). ${art.title}. International Journal of Intelligent Digital Computing Research, 1(1), ${art.code}.`
-    navigator.clipboard?.writeText(citation)
-    showToast('Citation copied to clipboard!', 'success')
+  // Handle View Article action: navigate to dedicated article-details route
+  const handleViewArticle = (articleId) => {
+    navigate(`/articles/${articleId}`)
   }
 
   // Filtered Archive by Search query
@@ -638,18 +557,21 @@ export default function Archives() {
                                   marginBottom: '6px',
                                 }}
                               >
-                                <span
+                                <Link
+                                  to={`/articles/${art.id}`}
                                   style={{
+                                    textDecoration: 'none',
                                     fontFamily: 'Jost, sans-serif',
                                     fontSize: '11px',
                                     letterSpacing: '0.14em',
                                     textTransform: 'uppercase',
                                     fontWeight: 600,
                                     color: '#9A7B23',
+                                    cursor: 'pointer',
                                   }}
                                 >
                                   {art.category}
-                                </span>
+                                </Link>
                                 <div
                                   style={{
                                     display: 'flex',
@@ -682,23 +604,30 @@ export default function Archives() {
                               </div>
 
                               {/* Title */}
-                              <h3
-                                onClick={() => handleViewArticle(art, vol.title, issue.name)}
+                              <Link
+                                to={`/articles/${art.id}`}
                                 style={{
-                                  fontFamily: "'Cormorant Garamond', Georgia, serif",
-                                  fontSize: 'clamp(19px, 2.2vw, 22px)',
-                                  fontWeight: 600,
-                                  color: '#0B1B3A',
-                                  lineHeight: 1.3,
-                                  margin: '0 0 8px',
-                                  cursor: 'pointer',
-                                  transition: 'color 0.15s',
+                                  textDecoration: 'none',
+                                  display: 'block',
                                 }}
-                                onMouseEnter={e => { e.currentTarget.style.color = '#9A7B23' }}
-                                onMouseLeave={e => { e.currentTarget.style.color = '#0B1B3A' }}
                               >
-                                {art.title}
-                              </h3>
+                                <h3
+                                  style={{
+                                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                                    fontSize: 'clamp(19px, 2.2vw, 22px)',
+                                    fontWeight: 600,
+                                    color: '#0B1B3A',
+                                    lineHeight: 1.3,
+                                    margin: '0 0 8px',
+                                    cursor: 'pointer',
+                                    transition: 'color 0.15s',
+                                  }}
+                                  onMouseEnter={e => { e.currentTarget.style.color = '#9A7B23' }}
+                                  onMouseLeave={e => { e.currentTarget.style.color = '#0B1B3A' }}
+                                >
+                                  {art.title}
+                                </h3>
+                              </Link>
 
                               {/* Authors */}
                               <div
@@ -788,7 +717,7 @@ export default function Archives() {
                                 </div>
                               )}
 
-                              {/* Action Buttons: View & Download */}
+                              {/* Action Button: View Article */}
                               <div
                                 style={{
                                   display: 'flex',
@@ -798,9 +727,8 @@ export default function Archives() {
                                   marginTop: '6px',
                                 }}
                               >
-                                <button
-                                  type="button"
-                                  onClick={() => handleViewArticle(art, vol.title, issue.name)}
+                                <Link
+                                  to={`/articles/${art.id}`}
                                   style={{
                                     fontFamily: 'Jost, sans-serif',
                                     fontSize: '12px',
@@ -811,7 +739,7 @@ export default function Archives() {
                                     border: '1px solid #0B1B3A',
                                     background: '#0B1B3A',
                                     color: '#FFFFFF',
-                                    cursor: 'pointer',
+                                    textDecoration: 'none',
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '6px',
@@ -822,33 +750,7 @@ export default function Archives() {
                                   onMouseLeave={e => { e.currentTarget.style.background = '#0B1B3A'; e.currentTarget.style.borderColor = '#0B1B3A' }}
                                 >
                                   <i className="fa-regular fa-eye" /> View Article
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => handleDownloadPdf(art, vol.title, issue.name)}
-                                  style={{
-                                    fontFamily: 'Jost, sans-serif',
-                                    fontSize: '12px',
-                                    letterSpacing: '0.06em',
-                                    textTransform: 'uppercase',
-                                    fontWeight: 600,
-                                    padding: '7px 16px',
-                                    border: '1px solid #E6E1D6',
-                                    background: '#FFFFFF',
-                                    color: '#0B1B3A',
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    borderRadius: '2px',
-                                    transition: 'all 0.15s',
-                                  }}
-                                  onMouseEnter={e => { e.currentTarget.style.background = '#FFFDF5'; e.currentTarget.style.borderColor = '#C4A24C'; e.currentTarget.style.color = '#9A7B23' }}
-                                  onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E6E1D6'; e.currentTarget.style.color = '#0B1B3A' }}
-                                >
-                                  <i className="fa-solid fa-download" /> Download Manuscript
-                                </button>
+                                </Link>
                               </div>
                             </article>
                           )
@@ -862,234 +764,6 @@ export default function Archives() {
           })
         )}
       </main>
-
-      {/* ── View Article Modal ── */}
-      {activeModalArticle && (
-        <div
-          onClick={() => setActiveModalArticle(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(11, 27, 58, 0.65)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '16px',
-            boxSizing: 'border-box',
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: '#FFFFFF',
-              width: '100%',
-              maxWidth: '740px',
-              maxHeight: '86vh',
-              overflowY: 'auto',
-              border: '1px solid #E6E1D6',
-              boxShadow: '0 16px 40px rgba(11, 27, 58, 0.25)',
-              position: 'relative',
-              padding: 'clamp(20px, 3.5vw, 36px)',
-              boxSizing: 'border-box',
-            }}
-          >
-            {/* Modal Close Button */}
-            <button
-              type="button"
-              onClick={() => setActiveModalArticle(null)}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                background: 'none',
-                border: 'none',
-                fontSize: '18px',
-                color: '#6B7288',
-                cursor: 'pointer',
-                padding: '4px 8px',
-              }}
-              aria-label="Close modal"
-            >
-              <i className="fa-solid fa-xmark" />
-            </button>
-
-            {/* Modal Top Metadata */}
-            <div
-              style={{
-                fontFamily: 'Jost, sans-serif',
-                fontSize: '11px',
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                color: '#9A7B23',
-                marginBottom: '8px',
-                fontWeight: 600,
-              }}
-            >
-              {activeModalArticle.volTitle} · {activeModalArticle.issueName} · {activeModalArticle.category}
-            </div>
-
-            {/* Modal Title */}
-            <h2
-              style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: 'clamp(22px, 2.8vw, 26px)',
-                fontWeight: 600,
-                color: '#0B1B3A',
-                marginBottom: '14px',
-                lineHeight: 1.25,
-              }}
-            >
-              {activeModalArticle.title}
-            </h2>
-
-            {/* Authors & Affiliations */}
-            <div
-              style={{
-                marginBottom: '16px',
-                paddingBottom: '14px',
-                borderBottom: '1px solid #E6E1D6',
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: 'Jost, sans-serif',
-                  fontSize: '11px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  color: '#6B7288',
-                  marginBottom: '6px',
-                  fontWeight: 600,
-                }}
-              >
-                Authors &amp; Institutional Affiliation:
-              </div>
-              <div style={{ display: 'grid', gap: '8px' }}>
-                {(activeModalArticle.authors || []).map((a, idx) => (
-                  <div key={idx} style={{ fontSize: '14.5px', color: '#1C2233', lineHeight: 1.5 }}>
-                    <div style={{ fontWeight: 600 }}>
-                      {a.name || a}
-                      {a.corresponding && (
-                        <span
-                          style={{
-                            background: '#FFFDF5',
-                            border: '1px solid #C4A24C',
-                            color: '#9A7B23',
-                            fontFamily: 'Jost, sans-serif',
-                            fontSize: '10.5px',
-                            fontWeight: 600,
-                            letterSpacing: '0.05em',
-                            textTransform: 'uppercase',
-                            padding: '1px 5px',
-                            borderRadius: '2px',
-                            marginLeft: '6px',
-                          }}
-                        >
-                          Corresponding Author
-                        </span>
-                      )}
-                    </div>
-                    {a.affiliation && (
-                      <div style={{ fontSize: '13px', color: '#6B7288' }}>
-                        {a.affiliation}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Structured Abstract */}
-            <div style={{ marginBottom: '16px' }}>
-              <h4
-                style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  color: '#0B1B3A',
-                  margin: '0 0 6px',
-                }}
-              >
-                Structured Abstract
-              </h4>
-              <div
-                style={{
-                  background: '#F8F9FB',
-                  borderLeft: '3px solid #C4A24C',
-                  padding: '14px 16px',
-                  fontSize: '14.5px',
-                  color: '#3A4157',
-                  lineHeight: 1.65,
-                }}
-              >
-                {activeModalArticle.abstract}
-              </div>
-            </div>
-
-            {/* Keywords */}
-            <div
-              style={{
-                fontFamily: 'Jost, sans-serif',
-                fontSize: '13px',
-                marginBottom: '22px',
-                color: '#3A4157',
-              }}
-            >
-              <strong style={{ color: '#0B1B3A' }}>Keywords:</strong> {activeModalArticle.keywords}
-            </div>
-
-            {/* Modal Action Buttons */}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => handleDownloadPdf(activeModalArticle, activeModalArticle.volTitle, activeModalArticle.issueName)}
-                style={{
-                  fontFamily: 'Jost, sans-serif',
-                  fontSize: '12px',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  padding: '9px 18px',
-                  background: '#0B1B3A',
-                  color: '#FFFFFF',
-                  border: '1px solid #0B1B3A',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  borderRadius: '2px',
-                }}
-              >
-                <i className="fa-solid fa-file-pdf" /> Download Manuscript
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleCopyCitation(activeModalArticle)}
-                style={{
-                  fontFamily: 'Jost, sans-serif',
-                  fontSize: '12px',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  padding: '9px 18px',
-                  background: '#FFFFFF',
-                  color: '#0B1B3A',
-                  border: '1px solid #E6E1D6',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  borderRadius: '2px',
-                }}
-              >
-                <i className="fa-regular fa-copy" /> Copy Citation (APA)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Toast Notification ── */}
       {toast.show && (

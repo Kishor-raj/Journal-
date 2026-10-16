@@ -84,6 +84,72 @@ export async function getPublishedArticles() {
 }
 
 /**
+ * Returns a single published manuscript by ID with authors and primary file download links.
+ */
+export async function getPublishedArticleById(id) {
+  const { rows } = await pool.query(`
+    SELECT
+      m.id,
+      m.title,
+      m.abstract,
+      m.keywords,
+      m.submission_number,
+      m.submitted_at,
+      m.updated_at,
+      COALESCE(p.published_at, m.updated_at) AS published_at,
+      p.volume,
+      p.issue,
+      p.publication_year,
+      COALESCE(c.name, 'Research Article') AS category,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'first_name', COALESCE(NULLIF(TRIM(u.first_name), ''), ma.first_name),
+            'last_name',  COALESCE(NULLIF(TRIM(u.last_name), ''), ma.last_name),
+            'is_corresponding', ma.is_corresponding
+          ) ORDER BY ma.author_order
+        ) FILTER (WHERE ma.id IS NOT NULL),
+        '[]'
+      ) AS authors,
+      (
+        SELECT json_build_object(
+          'id', mf.id,
+          'original_filename', mf.original_filename,
+          'public_id', mf.public_id,
+          'resource_type', mf.resource_type,
+          'format', mf.format,
+          'mime_type', mf.mime_type
+        )
+        FROM manuscript_files mf
+        WHERE mf.manuscript_id = m.id
+          AND mf.file_type = 'published_manuscript'
+          AND mf.is_accessible = true
+        ORDER BY mf.uploaded_at DESC
+        LIMIT 1
+      ) AS primary_file
+    FROM manuscripts m
+    LEFT JOIN categories c ON c.id = m.category_id
+    LEFT JOIN manuscript_authors ma ON ma.manuscript_id = m.id
+    LEFT JOIN users u ON u.id = ma.user_id
+    LEFT JOIN publications p ON p.manuscript_id = m.id
+    WHERE m.id = $1 AND m.current_status = 'published'
+    GROUP BY m.id, c.name, p.published_at, p.volume, p.issue, p.publication_year
+  `, [id])
+
+  if (!rows.length) return null
+
+  const r = rows[0]
+  const fileInfo = buildFileUrls(r.primary_file)
+  return {
+    ...r,
+    file_url: fileInfo?.download_url || null,
+    download_url: fileInfo?.download_url || null,
+    view_url: fileInfo?.view_url || null,
+    original_filename: fileInfo?.original_filename || null,
+  }
+}
+
+/**
  * Returns the most recently published manuscripts (limited to `limit`).
  * Used for the home-page featured section.
  */

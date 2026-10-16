@@ -12,7 +12,7 @@ const JOURNAL_INFO = {
   frequency: 'Quarterly',
   issnOnline: '2654-6725',
   issnPrint: 'To be Assigned',
-  doiPrefix: '10.xxxx/ijidcr.2026',
+  doiPrefix: '',
   status: 'Published · Open Access',
 }
 
@@ -273,27 +273,6 @@ function ArticleItem({ article, highlight, openAuthors }) {
         <ActionButton onClick={handleAuthors} active={showAuthors}>
           {showAuthors ? 'Close Authors' : 'Authors'}
         </ActionButton>
-        {article.download_url && (
-          <a
-            href={article.download_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              textDecoration: 'none',
-              color: '#0B1B3A',
-              fontWeight: 600,
-              fontSize: '12.5px',
-              fontFamily: 'Jost, sans-serif',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
-            <i className="fas fa-file-pdf" style={{ color: '#E11D48' }} /> Download PDF
-          </a>
-        )}
       </div>
     </article>
   )

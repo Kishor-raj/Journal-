@@ -13,6 +13,7 @@ import EditorialBoard from '../features/public/EditorialBoard'
 import SubmissionGuidelines from '../features/public/SubmissionGuidelines'
 import CurrentIssue from '../features/public/CurrentIssue'
 import Archives from '../features/public/Archives'
+import ArticleDetails from '../features/public/ArticleDetails'
 import PublicationEthics from '../features/public/PublicationEthics'
 import Contact from '../features/public/Contact'
 import Search from '../features/public/Search'
@@ -98,6 +99,7 @@ function AppRouter() {
         <Route path="/guidelines" element={<SubmissionGuidelines />} />
         <Route path="/current-issue" element={<CurrentIssue />} />
         <Route path="/archives" element={<Archives />} />
+        <Route path="/articles/:id" element={<ArticleDetails />} />
         <Route path="/ethics" element={<PublicationEthics />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/search" element={<Search />} />
