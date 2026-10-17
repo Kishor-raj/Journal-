@@ -44,6 +44,19 @@ function logAudit(client, { actorId, action, entityId, newValues }) {
   )
 }
 
+function safeParseScores(raw) {
+  if (!raw) return null
+  if (typeof raw === 'object') return raw
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 async function recordEmailStatus({ invitationId, manuscriptId, status, sentAt, messageId, error, resendCount, lastResentAt }) {
   await pool.query(
     `UPDATE reviewer_invitations
@@ -344,11 +357,15 @@ export async function getReviewerManagement(editorId) {
        ri.id AS invitation_id,
        ri.email_status,
        ri.resend_count,
-       ri.expires_at AS invitation_expires_at
+       ri.expires_at AS invitation_expires_at,
+       r.id AS review_id,
+       r.recommendation,
+       r.score
      FROM reviewer_assignments ra
      JOIN manuscripts m ON m.id = ra.manuscript_id
      JOIN users u ON u.id = ra.reviewer_id
      JOIN editorial_assignments ea ON ea.manuscript_id = ra.manuscript_id
+     LEFT JOIN reviews r ON r.assignment_id = ra.id
      LEFT JOIN LATERAL (
        SELECT i.id, i.email_status, i.resend_count, i.expires_at
        FROM reviewer_invitations i
@@ -363,7 +380,14 @@ export async function getReviewerManagement(editorId) {
     [editorId]
   )
 
-  return result.rows
+  return result.rows.map((row) => {
+    const parsedScore = safeParseScores(row.score)
+    return {
+      ...row,
+      score: parsedScore,
+      scores: parsedScore,
+    }
+  })
 }
 
 export async function getPendingDecisions(editorId) {
@@ -583,11 +607,20 @@ export async function getManuscript(manuscriptId) {
       }
     : null
 
+  const formattedReviews = reviewsResult.rows.map((r) => {
+    const parsedScore = safeParseScores(r.score)
+    return {
+      ...r,
+      score: parsedScore,
+      scores: parsedScore,
+    }
+  })
+
   return {
     ...manuscript,
     authors: authorsResult.rows,
     files: filesResult.rows,
-    reviews: reviewsResult.rows,
+    reviews: formattedReviews,
     revisions: revisionsResult.rows.map((rev) => ({
       ...rev,
       reviewer_responses: commentResponsesResult.rows.filter((cr) => cr.revision_request_id === rev.id),
@@ -1131,15 +1164,25 @@ export async function getAssignments(manuscriptId, editorId) {
   const result = await pool.query(
     `SELECT ra.id AS assignment_id, ra.reviewer_id, ra.assignment_status, ra.assigned_at,
             ra.accepted_at, ra.due_at, ra.completed_at, ra.round_number,
-            u.display_name AS reviewer_name, u.email AS reviewer_email
+            u.display_name AS reviewer_name, u.email AS reviewer_email,
+            r.id AS review_id, r.recommendation, r.public_comments, r.confidential_comments,
+            r.score, r.submitted_at AS review_submitted_at
      FROM reviewer_assignments ra
      JOIN users u ON u.id = ra.reviewer_id
+     LEFT JOIN reviews r ON r.assignment_id = ra.id
      WHERE ra.manuscript_id = $1
      ORDER BY ra.assigned_at ASC`,
     [manuscriptId]
   )
 
-  return result.rows
+  return result.rows.map((row) => {
+    const parsedScore = safeParseScores(row.score)
+    return {
+      ...row,
+      score: parsedScore,
+      scores: parsedScore,
+    }
+  })
 }
 
 export async function getExtensionRequests(manuscriptId, editorId) {

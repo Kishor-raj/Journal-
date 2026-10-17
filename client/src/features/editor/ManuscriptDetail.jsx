@@ -364,6 +364,52 @@ export default function ManuscriptDetail() {
     },
     { key: 'assignment_status', label: 'Status' },
     {
+      key: 'review_details',
+      label: 'Scores / Review',
+      render: (_, row) => {
+        const review = (manuscript?.reviews || []).find((r) => r.assignment_id === row.assignment_id || r.reviewer_id === row.reviewer_id) || row
+        const scores = review?.scores ?? review?.score
+        const parsedScores = typeof scores === 'string' ? (() => { try { return JSON.parse(scores) } catch { return null } })() : scores
+        const scoreEntries = parsedScores
+          ? Object.entries(parsedScores).filter(([_, val]) => val !== null && val !== undefined && val !== '')
+          : []
+
+        if (row.assignment_status === 'completed' || review?.recommendation || scoreEntries.length > 0) {
+          return (
+            <div>
+              {review?.recommendation && (
+                <div style={{ marginBottom: scoreEntries.length ? '4px' : 0 }}>
+                  <StatusBadge status={review.recommendation} />
+                </div>
+              )}
+              {scoreEntries.length > 0 ? (
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', fontSize: '0.75rem', marginTop: '2px' }}>
+                  {scoreEntries.map(([k, v]) => (
+                    <span
+                      key={k}
+                      style={{
+                        background: 'rgba(196, 162, 76, 0.12)',
+                        border: '1px solid rgba(196, 162, 76, 0.3)',
+                        padding: '1px 5px',
+                        borderRadius: '3px',
+                        color: '#70530A',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {k.charAt(0).toUpperCase() + k.slice(1)}: {v}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>No scores</span>
+              )}
+            </div>
+          )
+        }
+        return <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>—</span>
+      },
+    },
+    {
       key: 'due_at',
       label: 'Current Deadline',
       render: (val) => formatDate(val) || '—',
@@ -831,6 +877,138 @@ export default function ManuscriptDetail() {
           emptyMessage="No reviewers assigned yet."
         />
       </div>
+
+      {manuscript.reviews && manuscript.reviews.length > 0 && (
+        <div style={styles.section}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+            <h2 style={{ ...styles.sectionTitle, margin: 0 }}>Submitted Reviews &amp; Scores</h2>
+            {manuscript.current_status !== 'accepted' && manuscript.current_status !== 'rejected' && manuscript.current_status !== 'published' && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => navigate(`/editor/manuscripts/${id}/decision`)}
+              >
+                Make Decision →
+              </Button>
+            )}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+            {manuscript.reviews.map((review, idx) => {
+              const scores = (typeof review.scores === 'object' && review.scores)
+                || (typeof review.score === 'object' && review.score)
+                || (() => {
+                  try { return JSON.parse(review.scores || review.score) } catch { return null }
+                })()
+              const scoreEntries = scores
+                ? Object.entries(scores).filter(([_, val]) => val !== null && val !== undefined && val !== '')
+                : []
+
+              return (
+                <div
+                  key={review.id || idx}
+                  style={{
+                    border: '1px solid var(--color-rule-grey)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px',
+                    background: 'var(--color-surface)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--color-ink-navy)', fontSize: '0.9375rem' }}>
+                        {review.reviewer_name ? review.reviewer_name : `Reviewer ${idx + 1}`}
+                      </div>
+                      {review.round_number && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                          Round {review.round_number}
+                        </div>
+                      )}
+                    </div>
+                    {review.submitted_at && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                        {formatDate(review.submitted_at)}
+                      </span>
+                    )}
+                  </div>
+
+                  {review.recommendation && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <StatusBadge status={review.recommendation} />
+                    </div>
+                  )}
+
+                  {scoreEntries.length > 0 && (
+                    <div
+                      style={{
+                        background: 'rgba(196, 162, 76, 0.08)',
+                        border: '1px solid rgba(196, 162, 76, 0.25)',
+                        padding: '10px 12px',
+                        borderRadius: '4px',
+                        marginBottom: '12px',
+                      }}
+                    >
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#8A6D1C', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                        Reviewer Scores
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {scoreEntries.map(([key, val]) => (
+                          <div
+                            key={key}
+                            style={{
+                              background: '#FFFFFF',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              border: '1px solid #E6D9B8',
+                              fontSize: '0.8125rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span style={{ color: 'var(--color-text-muted)', textTransform: 'capitalize' }}>{key}:</span>
+                            <strong style={{ color: '#8A6D1C' }}>{val}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {review.public_comments && (
+                    <div style={{ marginTop: '10px', fontSize: '0.8125rem' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--color-ink-navy)', display: 'block', marginBottom: '2px' }}>
+                        Public Comments:
+                      </span>
+                      <div style={{ color: 'var(--color-ink-black)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                        {review.public_comments}
+                      </div>
+                    </div>
+                  )}
+
+                  {review.confidential_comments && (
+                    <div
+                      style={{
+                        marginTop: '10px',
+                        padding: '8px 10px',
+                        background: '#FFFBEB',
+                        border: '1px solid #FDE68A',
+                        borderRadius: '4px',
+                        fontSize: '0.8125rem',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, color: '#92400E', display: 'block', marginBottom: '2px' }}>
+                        Confidential Comments (Editor Only):
+                      </span>
+                      <div style={{ color: '#78350F', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                        {review.confidential_comments}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div style={styles.section}>
         <h2 style={styles.sectionTitle}>Extension Requests</h2>

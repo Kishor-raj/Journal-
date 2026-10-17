@@ -66,6 +66,11 @@ const styles = {
     marginTop: '12px',
     marginBottom: '12px',
     flexWrap: 'wrap',
+    alignItems: 'center',
+    background: 'rgba(196, 162, 76, 0.08)',
+    border: '1px solid rgba(196, 162, 76, 0.25)',
+    padding: '8px 12px',
+    borderRadius: '4px',
   },
   scoreItem: {
     fontSize: '0.8125rem',
@@ -73,7 +78,7 @@ const styles = {
   },
   scoreValue: {
     fontWeight: 700,
-    color: 'var(--color-citation-gold-dark)',
+    color: '#8A6D1C',
   },
   confidentialNote: {
     fontSize: '0.75rem',
@@ -135,6 +140,20 @@ const styles = {
 function formatRecommendation(val) {
   if (!val) return '—'
   return val.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function getReviewScores(review) {
+  const raw = review?.scores ?? review?.score
+  if (!raw) return null
+  if (typeof raw === 'object') return raw
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+  return null
 }
 
 function getFinalDecisionDisplay(status) {
@@ -272,16 +291,26 @@ export default function DecisionPanel() {
                 </div>
               )}
 
-              {review.scores && Object.keys(review.scores).length > 0 && (
-                <div style={styles.scoresRow}>
-                  {Object.entries(review.scores).map(([key, val]) => (
-                    <span key={key} style={styles.scoreItem}>
-                      {formatRecommendation(key)}:{' '}
-                      <span style={styles.scoreValue}>{val}</span>
+              {(() => {
+                const scores = getReviewScores(review)
+                const scoreEntries = scores
+                  ? Object.entries(scores).filter(([_, val]) => val !== null && val !== undefined && val !== '')
+                  : []
+                if (scoreEntries.length === 0) return null
+                return (
+                  <div style={styles.scoresRow}>
+                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-ink-navy)', marginRight: '4px' }}>
+                      Reviewer Scores:
                     </span>
-                  ))}
-                </div>
-              )}
+                    {scoreEntries.map(([key, val]) => (
+                      <span key={key} style={styles.scoreItem}>
+                        {formatRecommendation(key)}:{' '}
+                        <span style={styles.scoreValue}>{val}</span>
+                      </span>
+                    ))}
+                  </div>
+                )
+              })()}
 
               {review.public_comments && (
                 <div style={styles.commentSection}>

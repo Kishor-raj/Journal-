@@ -152,8 +152,26 @@ export default function ReviewerManagement() {
     },
     {
       key: 'assignment_status',
-      label: 'Status',
-      render: (val) => <StatusBadge status={val} />,
+      label: 'Status / Review',
+      render: (val, row) => {
+        const scores = row.scores ?? row.score
+        const parsed = typeof scores === 'string' ? (() => { try { return JSON.parse(scores) } catch { return null } })() : scores
+        const entries = parsed ? Object.entries(parsed).filter(([_, v]) => v !== null && v !== undefined && v !== '') : []
+
+        return (
+          <div>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <StatusBadge status={val} />
+              {row.recommendation && <StatusBadge status={row.recommendation} />}
+            </div>
+            {entries.length > 0 && (
+              <div style={{ marginTop: '4px', fontSize: '0.75rem', color: '#8A6D1C', fontWeight: 600 }}>
+                {entries.map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`).join(' · ')}
+              </div>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'assigned_at',
