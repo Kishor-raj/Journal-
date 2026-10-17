@@ -60,6 +60,13 @@ export async function confirmUpload(manuscriptId, versionId, fileData, userId) {
     sha256_checksum,
   } = fileData
 
+  if (file_type === 'main_manuscript' || file_type === 'manuscript') {
+    const ext = (original_filename || '').split('.').pop()?.toLowerCase()
+    if (ext !== 'docx') {
+      throw new AppError('Main manuscript file must be in .docx format', 400)
+    }
+  }
+
   const result = await pool.query(
     `INSERT INTO manuscript_files (manuscript_id, version_id, file_type, original_filename, public_id, resource_type, format, mime_type, file_size_bytes, sha256_checksum, uploaded_by, is_accessible)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true)

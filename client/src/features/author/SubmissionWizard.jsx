@@ -921,16 +921,19 @@ function StepAuthors({ manuscript, onChange }) {
 function StepFiles({ manuscript, onChange, errors }) {
   const [uploading, setUploading] = useState(null)
   const [removing, setRemoving] = useState(null)
+  const [uploadError, setUploadError] = useState(null)
 
   const handleFileRemove = async (fileId) => {
     if (!manuscript.id || !fileId) return
     setRemoving(fileId)
+    setUploadError(null)
     try {
       await deleteManuscriptFile(manuscript.id, fileId)
       const updated = await getManuscript(manuscript.id)
       onChange(updated)
     } catch (err) {
       console.error('Failed to remove file:', err)
+      setUploadError(err.response?.data?.error || err.message || 'Failed to remove file')
     } finally {
       setRemoving(null)
     }
@@ -938,6 +941,20 @@ function StepFiles({ manuscript, onChange, errors }) {
 
   const handleFileSelect = async (file, fileType) => {
     if (!file || !manuscript.id) return
+    setUploadError(null)
+
+    if (fileType === 'main_manuscript') {
+      const ext = file.name?.split('.').pop()?.toLowerCase()
+      if (ext !== 'docx') {
+        setUploadError('Main manuscript file must be in Microsoft Word (.docx) format.')
+        return
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        setUploadError('Manuscript file size must not exceed 20 MB.')
+        return
+      }
+    }
+
     setUploading(fileType)
     try {
       const sig = await requestSignature(manuscript.id, manuscript.current_version_id || 'current', fileType)
@@ -972,6 +989,7 @@ function StepFiles({ manuscript, onChange, errors }) {
       onChange(updated)
     } catch (err) {
       console.error(err)
+      setUploadError(err.response?.data?.error || err.message || 'Upload failed')
     } finally {
       setUploading(null)
     }
@@ -982,78 +1000,108 @@ function StepFiles({ manuscript, onChange, errors }) {
 
   const getFileIcon = (filename) => {
     const ext = filename?.split('.').pop()?.toLowerCase()
+    if (ext === 'docx' || ext === 'doc') return { icon: 'fa-file-word', color: 'var(--color-info, #2E6B9E)', bg: 'rgba(46, 107, 158, 0.08)' }
     if (ext === 'pdf') return { icon: 'fa-file-pdf', color: 'var(--color-danger)', bg: 'rgba(184, 51, 51, 0.08)' }
     if (['xlsx', 'csv'].includes(ext)) return { icon: 'fa-file-excel', color: 'var(--color-success)', bg: 'rgba(43, 122, 75, 0.08)' }
     if (['png', 'jpg', 'jpeg', 'svg'].includes(ext)) return { icon: 'fa-file-image', color: 'var(--color-info, #2E6B9E)', bg: 'rgba(46, 107, 158, 0.08)' }
     return { icon: 'fa-file', color: 'var(--color-text-muted)', bg: 'var(--color-vellum, #F9F8F6)' }
   }
 
+  const mainFileName = mainFile?.original_filename || mainFile?.original_name || ''
+  const isMainFileDocx = mainFileName.split('.').pop()?.toLowerCase() === 'docx'
+
   return (
     <div>
       <h2 style={styles.sectionTitle}>Manuscript Files</h2>
       
-      <FormField label="Manuscript File" required error={errors.main_manuscript}>
+      <FormField label="Manuscript File" required error={errors.main_manuscript || uploadError}>
         {mainFile ? (
-          <div style={styles.fileItem}>
-            <div style={{ 
-              ...styles.fileItemIcon, 
-              background: getFileIcon(mainFile.original_name).bg,
-              color: getFileIcon(mainFile.original_name).color,
-            }}>
-              <i className={`fas ${getFileIcon(mainFile.original_name).icon}`}></i>
-            </div>
-            <div style={styles.fileItemInfo}>
-              <div style={styles.fileItemName}>{mainFile.original_name}</div>
-              <div style={styles.fileItemMeta}>
-                {(mainFile.file_size_bytes / 1024 / 1024).toFixed(1)} MB — Uploaded
+          <div>
+            <div style={styles.fileItem}>
+              <div style={{ 
+                ...styles.fileItemIcon, 
+                background: getFileIcon(mainFileName).bg,
+                color: getFileIcon(mainFileName).color,
+              }}>
+                <i className={`fas ${getFileIcon(mainFileName).icon}`}></i>
               </div>
-            </div>
-            <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px', marginRight: '8px' }}>
-              <i className="fas fa-check-circle"></i>
-            </span>
-            <button
-              type="button"
-              onClick={() => handleFileRemove(mainFile.id)}
-              disabled={removing === mainFile.id}
-              style={{
-                background: 'rgba(184, 51, 51, 0.08)',
-                border: '1px solid rgba(184, 51, 51, 0.3)',
-                color: 'var(--color-danger)',
-                cursor: removing === mainFile.id ? 'not-allowed' : 'pointer',
-                borderRadius: '6px',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                opacity: removing === mainFile.id ? 0.6 : 1,
-                flexShrink: 0,
-              }}
-            >
-              {removing === mainFile.id ? (
-                <i className="fas fa-spinner fa-spin"></i>
+              <div style={styles.fileItemInfo}>
+                <div style={styles.fileItemName}>{mainFileName}</div>
+                <div style={styles.fileItemMeta}>
+                  {(mainFile.file_size_bytes / 1024 / 1024).toFixed(1)} MB — Uploaded
+                </div>
+              </div>
+              {isMainFileDocx ? (
+                <span style={{ color: 'var(--color-success)', fontWeight: 600, fontSize: '13px', marginRight: '8px' }}>
+                  <i className="fas fa-check-circle" style={{ marginRight: '4px' }}></i>
+                  Valid .docx
+                </span>
               ) : (
-                <i className="fas fa-trash-can"></i>
+                <span style={{ color: 'var(--color-danger)', fontWeight: 600, fontSize: '12px', marginRight: '8px' }}>
+                  <i className="fas fa-exclamation-triangle" style={{ marginRight: '4px' }}></i>
+                  Must be .docx
+                </span>
               )}
-              Remove
-            </button>
+              <button
+                type="button"
+                onClick={() => handleFileRemove(mainFile.id)}
+                disabled={removing === mainFile.id}
+                style={{
+                  background: 'rgba(184, 51, 51, 0.08)',
+                  border: '1px solid rgba(184, 51, 51, 0.3)',
+                  color: 'var(--color-danger)',
+                  cursor: removing === mainFile.id ? 'not-allowed' : 'pointer',
+                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  opacity: removing === mainFile.id ? 0.6 : 1,
+                  flexShrink: 0,
+                }}
+              >
+                {removing === mainFile.id ? (
+                  <i className="fas fa-spinner fa-spin"></i>
+                ) : (
+                  <i className="fas fa-trash-can"></i>
+                )}
+                Remove
+              </button>
+            </div>
+            {!isMainFileDocx && (
+              <div style={{ ...styles.formHint, color: 'var(--color-danger)', marginTop: '8px', fontWeight: 500 }}>
+                <i className="fas fa-circle-exclamation" style={{ marginRight: '4px' }}></i>
+                This manuscript file is not a Microsoft Word (.docx) document. Please remove it and upload a .docx file.
+              </div>
+            )}
           </div>
         ) : (
           <FileUpload
-            accept=".pdf,.doc,.docx"
+            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            validate={(f) => {
+              const ext = f.name?.split('.').pop()?.toLowerCase()
+              if (ext !== 'docx') {
+                return 'Only Microsoft Word (.docx) files are accepted for the manuscript.'
+              }
+              if (f.size > 20 * 1024 * 1024) {
+                return 'Manuscript file size must not exceed 20 MB.'
+              }
+              return null
+            }}
             onFileSelect={(f) => handleFileSelect(f, 'main_manuscript')}
             label={
               <div>
                 <div style={styles.uploadIcon}>
-                  <i className="fas fa-cloud-arrow-up"></i>
+                  <i className="fas fa-file-word" style={{ color: 'var(--color-citation-gold-dark, #C4A24C)' }}></i>
                 </div>
-                <div style={styles.uploadText}>Click to upload your manuscript</div>
-                <div style={styles.uploadHint}>PDF only, max 20 MB. Ensure all figures and tables are embedded or attached separately.</div>
+                <div style={styles.uploadText}>Click to upload your manuscript (.docx)</div>
+                <div style={styles.uploadHint}>Microsoft Word (.docx) only, max 20 MB. Ensure all figures and tables are embedded.</div>
                 {uploading === 'main_manuscript' && (
                   <div style={{ ...styles.uploadHint, color: 'var(--color-info, #2E6B9E)', marginTop: '8px' }}>
                     <i className="fas fa-spinner fa-spin" style={{ marginRight: '6px' }}></i>
-                    Uploading manuscript...
+                    Uploading manuscript (.docx)...
                   </div>
                 )}
               </div>
@@ -1227,8 +1275,19 @@ function StepReview({ manuscript }) {
     ? manuscript.keywords.split(',').map((k) => k.trim()).filter(Boolean)
     : []
   if (kws.length === 0) issues.push('Keywords are missing (Basic Information)')
-  const hasMain = (manuscript?.files || []).some((f) => f.file_type === 'main_manuscript')
-  if (!hasMain) issues.push('Main manuscript file is missing (Manuscript Files)')
+  const mainFiles = (manuscript?.files || []).filter((f) => f.file_type === 'main_manuscript')
+  if (mainFiles.length === 0) {
+    issues.push('Main manuscript file is missing (Manuscript Files)')
+  } else {
+    const invalidDocx = mainFiles.some((f) => {
+      const fname = f.original_filename || f.original_name || ''
+      const ext = fname.split('.').pop()?.toLowerCase()
+      return ext !== 'docx'
+    })
+    if (invalidDocx) {
+      issues.push('Main manuscript file must be in Microsoft Word (.docx) format (Manuscript Files)')
+    }
+  }
   if (!manuscript?.conflict_of_interest?.trim()) issues.push('Conflict of Interest statement is missing (Metadata & Declarations)')
   if (!manuscript?.ethics_approval?.trim()) issues.push('Ethics Approval statement is missing (Metadata & Declarations)')
 
@@ -1553,8 +1612,19 @@ export default function SubmissionWizard() {
     }
     
     if (stepToValidate === 2) {
-      const hasMain = (manuscript?.files || []).some((f) => f.file_type === 'main_manuscript')
-      if (!hasMain) newErrors.main_manuscript = 'Main manuscript file is required'
+      const mainFiles = (manuscript?.files || []).filter((f) => f.file_type === 'main_manuscript')
+      if (mainFiles.length === 0) {
+        newErrors.main_manuscript = 'Main manuscript file is required'
+      } else {
+        const nonDocx = mainFiles.some((f) => {
+          const fname = f.original_filename || f.original_name || ''
+          const ext = fname.split('.').pop()?.toLowerCase()
+          return ext !== 'docx'
+        })
+        if (nonDocx) {
+          newErrors.main_manuscript = 'Main manuscript file must be in Microsoft Word (.docx) format'
+        }
+      }
     }
     
     if (stepToValidate === 3) {

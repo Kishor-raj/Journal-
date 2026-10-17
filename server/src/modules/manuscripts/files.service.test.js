@@ -21,7 +21,7 @@ vi.mock('../../config/db.js', () => ({
 }))
 
 import cloudinary from '../../config/cloudinary.js'
-import { resolveDestroyResourceType, deleteManuscriptFile } from './files.service.js'
+import { resolveDestroyResourceType, deleteManuscriptFile, confirmUpload } from './files.service.js'
 
 describe('resolveDestroyResourceType (Cloudinary storage)', () => {
   it('derives image from image mime type even when stored resource_type is "auto"', () => {
@@ -124,5 +124,65 @@ describe('deleteManuscriptFile — Cloudinary destroy + DB cleanup', () => {
 
     await expect(deleteManuscriptFile('manus-1', 'missing', 'user-1')).rejects.toMatchObject({ statusCode: 404 })
     expect(cloudinary.uploader.destroy).not.toHaveBeenCalled()
+  })
+})
+
+describe('confirmUpload — docx file validation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('rejects upload when main_manuscript is not a .docx file', async () => {
+    fakePool.query.mockResolvedValueOnce({ rows: [{ id: 'manus-1' }] }) // SELECT manuscript
+
+    await expect(
+      confirmUpload('manus-1', 'current', {
+        file_type: 'main_manuscript',
+        original_filename: 'paper.pdf',
+        public_id: 'sample_id',
+      }, 'user-1')
+    ).rejects.toThrow('Main manuscript file must be in .docx format')
+  })
+
+  it('allows upload when main_manuscript is a .docx file', async () => {
+    fakePool.query
+      .mockResolvedValueOnce({ rows: [{ id: 'manus-1' }] }) // SELECT manuscript
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'file-docx',
+          manuscript_id: 'manus-1',
+          file_type: 'main_manuscript',
+          original_filename: 'paper.docx',
+        }],
+      }) // INSERT INTO manuscript_files
+
+    const result = await confirmUpload('manus-1', 'current', {
+      file_type: 'main_manuscript',
+      original_filename: 'paper.docx',
+      public_id: 'sample_id',
+    }, 'user-1')
+
+    expect(result.original_filename).toBe('paper.docx')
+  })
+
+  it('allows supplementary files with non-docx extensions', async () => {
+    fakePool.query
+      .mockResolvedValueOnce({ rows: [{ id: 'manus-1' }] }) // SELECT manuscript
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'file-supp',
+          manuscript_id: 'manus-1',
+          file_type: 'supplementary',
+          original_filename: 'data.xlsx',
+        }],
+      }) // INSERT INTO manuscript_files
+
+    const result = await confirmUpload('manus-1', 'current', {
+      file_type: 'supplementary',
+      original_filename: 'data.xlsx',
+      public_id: 'sample_supp',
+    }, 'user-1')
+
+    expect(result.original_filename).toBe('data.xlsx')
   })
 })

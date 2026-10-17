@@ -18,6 +18,7 @@ import PublicationEthics from '../features/public/PublicationEthics'
 import Contact from '../features/public/Contact'
 import Search from '../features/public/Search'
 import Privacy from '../features/public/Privacy'
+import Terms from '../features/public/Terms'
 import CertificateVerify from '../features/public/CertificateVerify'
 import EditorialApply from '../features/public/EditorialApply'
 import EditorialStatus from '../features/public/EditorialStatus'
@@ -104,6 +105,7 @@ function AppRouter() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/search" element={<Search />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/verify/:token" element={<CertificateVerify />} />
       </Route>
 

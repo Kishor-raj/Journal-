@@ -56,7 +56,7 @@ const FAQ = [
   },
   {
     q: 'What file formats are accepted?',
-    a: 'Manuscripts must be submitted as Microsoft Word (.docx) or LaTeX (.zip). Figures should be submitted as separate high-resolution files (TIFF, EPS, or PDF, minimum 300 dpi).',
+    a: 'Manuscripts must be submitted in Microsoft Word (.docx) format. Supplementary files and figures can be submitted in standard formats (ZIP, XLSX, CSV, PNG, JPG, or PDF).',
   },
   {
     q: 'What happens after my manuscript is accepted?',

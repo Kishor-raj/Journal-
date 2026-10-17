@@ -235,6 +235,20 @@ export default function RevisionResponseForm() {
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0]
     if (!file || !request?.manuscript_id) return
+
+    const ext = file.name?.split('.').pop()?.toLowerCase()
+    if (ext !== 'docx') {
+      setErrorMessage('Revised manuscript file must be in Microsoft Word (.docx) format.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      setErrorMessage('Revised manuscript file size must not exceed 20 MB.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
     setUploading(true)
     setErrorMessage('')
     try {
@@ -488,7 +502,7 @@ export default function RevisionResponseForm() {
                   ref={fileInputRef}
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
-                  accept=".pdf,.doc,.docx,.tex"
+                  accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 />
 
                 <div
@@ -496,13 +510,13 @@ export default function RevisionResponseForm() {
                   onClick={() => !uploading && fileInputRef.current?.click()}
                 >
                   <div style={styles.uploadIcon}>
-                    <i className={uploading ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-arrow-up'} />
+                    <i className={uploading ? 'fas fa-spinner fa-spin' : 'fas fa-file-word'} style={!uploading ? { color: 'var(--color-citation-gold-dark, #C4A24C)' } : undefined} />
                   </div>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink-navy)', marginBottom: '4px' }}>
-                    {uploading ? 'Uploading file...' : 'Click to select revised manuscript file'}
+                    {uploading ? 'Uploading file...' : 'Click to select revised manuscript file (.docx)'}
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                    PDF, Word (.docx, .doc), or LaTeX supported
+                    Microsoft Word (.docx) only, max 20 MB
                   </div>
                 </div>
               </>

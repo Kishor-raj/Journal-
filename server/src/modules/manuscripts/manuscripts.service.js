@@ -241,10 +241,10 @@ export async function getManuscriptById(id, userId) {
   )
 
   const decisionsResult = await pool.query(
-    `SELECT ed.id, ed.decision, ed.comments_to_author, ed.decided_at
+    `SELECT ed.id, ed.decision, ed.comments_to_author, ed.created_at, ed.created_at AS decided_at
      FROM editorial_decisions ed
      WHERE ed.manuscript_id = $1
-     ORDER BY ed.decided_at DESC`,
+     ORDER BY ed.created_at DESC`,
     [id]
   )
 
@@ -671,6 +671,25 @@ export async function submitManuscript(manuscriptId, userId) {
     )
     if (selfAuthorResult.rowCount === 0) {
       throw new AppError('The submitting author must be included as a manuscript author', 400)
+    }
+
+    const mainFilesResult = await client.query(
+      `SELECT original_filename, format, mime_type
+       FROM manuscript_files
+       WHERE manuscript_id = $1
+         AND file_type = 'main_manuscript'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [manuscriptId]
+    )
+
+    if (mainFilesResult.rowCount === 0) {
+      throw new AppError('Main manuscript file is required before submitting', 400)
+    }
+
+    const mainFileExt = (mainFilesResult.rows[0].original_filename || '').split('.').pop()?.toLowerCase()
+    if (mainFileExt !== 'docx') {
+      throw new AppError('The main manuscript file must be in Microsoft Word (.docx) format', 400)
     }
 
     const versionResult = await client.query(
