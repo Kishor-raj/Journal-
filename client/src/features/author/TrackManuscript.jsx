@@ -358,6 +358,43 @@ function ManuscriptTracker({ manuscript, defaultExpanded = false }) {
             </div>
           )}
 
+          {/* Reviewer comments */}
+          {manuscript.reviews && manuscript.reviews.length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--dash-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
+                <i className="fas fa-comments" style={{ marginRight: '6px' }} />
+                Reviewer Comments ({manuscript.reviews.length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {manuscript.reviews.map((rev, rIdx) => (
+                  <div
+                    key={rev.id || rIdx}
+                    style={{
+                      background: 'var(--dash-surface-sunken, #F8FAFC)',
+                      border: '1px solid var(--dash-surface-border, #E2E8F0)',
+                      borderLeft: '3px solid #C4A24C',
+                      borderRadius: '6px',
+                      padding: '12px 14px',
+                      fontSize: '13px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontWeight: 600, color: 'var(--dash-text-primary)' }}>
+                      <span>Reviewer {rIdx + 1} {rev.round_number ? `· Round ${rev.round_number}` : ''}</span>
+                      {rev.submitted_at && (
+                        <span style={{ fontSize: '11px', fontWeight: 400, color: 'var(--dash-text-muted)' }}>
+                          {formatDate(rev.submitted_at)}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ color: 'var(--dash-text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                      {rev.public_comments}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Status history timeline */}
           <div>
             <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--dash-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>

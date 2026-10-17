@@ -75,12 +75,27 @@ export async function createDraft(userId, journalId) {
 
 export async function getManuscriptsByUser(userId) {
   const result = await pool.query(
-    `SELECT DISTINCT m.*, j.name as journal_name, c.name as category_name
+    `SELECT m.*, j.name as journal_name, c.name as category_name,
+            (
+              SELECT COALESCE(json_agg(
+                json_build_object(
+                  'id', r.id,
+                  'round_number', r.round_number,
+                  'public_comments', r.public_comments,
+                  'submitted_at', r.submitted_at
+                ) ORDER BY r.round_number ASC, r.submitted_at ASC
+              ) FILTER (WHERE r.id IS NOT NULL), '[]'::json)
+              FROM reviews r
+              WHERE r.manuscript_id = m.id
+                AND r.is_complete = true
+                AND r.public_comments IS NOT NULL
+                AND TRIM(r.public_comments) != ''
+            ) AS reviews
      FROM manuscripts m
      LEFT JOIN journals j ON j.id = m.journal_id
      LEFT JOIN categories c ON c.id = m.category_id
-     LEFT JOIN manuscript_authors ma ON ma.manuscript_id = m.id
-     WHERE m.submitted_by = $1 OR ma.user_id = $1
+     WHERE m.submitted_by = $1
+        OR EXISTS (SELECT 1 FROM manuscript_authors ma WHERE ma.manuscript_id = m.id AND ma.user_id = $1)
      ORDER BY m.created_at DESC`,
     [userId]
   )
@@ -214,11 +229,32 @@ export async function getManuscriptById(id, userId) {
     [id]
   )
 
+  const reviewsResult = await pool.query(
+    `SELECT r.id, r.round_number, r.public_comments, r.submitted_at
+     FROM reviews r
+     WHERE r.manuscript_id = $1
+       AND r.is_complete = true
+       AND r.public_comments IS NOT NULL
+       AND TRIM(r.public_comments) != ''
+     ORDER BY r.round_number ASC, r.submitted_at ASC`,
+    [id]
+  )
+
+  const decisionsResult = await pool.query(
+    `SELECT ed.id, ed.decision, ed.comments_to_author, ed.decided_at
+     FROM editorial_decisions ed
+     WHERE ed.manuscript_id = $1
+     ORDER BY ed.decided_at DESC`,
+    [id]
+  )
+
   return {
     ...manuscript,
     authors: authorsResult.rows,
     current_version: versionResult.rows[0] || null,
     files: filesResult.rows,
+    reviews: reviewsResult.rows,
+    editorial_decisions: decisionsResult.rows,
   }
 }
 

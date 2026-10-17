@@ -8,6 +8,7 @@ import { formatDate, formatDateTime } from '../../shared/utils/formatDate'
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
+  { key: 'reviews', label: 'Reviewer Feedback' },
   { key: 'files', label: 'Files & Versions' },
   { key: 'coauthors', label: 'Co-Authors' },
 ]
@@ -367,10 +368,17 @@ export default function ManuscriptDetail() {
 
   const hasFilesTabContent = (manuscript.versions && manuscript.versions.length > 0) || (manuscript.files && manuscript.files.length > 0)
   const hasCoauthorsTabContent = manuscript.authors && manuscript.authors.length > 0
+  const hasReviewsTabContent = manuscript.reviews && manuscript.reviews.length > 0
   const tabs = TABS.filter((t) => {
     if (t.key === 'files') return hasFilesTabContent
     if (t.key === 'coauthors') return hasCoauthorsTabContent
+    if (t.key === 'reviews') return hasReviewsTabContent
     return true
+  }).map((t) => {
+    if (t.key === 'reviews' && manuscript.reviews?.length) {
+      return { ...t, label: `Reviewer Feedback (${manuscript.reviews.length})` }
+    }
+    return t
   })
   const currentTab = tabs.some((t) => t.key === activeTab) ? activeTab : 'overview'
 
@@ -425,6 +433,40 @@ export default function ManuscriptDetail() {
 
       {currentTab === 'overview' && (
         <>
+          {manuscript.reviews && manuscript.reviews.length > 0 && (
+            <div style={{
+              background: '#FAF7EE',
+              border: '1px solid #E6D9B8',
+              borderRadius: '8px',
+              padding: '16px 20px',
+              marginBottom: '28px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <i className="fa-solid fa-comments" style={{ fontSize: '20px', color: '#8A6D1C' }} />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-ink-navy)' }}>
+                    Reviewer Feedback Available ({manuscript.reviews.length} report{manuscript.reviews.length > 1 ? 's' : ''})
+                  </div>
+                  <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                    Peer reviewers have provided public comments on your submission.
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setActiveTab('reviews')}
+              >
+                Read Reviewer Feedback →
+              </Button>
+            </div>
+          )}
+
           {manuscript.abstract && (
             <div style={styles.section}>
               <h2 style={styles.sectionTitle}>Abstract</h2>
@@ -553,6 +595,77 @@ export default function ManuscriptDetail() {
             </div>
           )}
         </>
+      )}
+
+      {currentTab === 'reviews' && (
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Reviewer Comments &amp; Feedback</h2>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', marginBottom: '20px' }}>
+            The following comments were provided by expert peer reviewers for your manuscript. Please review this feedback carefully.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {manuscript.reviews.map((rev, idx) => (
+              <div
+                key={rev.id || idx}
+                style={{
+                  background: 'var(--color-surface, #FFFFFF)',
+                  border: '1px solid var(--color-rule-grey, #E2E8F0)',
+                  borderRadius: 'var(--radius-lg, 8px)',
+                  padding: '24px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: 'rgba(196, 162, 76, 0.15)',
+                      color: '#8A6D1C',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                    }}>
+                      <i className="fa-solid fa-user-check" />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-ink-navy, #0B1B3A)' }}>
+                        Reviewer {idx + 1}
+                      </h3>
+                      {rev.round_number && (
+                        <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                          Evaluation Round {rev.round_number}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {rev.submitted_at && (
+                    <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                      Submitted {formatDate(rev.submitted_at)}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{
+                  background: '#F8FAFC',
+                  border: '1px solid #EDF2F7',
+                  borderLeft: '4px solid var(--color-citation-gold-dark, #C4A24C)',
+                  borderRadius: '4px',
+                  padding: '16px',
+                  fontSize: 'var(--text-sm)',
+                  lineHeight: 1.7,
+                  color: 'var(--color-ink-black)',
+                  whiteSpace: 'pre-wrap',
+                }}>
+                  {rev.public_comments}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {currentTab === 'coauthors' && (
