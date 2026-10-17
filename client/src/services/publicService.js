@@ -2,6 +2,7 @@ import apiClient from './apiClient.js'
 
 export const publicService = {
   getPublishedArticles: () => apiClient.get('/public/published'),
+  getPublishedArticleById: (id) => apiClient.get(`/public/published/${id}`),
   getCurrentIssueArticles: () => apiClient.get('/public/current-issue'),
   getFeaturedArticles: (limit = 6) => apiClient.get(`/public/featured?limit=${limit}`),
   getPublishedArticleAuthors: (manuscriptId) => apiClient.get(`/public/published/${manuscriptId}/authors`),

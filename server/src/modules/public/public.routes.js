@@ -29,6 +29,15 @@ router.get('/current-issue', async (req, res) => {
   res.json(articles)
 })
 
+// GET /api/public/published/:id — single published article
+router.get('/published/:id', async (req, res) => {
+  const article = await publicService.getPublishedArticleById(req.params.id)
+  if (!article) {
+    return res.status(404).json({ error: 'Published article not found' })
+  }
+  res.json(article)
+})
+
 // GET /api/public/published/:id/authors — authors for one published article
 router.get('/published/:id/authors', async (req, res) => {
   const authors = await publicService.getPublishedArticleAuthors(req.params.id)
