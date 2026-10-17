@@ -42,14 +42,20 @@ BEGIN
   SELECT id INTO reviewer_role_id FROM roles WHERE name = 'reviewer' LIMIT 1;
   SELECT id INTO editor_role_id FROM roles WHERE name = 'editor' LIMIT 1;
 
-  UPDATE users
-  SET role_id = editor_role_id, updated_at = now()
-  WHERE id = ANY(affected_ids) AND role_id = reviewer_role_id;
+  IF editor_role_id IS NOT NULL THEN
+    UPDATE users
+    SET role_id = editor_role_id, updated_at = now()
+    WHERE id = ANY(affected_ids) AND (reviewer_role_id IS NULL OR role_id = reviewer_role_id);
 
-  DELETE FROM user_roles
-  WHERE user_id = ANY(affected_ids) AND role_id = reviewer_role_id;
+    IF reviewer_role_id IS NOT NULL THEN
+      DELETE FROM user_roles
+      WHERE user_id = ANY(affected_ids) AND role_id = reviewer_role_id;
+    END IF;
 
-  INSERT INTO user_roles (user_id, role_id)
-  SELECT unnest(affected_ids), editor_role_id
-  ON CONFLICT (user_id, role_id) DO NOTHING;
+    INSERT INTO user_roles (user_id, role_id)
+    SELECT u.id, editor_role_id
+    FROM users u
+    WHERE u.id = ANY(affected_ids)
+    ON CONFLICT (user_id, role_id) DO NOTHING;
+  END IF;
 END $$;
