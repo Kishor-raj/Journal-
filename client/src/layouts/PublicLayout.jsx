@@ -102,9 +102,7 @@ export default function PublicLayout() {
           width: '100%',
         }}>
           <div style={{ display: 'flex', gap: '6px 26px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>ISSN 2654-6725 (Online)</span>
-            {!isCompact && <span style={{ opacity: 0.35 }}>|</span>}
-            {!isCompact && <span>Peer-reviewed &amp; Open Access</span>}
+            <span>Peer-reviewed &amp; Open Access</span>
           </div>
           <div style={{ display: 'flex', gap: '6px 26px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span>ceo@ijidcr-asgard.in</span>
@@ -424,7 +422,7 @@ export default function PublicLayout() {
           flexWrap: 'wrap',
         }}>
           <span>© 2026 Asgard International Research Publication. All rights reserved.</span>
-          <span>Content licensed under CC BY 4.0 · ISSN 2654-6725</span>
+          <span>Content licensed under CC BY 4.0</span>
         </div>
       </footer>
     </div>

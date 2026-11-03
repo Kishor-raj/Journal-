@@ -406,7 +406,7 @@ export default function NotFound() {
         </main>
 
         <footer className="nf-footer">
-          <b>Asgard International Research Publication</b> · ISSN 2654-6725 · © 2026 · CC BY 4.0
+          <b>Asgard International Research Publication</b> · © 2026 · CC BY 4.0
         </footer>
       </div>
     </>
