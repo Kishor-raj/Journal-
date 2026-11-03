@@ -362,8 +362,6 @@ export default function CurrentIssue() {
               <div><strong>Volume / Issue:</strong> {JOURNAL_INFO.volume}, {JOURNAL_INFO.issue}</div>
               <div><strong>Frequency:</strong> {JOURNAL_INFO.frequency}</div>
               <div><strong>Publication Year:</strong> {JOURNAL_INFO.year}</div>
-              <div><strong>ISSN (Online):</strong> {JOURNAL_INFO.issnOnline}</div>
-              <div><strong>ISSN (Print):</strong> {JOURNAL_INFO.issnPrint}</div>
               <div><strong>DOI Prefix:</strong> {JOURNAL_INFO.doiPrefix}</div>
             </div>
           </div>
