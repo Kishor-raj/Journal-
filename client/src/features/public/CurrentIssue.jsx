@@ -12,7 +12,7 @@ const JOURNAL_INFO = {
   frequency: 'Quarterly',
   issnOnline: '2654-6725',
   issnPrint: 'To be Assigned',
-  doiPrefix: '',
+  doiPrefix: '10.68968',
   status: 'Published · Open Access',
 }
 
@@ -48,7 +48,8 @@ function toArticle(m, idx) {
 
   // Build APA-style citation
   const yearStr = m.updated_at ? new Date(m.updated_at).getFullYear() : JOURNAL_INFO.year
-  const citation = `${authorsStr} (${yearStr}). ${m.title}. ${JOURNAL_INFO.shortName}, ${JOURNAL_INFO.volume.replace('Volume ', '')}(${JOURNAL_INFO.issue.replace('Issue ', '')}). ${m.submission_number || ''}`
+  const doiUrl = m.doi_url || (m.doi ? `https://doi.org/${m.doi}` : '')
+  const citation = `${authorsStr} (${yearStr}). ${m.title}. ${JOURNAL_INFO.shortName}, ${JOURNAL_INFO.volume.replace('Volume ', '')}(${JOURNAL_INFO.issue.replace('Issue ', '')}). ${m.submission_number || ''}.${doiUrl ? ` ${doiUrl}` : ''}`
 
   return {
     id: m.id,
@@ -59,7 +60,8 @@ function toArticle(m, idx) {
     abstract: collapseRepeatedText(m.abstract),
     keywords: (m.keywords || []).join(', '),
     pages: m.submission_number || `Article ${idx + 1}`,
-    doi: '',
+    doi: m.doi || '',
+    doi_url: doiUrl,
     status: 'Published',
     citation,
     download_url: m.download_url || null,
@@ -262,7 +264,18 @@ function ArticleItem({ article, highlight, openAuthors }) {
 
       {/* Action footer */}
       <div style={{ display: 'flex', gap: '18px', alignItems: 'center', fontFamily: 'Jost, sans-serif', fontSize: '12.5px', color: '#6B7288', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
-        {article.doi && <span>DOI: {article.doi}</span>}
+        {article.doi && (
+          <a
+            href={article.doi_url || `https://doi.org/${article.doi}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#0B1B3A', textDecoration: 'none', fontWeight: 600 }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#C4A24C'; e.currentTarget.style.textDecoration = 'underline' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#0B1B3A'; e.currentTarget.style.textDecoration = 'none' }}
+          >
+            DOI: https://doi.org/{article.doi}
+          </a>
+        )}
         {article.doi && <span style={{ color: '#E6E1D6' }}>|</span>}
         <ActionButton onClick={() => setShowAbstract(!showAbstract)} active={showAbstract}>
           {showAbstract ? 'Hide Abstract' : 'Abstract'}

@@ -11,6 +11,12 @@ import {
   generateCertificatesForManuscript,
 } from '../publications/publication.service.js'
 import {
+  allocateDoiForPublication,
+  buildCanonicalDoiUrl,
+  getDoiDetailsForManuscript,
+} from '../publications/doi.service.js'
+import { retryCrossrefDeposit } from '../publications/crossref.worker.js'
+import {
   generatePublishedManuscriptPdf,
   reprocessPublishedManuscript,
   getPublishedManuscriptStatus,
@@ -1421,15 +1427,41 @@ export async function publishManuscript(manuscriptId, editorId, publicationData 
       [manuscriptId, previousStatus, newStatus, editorId]
     )
 
+    const doiAlloc = await allocateDoiForPublication(client, manuscriptId)
+    const timestamp = Date.now()
+    const cleanStem = (doiAlloc.doiSuffix || '').replace(/[^a-zA-Z0-9_]/g, '')
+    const batchId = `crossref_${cleanStem}_${timestamp}`
+    const depositFilename = `${batchId}.xml`
+
     const publication = await createPublicationRow(client, {
       manuscriptId,
       editorId,
       volume: metadata.volume,
       issue: metadata.issue,
       publicationYear: metadata.publicationYear,
-      doi: metadata.doi,
-      articleUrl: metadata.articleUrl,
+      doi: doiAlloc.doi,
+      doiSuffix: doiAlloc.doiSuffix,
+      doiStatus: doiAlloc.doiStatus,
+      doiEnvironment: doiAlloc.doiEnvironment,
+      doiBatchId: batchId,
+      doiDepositFilename: depositFilename,
+      articleUrl: doiAlloc.articleUrl,
     })
+
+    await client.query(
+      `INSERT INTO crossref_deposit_jobs
+         (manuscript_id, publication_id, doi, doi_suffix, environment, batch_id, deposit_filename, status, next_attempt_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'queued', now())`,
+      [
+        manuscriptId,
+        publication.id,
+        doiAlloc.doi,
+        doiAlloc.doiSuffix,
+        doiAlloc.doiEnvironment,
+        batchId,
+        depositFilename,
+      ]
+    )
 
     const { certificates } = await createCertificateRows(client, {
       manuscriptId,
@@ -1447,6 +1479,9 @@ export async function publishManuscript(manuscriptId, editorId, publicationData 
           from_status: previousStatus,
           to_status: newStatus,
           publication_id: publication.id,
+          doi: doiAlloc.doi,
+          doi_suffix: doiAlloc.doiSuffix,
+          doi_status: doiAlloc.doiStatus,
           certificates_created: certificates.length,
         }),
       ]
@@ -1458,7 +1493,11 @@ export async function publishManuscript(manuscriptId, editorId, publicationData 
       [
         editorId,
         manuscriptId,
-        JSON.stringify({ publication_id: publication.id, certificates_created: certificates.length }),
+        JSON.stringify({
+          publication_id: publication.id,
+          doi: doiAlloc.doi,
+          certificates_created: certificates.length,
+        }),
       ]
     )
 
@@ -1469,6 +1508,10 @@ export async function publishManuscript(manuscriptId, editorId, publicationData 
         manuscriptId,
         JSON.stringify({
           publication_id: publication.id,
+          doi: doiAlloc.doi,
+          doi_suffix: doiAlloc.doiSuffix,
+          doi_status: doiAlloc.doiStatus,
+          batch_id: batchId,
           certificates_created: certificates.length,
           volume: metadata.volume,
           issue: metadata.issue,
@@ -1503,6 +1546,12 @@ export async function publishManuscript(manuscriptId, editorId, publicationData 
       submission_number: manuscript.submission_number,
       publication_year: publication.publication_year,
       status: newStatus,
+      doi: doiAlloc.doi,
+      doi_url: buildCanonicalDoiUrl(doiAlloc.doi),
+      doi_suffix: doiAlloc.doiSuffix,
+      doi_status: doiAlloc.doiStatus,
+      doi_environment: doiAlloc.doiEnvironment,
+      article_url: doiAlloc.articleUrl,
       certificates_created: certificates.length,
       certificates_generated,
       document_status: document_generation.document_status || (document_generation.success ? 'ready' : 'failed'),
@@ -1532,6 +1581,12 @@ export async function getAcceptedManuscripts() {
             p.volume,
             p.issue,
             p.publication_year,
+            p.doi,
+            p.doi_suffix,
+            p.doi_status,
+            p.doi_environment,
+            p.doi_error,
+            p.article_url,
             p.document_status,
             p.document_error,
             p.document_generated_at,
@@ -1546,6 +1601,7 @@ export async function getAcceptedManuscripts() {
   )
   return result.rows.map(row => ({
     ...row,
+    doi_url: row.doi ? buildCanonicalDoiUrl(row.doi) : null,
     document_download_url: row.document_public_id ? getPublishedManuscriptDownloadUrl(row.document_public_id) : null,
     document_view_url: row.document_public_id ? getPublishedManuscriptViewUrl(row.document_public_id) : null,
   }))
@@ -1557,6 +1613,14 @@ export async function reprocessPublishedManuscriptDocument(manuscriptId, editorI
 
 export async function getPublishedDocumentStatus(manuscriptId) {
   return getPublishedManuscriptStatus(manuscriptId)
+}
+
+export async function retryDoiRegistration(manuscriptId, editorId) {
+  return retryCrossrefDeposit(manuscriptId, editorId)
+}
+
+export async function getDoiRegistrationStatus(manuscriptId) {
+  return getDoiDetailsForManuscript(manuscriptId)
 }
 
 

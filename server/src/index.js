@@ -46,6 +46,10 @@ async function start() {
         enabled: true,
         pollIntervalMs: parseInt(process.env.AI_EMAIL_WORKER_INTERVAL_MS, 10) || 20 * 1000,
       },
+      crossrefWorker: {
+        enabled: true,
+        pollIntervalMs: parseInt(process.env.CROSSREF_WORKER_INTERVAL_MS, 10) || 60 * 1000,
+      },
     })
     if (jobs) process.on('SIGTERM', () => jobs.stop())
   } else {

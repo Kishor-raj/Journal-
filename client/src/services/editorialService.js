@@ -92,3 +92,11 @@ export function getPublishedDocumentStatus(manuscriptId) {
   return apiClient.get(`/editorial/manuscripts/${manuscriptId}/published-document-status`)
 }
 
+export function retryDoiRegistration(manuscriptId) {
+  return apiClient.post(`/editorial/manuscripts/${manuscriptId}/retry-doi`, {})
+}
+
+export function getDoiRegistrationStatus(manuscriptId) {
+  return apiClient.get(`/editorial/manuscripts/${manuscriptId}/doi-status`)
+}
+
