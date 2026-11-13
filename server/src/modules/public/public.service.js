@@ -1,5 +1,6 @@
 import pool from '../../config/db.js'
 import cloudinary from '../../config/cloudinary.js'
+import { buildCanonicalDoiUrl } from '../publications/doi.service.js'
 
 function buildFileUrls(file) {
   if (!file || !file.public_id) return null
@@ -34,6 +35,11 @@ export async function getPublishedArticles() {
       p.volume,
       p.issue,
       p.publication_year,
+      CASE
+        WHEN p.doi_status = 'registered' AND p.doi_environment = 'production' THEN p.doi
+        ELSE NULL
+      END AS doi,
+      p.article_url,
       COALESCE(c.name, 'Research Article') AS category,
       COALESCE(
         json_agg(
@@ -67,7 +73,7 @@ export async function getPublishedArticles() {
     LEFT JOIN users u ON u.id = ma.user_id
     LEFT JOIN publications p ON p.manuscript_id = m.id
     WHERE m.current_status = 'published'
-    GROUP BY m.id, c.name, p.published_at, p.volume, p.issue, p.publication_year
+    GROUP BY m.id, c.name, p.published_at, p.volume, p.issue, p.publication_year, p.doi, p.doi_status, p.doi_environment, p.article_url
     ORDER BY COALESCE(p.published_at, m.updated_at) DESC
   `)
 
@@ -75,6 +81,7 @@ export async function getPublishedArticles() {
     const fileInfo = buildFileUrls(r.primary_file)
     return {
       ...r,
+      doi_url: r.doi ? buildCanonicalDoiUrl(r.doi) : null,
       file_url: fileInfo?.download_url || null,
       download_url: fileInfo?.download_url || null,
       view_url: fileInfo?.view_url || null,
@@ -100,6 +107,11 @@ export async function getPublishedArticleById(id) {
       p.volume,
       p.issue,
       p.publication_year,
+      CASE
+        WHEN p.doi_status = 'registered' AND p.doi_environment = 'production' THEN p.doi
+        ELSE NULL
+      END AS doi,
+      p.article_url,
       COALESCE(c.name, 'Research Article') AS category,
       COALESCE(
         json_agg(
@@ -133,7 +145,7 @@ export async function getPublishedArticleById(id) {
     LEFT JOIN users u ON u.id = ma.user_id
     LEFT JOIN publications p ON p.manuscript_id = m.id
     WHERE m.id = $1 AND m.current_status = 'published'
-    GROUP BY m.id, c.name, p.published_at, p.volume, p.issue, p.publication_year
+    GROUP BY m.id, c.name, p.published_at, p.volume, p.issue, p.publication_year, p.doi, p.doi_status, p.doi_environment, p.article_url
   `, [id])
 
   if (!rows.length) return null
@@ -142,6 +154,7 @@ export async function getPublishedArticleById(id) {
   const fileInfo = buildFileUrls(r.primary_file)
   return {
     ...r,
+    doi_url: r.doi ? buildCanonicalDoiUrl(r.doi) : null,
     file_url: fileInfo?.download_url || null,
     download_url: fileInfo?.download_url || null,
     view_url: fileInfo?.view_url || null,
@@ -163,6 +176,14 @@ export async function getFeaturedArticles(limit = 6) {
       m.submission_number,
       m.updated_at,
       COALESCE(p.published_at, m.updated_at) AS published_at,
+      p.volume,
+      p.issue,
+      p.publication_year,
+      CASE
+        WHEN p.doi_status = 'registered' AND p.doi_environment = 'production' THEN p.doi
+        ELSE NULL
+      END AS doi,
+      p.article_url,
       COALESCE(c.name, 'Research Article') AS category,
       COALESCE(
         json_agg(
@@ -196,7 +217,7 @@ export async function getFeaturedArticles(limit = 6) {
     LEFT JOIN users u ON u.id = ma.user_id
     LEFT JOIN publications p ON p.manuscript_id = m.id
     WHERE m.current_status = 'published'
-    GROUP BY m.id, c.name, p.published_at
+    GROUP BY m.id, c.name, p.published_at, p.volume, p.issue, p.publication_year, p.doi, p.doi_status, p.doi_environment, p.article_url
     ORDER BY COALESCE(p.published_at, m.updated_at) DESC
     LIMIT $1
   `, [limit])
@@ -205,6 +226,7 @@ export async function getFeaturedArticles(limit = 6) {
     const fileInfo = buildFileUrls(r.primary_file)
     return {
       ...r,
+      doi_url: r.doi ? buildCanonicalDoiUrl(r.doi) : null,
       file_url: fileInfo?.download_url || null,
       download_url: fileInfo?.download_url || null,
       view_url: fileInfo?.view_url || null,

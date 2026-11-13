@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: journal_postgres
+    container_name: journal_postgres_new
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

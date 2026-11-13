@@ -41,6 +41,7 @@ export function generateAcademicPdfBlob({
   keywords = 'Computing, AI',
   volTitle = 'Volume 1 (2026)',
   issueName = 'Issue 1 (2026)',
+  doi = null,
 }) {
   const authorNames = Array.isArray(authors)
     ? authors.map(a => typeof a === 'string' ? a : (a.name + (a.affiliation ? ` (${a.affiliation})` : ''))).join(' • ')
@@ -66,9 +67,14 @@ export function generateAcademicPdfBlob({
   stream += '40 755 m 555 755 l S\n'
 
   // Metadata Line
+  const cleanDoi = doi ? String(doi).trim() : ''
+  const doiSegment = cleanDoi
+    ? `  •  DOI: ${sanitize(cleanDoi.startsWith('http') ? cleanDoi : `https://doi.org/${cleanDoi}`)}`
+    : ''
+
   stream += '0.35 0.4 0.48 rg\n'
   stream += `BT /F2 8.5 Tf 40 738 Td (${sanitize(category.toUpperCase() + '  •  ' + volTitle + '  •  ' + issueName + '  •  CODE: ' + code)}) Tj ET\n`
-  stream += `BT /F1 8.5 Tf 40 726 Td (Published Online: ${sanitize(date)}  •  DOI Prefix: 10.xxxx/ijidcr.2026.${sanitize(code)}) Tj ET\n`
+  stream += `BT /F1 8.5 Tf 40 726 Td (Published Online: ${sanitize(date)}${doiSegment}) Tj ET\n`
 
   // Divider line
   stream += '0.88 0.86 0.82 RG 1 w\n'

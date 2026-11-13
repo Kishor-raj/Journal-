@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { PDFDocument } from 'pdf-lib'
@@ -21,6 +21,13 @@ import {
 import {
   generatePublishedManuscriptPdf,
 } from './published-manuscript.service.js'
+
+vi.mock('../../config/db.js', () => ({
+  default: {
+    query: vi.fn().mockResolvedValue({ rows: [] }),
+    connect: vi.fn(),
+  },
+}))
 
 describe('Metadata & ISSN formatting', () => {
   it('formats both online and print ISSNs when provided', () => {
@@ -154,6 +161,25 @@ describe('PDF Branding Renderer (pdf-lib)', () => {
     expect(stampedDoc.getPageCount()).toBe(3)
     expect(stampedDoc.getTitle()).toBe('Deep Learning in Autonomous Operations')
     expect(stampedDoc.getCreator()).toBe('IJIDCR Publishing Engine')
+  })
+
+  it('stamps canonical DOI URL on page 1 publication header when doi is present', async () => {
+    const sampleBuffer = await createSamplePdf(2)
+    const journal = { name: 'Journal of Intelligent Systems', short_name: 'JIS' }
+    const manuscript = { submission_number: 'JIS-26-00042', title: 'Deep Learning' }
+    const publication = { volume: 1, issue: 1, publication_year: 2026, doi: '10.68968/IJIDCR_00001' }
+
+    const brandedBuffer = await renderBrandedManuscriptPdf({
+      pdfBuffer: sampleBuffer,
+      journal,
+      manuscript,
+      publication,
+      certificateNumber: 'AIRP-26-JIS-26-00042',
+    })
+
+    expect(Buffer.isBuffer(brandedBuffer)).toBe(true)
+    const stampedDoc = await PDFDocument.load(brandedBuffer)
+    expect(stampedDoc.getPageCount()).toBe(2)
   })
 
   it('handles landscape orientation gracefully', async () => {

@@ -246,8 +246,24 @@ export async function renderBrandedManuscriptPdf({
         color: MUTED,
       })
 
+      const rawDoi = publication.doi ? String(publication.doi).trim() : ''
+      const doiUrlText = rawDoi
+        ? (rawDoi.startsWith('http') ? rawDoi : `https://doi.org/${rawDoi}`)
+        : null
+
+      if (doiUrlText) {
+        const doiW = fontRegular.widthOfTextAtSize(`DOI: ${doiUrlText}`, 6.5)
+        page.drawText(`DOI: ${doiUrlText}`, {
+          x: width - margin - doiW,
+          y: height - 46.5,
+          size: 6.5,
+          font: fontRegular,
+          color: MUTED,
+        })
+      }
+
       // Separator rule
-      const sepY = Math.min(lineY - 2, height - 48)
+      const sepY = Math.min(lineY - 2, height - (doiUrlText ? 54 : 48))
       page.drawLine({
         start: { x: margin, y: sepY },
         end: { x: width - margin, y: sepY },

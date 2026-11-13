@@ -178,22 +178,61 @@ async function writeWorkflowLog(target, { manuscriptId, eventName, status, paylo
 }
 
 /**
- * Creates the authoritative publication record. Idempotent: uses a unique
- * manuscript_id constraint and never creates a duplicate publication row.
+ * Creates or updates the authoritative publication record.
+ * Concurrency-safe & idempotent: updates missing DOI fields for pre-existing rows
+ * without ever overwriting an already assigned DOI.
  */
-export async function createPublicationRow(client, { manuscriptId, editorId, volume, issue, publicationYear, doi, articleUrl }) {
+export async function createPublicationRow(client, {
+  manuscriptId,
+  editorId,
+  volume,
+  issue,
+  publicationYear,
+  doi = null,
+  doiSuffix = null,
+  doiStatus = 'not_assigned',
+  doiEnvironment = 'test',
+  doiBatchId = null,
+  doiDepositFilename = null,
+  articleUrl = null,
+}) {
   const result = await client.query(
     `INSERT INTO publications
-       (manuscript_id, volume, issue, publication_year, doi, article_url, published_at, published_by)
-     VALUES ($1, $2, $3, $4, $5, $6, now(), $7)
-     ON CONFLICT (manuscript_id) DO NOTHING
+       (manuscript_id, volume, issue, publication_year, doi, doi_suffix, doi_status, doi_environment, doi_batch_id, doi_deposit_filename, article_url, published_at, published_by)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), $12)
+     ON CONFLICT (manuscript_id) DO UPDATE
+       SET volume = EXCLUDED.volume,
+           issue = EXCLUDED.issue,
+           publication_year = EXCLUDED.publication_year,
+           doi = COALESCE(publications.doi, EXCLUDED.doi),
+           doi_suffix = COALESCE(publications.doi_suffix, EXCLUDED.doi_suffix),
+           doi_status = CASE
+             WHEN publications.doi IS NULL AND EXCLUDED.doi IS NOT NULL THEN EXCLUDED.doi_status
+             ELSE publications.doi_status
+           END,
+           doi_environment = COALESCE(publications.doi_environment, EXCLUDED.doi_environment),
+           doi_batch_id = COALESCE(publications.doi_batch_id, EXCLUDED.doi_batch_id),
+           doi_deposit_filename = COALESCE(publications.doi_deposit_filename, EXCLUDED.doi_deposit_filename),
+           article_url = COALESCE(publications.article_url, EXCLUDED.article_url),
+           published_by = COALESCE(publications.published_by, EXCLUDED.published_by),
+           updated_at = now()
      RETURNING *`,
-    [manuscriptId, volume, issue, publicationYear, doi, articleUrl, editorId]
+    [
+      manuscriptId,
+      volume,
+      issue,
+      publicationYear,
+      doi,
+      doiSuffix,
+      doiStatus,
+      doiEnvironment,
+      doiBatchId,
+      doiDepositFilename,
+      articleUrl,
+      editorId,
+    ]
   )
-  if (result.rows[0]) return result.rows[0]
-
-  const existing = await client.query('SELECT * FROM publications WHERE manuscript_id = $1', [manuscriptId])
-  return existing.rows[0]
+  return result.rows[0]
 }
 
 /**

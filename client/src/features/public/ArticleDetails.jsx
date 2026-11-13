@@ -228,7 +228,8 @@ export default function ArticleDetails() {
   const submissionCode = article?.submission_number || `IJIDCR-26-${String(id).padStart(4, '0')}`
 
   // Citation string (APA 7th)
-  const citationText = `${authorNamesStr} (${pubYear}). ${article?.title || 'Manuscript'}. International Journal of Intelligent Digital Computing Research, ${volumeLabel.replace('Volume ', '')}(${issueLabel.replace('Issue ', '')}), ${submissionCode}.`
+  const doiUrl = article?.doi_url || (article?.doi ? `https://doi.org/${article.doi}` : '')
+  const citationText = `${authorNamesStr} (${pubYear}). ${article?.title || 'Manuscript'}. International Journal of Intelligent Digital Computing Research, ${volumeLabel.replace('Volume ', '')}(${issueLabel.replace('Issue ', '')}), ${submissionCode}.${doiUrl ? ` ${doiUrl}` : ''}`
 
   const handleCopyCitation = () => {
     navigator.clipboard?.writeText(citationText)
@@ -554,6 +555,41 @@ export default function ArticleDetails() {
                   {volumeLabel} · {issueLabel} ({pubYear})
                 </strong>
               </div>
+
+              {(article.doi || article.doi_url) && (
+                <div>
+                  <span
+                    style={{
+                      fontFamily: 'Jost, sans-serif',
+                      fontSize: '10.5px',
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: '#6B7288',
+                      display: 'block',
+                      marginBottom: '3px',
+                    }}
+                  >
+                    DOI
+                  </span>
+                  <a
+                    href={article.doi_url || `https://doi.org/${article.doi}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: '#0B1B3A',
+                      fontSize: '13.5px',
+                      fontFamily: 'Jost, sans-serif',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      wordBreak: 'break-all',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#C4A24C'; e.currentTarget.style.textDecoration = 'underline' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = '#0B1B3A'; e.currentTarget.style.textDecoration = 'none' }}
+                  >
+                    {article.doi_url || `https://doi.org/${article.doi}`}
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Section: Authors and Affiliations */}

@@ -109,6 +109,19 @@ router.get('/manuscripts/:id/published-document-status', authenticate, requireRo
   res.json(status)
 })
 
+router.post('/manuscripts/:id/retry-doi', authenticate, requireRole('editor'), async (req, res) => {
+  const result = await editorialService.retryDoiRegistration(req.params.id, req.user.uid)
+  res.json(result)
+})
+
+router.get('/manuscripts/:id/doi-status', authenticate, requireRole('editor'), async (req, res) => {
+  const status = await editorialService.getDoiRegistrationStatus(req.params.id)
+  if (!status) {
+    return res.status(404).json({ error: 'DOI details not found for this manuscript' })
+  }
+  res.json(status)
+})
+
 router.get('/accepted', authenticate, requireRole('editor'), async (req, res) => {
   const manuscripts = await editorialService.getAcceptedManuscripts(req.user.uid)
   res.json(manuscripts)

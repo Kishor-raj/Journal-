@@ -4,6 +4,7 @@ import { processDraftReminders } from './manuscript-notification.service.js'
 import { MAX_RETRY_ATTEMPTS, RETRY_BACKOFF } from './notification.events.js'
 import { processPendingWebhooks } from '../ai-email/ai-email.controller.js'
 import { startAiEmailWorker } from '../ai-email/ai-email-worker.js'
+import { startCrossrefWorker } from '../publications/crossref.worker.js'
 
 const DEFAULT_POLL_INTERVAL_MS = 30 * 1000
 
@@ -191,6 +192,7 @@ export function startBackgroundJobs(options = {}) {
   const draftScheduler = startDraftReminderScheduler(options.draftReminder)
   const webhookWorker = startWebhookEventWorker({ ...options.webhookEvent, enabled: false })
   const aiEmailWorker = startAiEmailWorker(options.aiEmail)
+  const crossrefWorker = startCrossrefWorker(options.crossrefWorker)
 
   return {
     stop() {
@@ -198,6 +200,7 @@ export function startBackgroundJobs(options = {}) {
       if (draftScheduler) draftScheduler.stop()
       if (webhookWorker) webhookWorker.stop()
       if (aiEmailWorker) aiEmailWorker.stop()
+      if (crossrefWorker) crossrefWorker.stop()
       console.log('[BACKGROUND_JOBS] All background jobs stopped')
     },
   }

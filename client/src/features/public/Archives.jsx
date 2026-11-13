@@ -153,6 +153,8 @@ export default function Archives() {
               volume: m.volume || 1,
               issue: m.issue || 1,
               publicationYear: m.publication_year || 2026,
+              doi: m.doi || null,
+              doiUrl: m.doi_url || (m.doi ? `https://doi.org/${m.doi}` : null),
             }
           })
 
@@ -240,10 +242,11 @@ export default function Archives() {
         const matchingArticles = iss.articles.filter(art => {
           const matchTitle = (art.title || '').toLowerCase().includes(q)
           const matchCode = (art.code || '').toLowerCase().includes(q)
+          const matchDoi = (art.doi || '').toLowerCase().includes(q)
           const matchKeywords = (art.keywords || '').toLowerCase().includes(q)
           const matchCategory = (art.category || '').toLowerCase().includes(q)
           const matchAuthors = (art.authors || []).some(a => (a.name || '').toLowerCase().includes(q))
-          return matchTitle || matchCode || matchKeywords || matchCategory || matchAuthors
+          return matchTitle || matchCode || matchDoi || matchKeywords || matchCategory || matchAuthors
         })
         return { ...iss, articles: matchingArticles }
       }).filter(iss => iss.articles.length > 0 || iss.name.toLowerCase().includes(q))
@@ -586,6 +589,26 @@ export default function Archives() {
                                   <span>{art.code}</span>
                                   <span>·</span>
                                   <span>{art.date}</span>
+                                  {art.doi && (
+                                    <>
+                                      <span>·</span>
+                                      <a
+                                        href={art.doiUrl || `https://doi.org/${art.doi}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        style={{
+                                          color: '#0B1B3A',
+                                          fontWeight: 600,
+                                          textDecoration: 'none',
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.color = '#C4A24C'; e.currentTarget.style.textDecoration = 'underline' }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.color = '#0B1B3A'; e.currentTarget.style.textDecoration = 'none' }}
+                                      >
+                                        https://doi.org/{art.doi}
+                                      </a>
+                                    </>
+                                  )}
                                   <span
                                     style={{
                                       background: '#EAF6EE',

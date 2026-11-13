@@ -6,6 +6,7 @@ import {
   publishManuscript,
   getLatestPublicationMeta,
   reprocessPublishedDocument,
+  retryDoiRegistration,
 } from '../../services/editorialService'
 import { formatDate } from '../../shared/utils/formatDate'
 
@@ -159,7 +160,7 @@ const styles = {
   },
 }
 
-function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryDoc, isReprocessing }) {
+function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryDoc, isReprocessing, onRetryDoi, isRetryingDoi }) {
   const [hovered, setHovered] = useState(false)
   const isPublished = manuscript.current_status === 'published'
 
@@ -209,6 +210,28 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
           <span style={styles.metaLabel}>{isPublished ? 'Published' : 'Accepted'}</span>
           <span style={styles.metaValue}>{manuscript.acceptance_date ? formatDate(manuscript.acceptance_date) : '—'}</span>
         </div>
+        {isPublished && manuscript.doi && (
+          <div style={{ ...styles.metaItem, gridColumn: 'span 2' }}>
+            <span style={styles.metaLabel}>DOI &amp; Crossref</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '2px' }}>
+              <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', fontWeight: 600, color: '#0B1B3A' }}>
+                {manuscript.doi}
+              </span>
+              <span style={{
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                padding: '1px 6px',
+                borderRadius: '4px',
+                background: manuscript.doi_status === 'registered' || manuscript.doi_status === 'test_success' ? '#EAF7F0' : manuscript.doi_status === 'failed' ? '#FEF2F2' : '#F1F5F9',
+                color: manuscript.doi_status === 'registered' || manuscript.doi_status === 'test_success' ? '#1A7F4B' : manuscript.doi_status === 'failed' ? '#B91C1C' : '#475569',
+                border: `1px solid ${manuscript.doi_status === 'registered' || manuscript.doi_status === 'test_success' ? '#A7F3D0' : manuscript.doi_status === 'failed' ? '#FECACA' : '#CBD5E1'}`,
+              }}>
+                {manuscript.doi_status === 'test_success' ? 'Test Verified' : (manuscript.doi_status || 'Reserved')}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={styles.cardDivider}>
@@ -229,7 +252,33 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
         </button>
 
         {isPublished ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            {manuscript.doi_status === 'failed' && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRetryDoi(manuscript.id)
+                }}
+                disabled={isRetryingDoi}
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  color: '#92400E',
+                  background: '#FEF3C7',
+                  border: '1px solid #FCD34D',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '4px 8px',
+                  cursor: isRetryingDoi ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <i className="fas fa-rotate" /> {isRetryingDoi ? 'Retrying DOI...' : 'Retry DOI'}
+              </button>
+            )}
+
             {manuscript.document_status === 'ready' && manuscript.document_download_url ? (
               <a
                 href={manuscript.document_download_url}
@@ -329,8 +378,9 @@ export default function AcceptedManuscripts() {
   const [loading, setLoading] = useState(true)
   const [publishingId, setPublishingId] = useState(null)
   const [reprocessingId, setReprocessingId] = useState(null)
+  const [retryingDoiId, setRetryingDoiId] = useState(null)
   const [publishTarget, setPublishTarget] = useState(null)
-  const [publishForm, setPublishForm] = useState({ volume: '', issue: '', doi: '' })
+  const [publishForm, setPublishForm] = useState({ volume: '', issue: '' })
   const [successMessage, setSuccessMessage] = useState('')
   const [filter, setFilter] = useState('all') // 'all' | 'accepted' | 'published'
 
@@ -359,12 +409,26 @@ export default function AcceptedManuscripts() {
     }
   }
 
+  const handleRetryDoi = async (id) => {
+    setRetryingDoiId(id)
+    try {
+      await retryDoiRegistration(id)
+      setSuccessMessage('DOI registration job re-enqueued with Crossref!')
+      loadManuscripts()
+      setTimeout(() => setSuccessMessage(''), 6000)
+    } catch (err) {
+      alert(err.message || 'Failed to retry DOI registration')
+    } finally {
+      setRetryingDoiId(null)
+    }
+  }
+
   const handlePublish = async (id) => {
     try {
       const meta = await getLatestPublicationMeta()
-      setPublishForm({ volume: String(meta.volume || 1), issue: String(meta.issue || 1), doi: '' })
+      setPublishForm({ volume: String(meta.volume || 1), issue: String(meta.issue || 1) })
     } catch {
-      setPublishForm({ volume: '1', issue: '1', doi: '' })
+      setPublishForm({ volume: '1', issue: '1' })
     }
     setPublishTarget(id)
   }
@@ -376,8 +440,10 @@ export default function AcceptedManuscripts() {
       const result = await publishManuscript(publishTarget, {
         volume: publishForm.volume,
         issue: publishForm.issue,
-        doi: publishForm.doi,
       })
+      const doiNote = result?.doi
+        ? ` DOI allocated: ${result.doi} (${result.doi_status || 'reserved'}).`
+        : ''
       const certNote =
         result?.certificates_created > 0
           ? ` Certificate(s) prepared: ${result.certificates_created} (${result.certificates_generated ?? 0} generated).`
@@ -388,7 +454,7 @@ export default function AcceptedManuscripts() {
           : result?.document_status === 'failed'
           ? ` Branded PDF generation failed: ${result.document_error || 'Check server logs'}`
           : ' Branded PDF generation in progress.'
-      setSuccessMessage(`Manuscript successfully published!${docNote}${certNote}`)
+      setSuccessMessage(`Manuscript successfully published!${doiNote}${docNote}${certNote}`)
       loadManuscripts()
       setTimeout(() => setSuccessMessage(''), 6000)
     } catch (err) {
@@ -486,6 +552,8 @@ export default function AcceptedManuscripts() {
                 isPublishing={publishingId === m.id}
                 onRetryDoc={handleRetryDoc}
                 isReprocessing={reprocessingId === m.id}
+                onRetryDoi={handleRetryDoi}
+                isRetryingDoi={retryingDoiId === m.id}
               />
             ))}
           </div>
@@ -524,7 +592,7 @@ export default function AcceptedManuscripts() {
               {manuscripts.find((m) => m.id === publishTarget)?.title || 'This manuscript'}
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
               <label style={styles.metaItem}>
                 <span style={styles.metaLabel}>Volume</span>
                 <input
@@ -549,16 +617,19 @@ export default function AcceptedManuscripts() {
               </label>
             </div>
 
-            <label style={{ ...styles.metaItem, marginBottom: '18px' }}>
-              <span style={styles.metaLabel}>DOI (optional)</span>
-              <input
-                type="text"
-                value={publishForm.doi}
-                onChange={(e) => setPublishForm({ ...publishForm, doi: e.target.value })}
-                placeholder="10.xxxx/journal.xxxxxxxx"
-                style={styles.modalInput}
-              />
-            </label>
+            <div style={{
+              background: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              borderRadius: 'var(--radius-sm)',
+              padding: '10px 12px',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-ink-navy)',
+              marginBottom: '16px',
+              lineHeight: 1.5,
+            }}>
+              <i className="fas fa-fingerprint" style={{ color: '#C4A24C', marginRight: '6px' }} />
+              <strong>Automated DOI:</strong> Unique suffix (e.g. <code>IJIDCR_00001</code>) and Crossref registration are allocated automatically.
+            </div>
 
             <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', margin: '0 0 18px', lineHeight: 1.5 }}>
               Publishing creates the official record of publication and a Certificate of Publication
