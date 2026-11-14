@@ -13,9 +13,11 @@ import { formatDate } from '../../shared/utils/formatDate'
 const styles = {
   page: {
     fontFamily: 'var(--font-body)',
-    padding: '40px',
-    maxWidth: '1100px',
+    padding: 'clamp(16px, 3vw, 40px)',
+    maxWidth: '1200px',
     margin: '0 auto',
+    boxSizing: 'border-box',
+    width: '100%',
   },
   tabsContainer: {
     display: 'flex',
@@ -23,6 +25,7 @@ const styles = {
     marginTop: '20px',
     borderBottom: '1px solid var(--color-rule-grey)',
     paddingBottom: '12px',
+    flexWrap: 'wrap',
   },
   tabBtn: (active) => ({
     background: active ? 'var(--color-ink-navy)' : 'transparent',
@@ -35,10 +38,11 @@ const styles = {
     fontWeight: 600,
     cursor: 'pointer',
     transition: 'all 150ms ease',
+    whiteSpace: 'nowrap',
   }),
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
     gap: '20px',
     marginTop: '20px',
   },
@@ -49,22 +53,33 @@ const styles = {
     padding: '20px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
+    gap: '14px',
     cursor: 'pointer',
+    minWidth: 0,
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    overflow: 'hidden',
   },
   cardHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: '10px',
+    gap: '12px',
+    minWidth: 0,
+    width: '100%',
   },
   cardTitle: {
     fontFamily: 'var(--font-display)',
-    fontSize: 'var(--text-base)',
+    fontSize: '1.05rem',
     fontWeight: 600,
     color: 'var(--color-ink-navy)',
-    lineHeight: 1.35,
-    flex: 1,
+    lineHeight: 1.4,
+    flex: '1 1 0%',
+    minWidth: 0,
+    maxWidth: '100%',
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+    hyphens: 'auto',
   },
   acceptedBadge: {
     display: 'inline-flex',
@@ -80,6 +95,8 @@ const styles = {
     color: 'var(--color-success)',
     border: '1px solid var(--color-success)',
     flexShrink: 0,
+    whiteSpace: 'nowrap',
+    alignSelf: 'flex-start',
   },
   publishedBadge: {
     display: 'inline-flex',
@@ -95,16 +112,22 @@ const styles = {
     color: '#D9A94A',
     border: '1px solid #C4A24C',
     flexShrink: 0,
+    whiteSpace: 'nowrap',
+    alignSelf: 'flex-start',
   },
   meta: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '8px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+    gap: '10px 12px',
+    minWidth: 0,
+    width: '100%',
   },
   metaItem: {
     display: 'flex',
     flexDirection: 'column',
     gap: '2px',
+    minWidth: 0,
+    overflow: 'hidden',
   },
   metaLabel: {
     fontSize: '0.65rem',
@@ -112,12 +135,17 @@ const styles = {
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     color: 'var(--color-text-muted)',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
+    overflow: 'hidden',
   },
   metaValue: {
     fontSize: 'var(--text-sm)',
     color: 'var(--color-ink-black)',
     fontWeight: 500,
     wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+    minWidth: 0,
   },
   cardDivider: {
     borderTop: '1px solid var(--color-rule-grey)',
@@ -125,7 +153,11 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '8px',
+    gap: '10px',
+    flexWrap: 'wrap',
+    marginTop: 'auto',
+    minWidth: 0,
+    width: '100%',
   },
   emptyState: {
     textAlign: 'center',
@@ -177,7 +209,9 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
       onMouseLeave={() => setHovered(false)}
     >
       <div style={styles.cardHeader}>
-        <div style={styles.cardTitle}>{manuscript.title || 'Untitled Manuscript'}</div>
+        <div style={styles.cardTitle} title={manuscript.title || 'Untitled Manuscript'}>
+          {manuscript.title || 'Untitled Manuscript'}
+        </div>
         {isPublished ? (
           <div style={styles.publishedBadge}>
             <i className="fas fa-globe" style={{ fontSize: '10px' }} />
@@ -211,10 +245,10 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
           <span style={styles.metaValue}>{manuscript.acceptance_date ? formatDate(manuscript.acceptance_date) : '—'}</span>
         </div>
         {isPublished && manuscript.doi && (
-          <div style={{ ...styles.metaItem, gridColumn: 'span 2' }}>
+          <div style={{ ...styles.metaItem, gridColumn: '1 / -1' }}>
             <span style={styles.metaLabel}>DOI &amp; Crossref</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '2px' }}>
-              <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', fontWeight: 600, color: '#0B1B3A' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '2px', minWidth: 0 }}>
+              <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', fontWeight: 600, color: '#0B1B3A', wordBreak: 'break-all' }}>
                 {manuscript.doi}
               </span>
               <span style={{
@@ -226,6 +260,7 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
                 background: manuscript.doi_status === 'registered' || manuscript.doi_status === 'test_success' ? '#EAF7F0' : manuscript.doi_status === 'failed' ? '#FEF2F2' : '#F1F5F9',
                 color: manuscript.doi_status === 'registered' || manuscript.doi_status === 'test_success' ? '#1A7F4B' : manuscript.doi_status === 'failed' ? '#B91C1C' : '#475569',
                 border: `1px solid ${manuscript.doi_status === 'registered' || manuscript.doi_status === 'test_success' ? '#A7F3D0' : manuscript.doi_status === 'failed' ? '#FECACA' : '#CBD5E1'}`,
+                whiteSpace: 'nowrap',
               }}>
                 {manuscript.doi_status === 'test_success' ? 'Test Verified' : (manuscript.doi_status || 'Reserved')}
               </span>
@@ -244,6 +279,7 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
             cursor: 'pointer',
             padding: 0,
             textDecoration: 'underline',
+            whiteSpace: 'nowrap',
           }}
           type="button"
           onClick={(e) => { e.stopPropagation(); onClick() }}
@@ -273,6 +309,7 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 <i className="fas fa-rotate" /> {isRetryingDoi ? 'Retrying DOI...' : 'Retry DOI'}
@@ -297,6 +334,7 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 <i className="fas fa-file-pdf" style={{ color: '#E11D48' }} /> Download PDF
@@ -321,12 +359,13 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '4px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 <i className="fas fa-rotate-right" /> {isReprocessing ? 'Retrying...' : 'Retry PDF'}
               </button>
             ) : manuscript.document_status === 'processing' ? (
-              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontStyle: 'italic', whiteSpace: 'nowrap' }}>
                 <i className="fas fa-spinner fa-spin" /> Generating PDF...
               </span>
             ) : null}
@@ -338,6 +377,7 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
               display: 'inline-flex',
               alignItems: 'center',
               gap: '4px',
+              whiteSpace: 'nowrap',
             }}>
               <i className="fas fa-check-circle" /> Live on Site
             </span>
@@ -356,6 +396,7 @@ function ManuscriptCard({ manuscript, onClick, onPublish, isPublishing, onRetryD
               cursor: isPublishing ? 'not-allowed' : 'pointer',
               transition: 'background 150ms ease',
               opacity: isPublishing ? 0.7 : 1,
+              whiteSpace: 'nowrap',
             }}
             type="button"
             disabled={isPublishing}
@@ -394,6 +435,24 @@ export default function AcceptedManuscripts() {
   useEffect(() => {
     loadManuscripts()
   }, [])
+
+  // Auto-refresh when any manuscript is actively generating or reprocessing its PDF
+  useEffect(() => {
+    const hasProcessing = manuscripts.some(
+      (m) => m.document_status === 'processing' || m.doi_status === 'submitted'
+    )
+    if (!hasProcessing && !reprocessingId) return
+
+    const timer = setInterval(() => {
+      getAcceptedManuscripts()
+        .then((data) => {
+          if (Array.isArray(data)) setManuscripts(data)
+        })
+        .catch(() => {})
+    }, 3000)
+
+    return () => clearInterval(timer)
+  }, [manuscripts, reprocessingId])
 
   const handleRetryDoc = async (id) => {
     setReprocessingId(id)
@@ -588,7 +647,14 @@ export default function AcceptedManuscripts() {
             <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--color-ink-navy)', margin: '0 0 6px' }}>
               Publish Manuscript
             </h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: '0 0 18px' }}>
+            <p style={{
+              color: 'var(--color-text-muted)',
+              fontSize: 'var(--text-sm)',
+              margin: '0 0 18px',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+              lineHeight: 1.5,
+            }}>
               {manuscripts.find((m) => m.id === publishTarget)?.title || 'This manuscript'}
             </p>
 

@@ -9,7 +9,7 @@ vi.mock('../../config/db.js', () => ({
 }))
 
 vi.mock('../notification/manuscript-notification.service.js', () => ({
-  sendSubmissionReceived: vi.fn(),
+  sendSubmissionReceived: vi.fn().mockResolvedValue(true),
 }))
 
 import {
@@ -18,6 +18,7 @@ import {
   getArticleTypes,
   getManuscriptById,
   updateManuscript,
+  submitManuscript,
 } from './manuscripts.service.js'
 
 describe('Manuscripts Service — Submission Flow', () => {
@@ -131,5 +132,77 @@ describe('Manuscripts Service — Submission Flow', () => {
     expect(result.keywords).toEqual(['deep learning', 'neural networks'])
     expect(result.conflict_of_interest).toBe('None declared')
     expect(result.authors).toHaveLength(1)
+  })
+
+  it('submitManuscript validates main manuscript file ordering by uploaded_at DESC and succeeds', async () => {
+    const mockClient = {
+      query: vi.fn().mockImplementation((sql) => {
+        if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') {
+          return Promise.resolve()
+        }
+        if (sql.includes('SELECT * FROM manuscripts WHERE id = $1 FOR UPDATE')) {
+          return Promise.resolve({
+            rowCount: 1,
+            rows: [{
+              id: 'm-1',
+              title: 'Test Paper',
+              abstract: 'Test Abstract',
+              current_status: 'draft',
+              submitted_by: 'u-1',
+              category_id: 'cat-1',
+              conflict_of_interest: 'None',
+              ethics_approval: 'None',
+            }],
+          })
+        }
+        if (sql.includes('SELECT 1 FROM categories WHERE id = $1 AND is_active = true')) {
+          return Promise.resolve({ rowCount: 1 })
+        }
+        if (sql.includes('FROM manuscript_authors')) {
+          if (sql.includes('COUNT(id)') || sql.includes("account_status <> 'active'") || sql.includes('GROUP BY user_id')) {
+            return Promise.resolve({ rowCount: 0, rows: [] })
+          }
+          return Promise.resolve({
+            rowCount: 1,
+            rows: [{ id: 'auth-1', is_corresponding: true, user_id: 'u-1', first_name: 'John', last_name: 'Doe', email: 'jdoe@test.com' }],
+          })
+        }
+        if (sql.includes('FROM manuscript_files') && sql.includes('ORDER BY uploaded_at DESC')) {
+          return Promise.resolve({
+            rowCount: 1,
+            rows: [{ original_filename: 'manuscript.docx', format: 'docx', mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }],
+          })
+        }
+        if (sql.includes('INSERT INTO manuscript_versions')) {
+          return Promise.resolve({ rows: [{ id: 'v-1' }] })
+        }
+        if (sql.includes('UPDATE manuscripts SET') || sql.includes('UPDATE manuscript_files SET')) {
+          return Promise.resolve({ rowCount: 1 })
+        }
+        if (sql.includes('submission_counters')) {
+          return Promise.resolve({ rows: [{ last_number: 1 }], rowCount: 1 })
+        }
+        if (sql.includes('INSERT INTO workflow_logs') || sql.includes('INSERT INTO manuscript_status_history')) {
+          return Promise.resolve({ rowCount: 1 })
+        }
+        return Promise.resolve({ rows: [], rowCount: 1 })
+      }),
+      release: vi.fn(),
+    }
+
+    fakePool.connect.mockResolvedValueOnce(mockClient)
+    fakePool.query.mockImplementation((sql) => {
+      if (sql.includes('SELECT * FROM manuscripts WHERE id = $1')) {
+        return Promise.resolve({ rows: [{ id: 'm-1', submission_number: 'SUB-2026-0001' }] })
+      }
+      return Promise.resolve({ rows: [] })
+    })
+
+    const res = await submitManuscript('m-1', 'u-1')
+    expect(res.submission_number).toBeDefined()
+    expect(mockClient.query).toHaveBeenCalledWith(
+      expect.stringContaining('ORDER BY uploaded_at DESC'),
+      ['m-1']
+    )
   })
 })
