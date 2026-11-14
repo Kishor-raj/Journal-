@@ -1,9 +1,11 @@
 import pool from '../../config/db.js'
 import cloudinary from '../../config/cloudinary.js'
+import { PDFDocument, PDFName, PDFString } from 'pdf-lib'
 import { AppError } from '../../shared/errors/AppError.js'
 import { buildCertificateNumber } from './publication.service.js'
 import { convertDocxToPdf } from './document-converter.js'
 import { renderBrandedManuscriptPdf } from './published-manuscript.renderer.js'
+import { renderPublicationDocx, deriveCanonicalDoiUrl } from './publication-docx.renderer.js'
 import {
   uploadPublishedManuscriptPdf,
   getPublishedManuscriptDownloadUrl,
@@ -105,10 +107,15 @@ async function fetchSourceBuffer(file) {
  */
 export async function loadManuscriptPublicationContext(manuscriptId) {
   const manuscriptRes = await pool.query(
-    `SELECT m.id, m.title, m.submission_number, m.current_status, m.current_version_id,
+    `SELECT m.id, m.title, m.abstract, m.keywords, m.article_type, m.submission_number,
+            m.current_status, m.current_version_id, m.submitted_at,
+            m.conflict_of_interest, m.ethics_approval, m.funding, m.acknowledgements, m.data_availability,
+            c.name AS category_name,
+            c.name AS subject_category,
             j.id AS journal_id, j.name AS journal_name, j.short_name AS journal_short_name,
             j.publisher_name, j.issn_print, j.issn_online, j.website_url, j.logo_url
      FROM manuscripts m
+     LEFT JOIN categories c ON c.id = m.category_id
      LEFT JOIN journals j ON j.id = m.journal_id
      WHERE m.id = $1`,
     [manuscriptId]
@@ -130,6 +137,60 @@ export async function loadManuscriptPublicationContext(manuscriptId) {
     issue: 1,
     publication_year: new Date().getFullYear(),
     document_status: 'pending',
+  }
+
+  // Load authors
+  const authorsRes = await pool.query(
+    `SELECT id, first_name, last_name, email, institution, department, country, orcid_id,
+            is_corresponding, author_order, contribution_roles
+     FROM manuscript_authors
+     WHERE manuscript_id = $1
+     ORDER BY author_order ASC`,
+    [manuscriptId]
+  )
+  const authors = authorsRes.rows || []
+
+  // Load acceptance date from editorial_decisions or status history
+  let acceptedDate = null
+  const acceptRes = await pool.query(
+    `SELECT created_at
+     FROM editorial_decisions
+     WHERE manuscript_id = $1 AND decision = 'accept'
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [manuscriptId]
+  )
+  if (acceptRes.rows.length > 0) {
+    acceptedDate = acceptRes.rows[0].created_at
+  } else {
+    const historyRes = await pool.query(
+      `SELECT created_at
+       FROM manuscript_status_history
+       WHERE manuscript_id = $1 AND to_status = 'accepted'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [manuscriptId]
+    )
+    acceptedDate = historyRes.rows[0]?.created_at || publication.published_at || manuscript.updated_at || null
+  }
+
+  // Load revision date if applicable
+  const revisionRes = await pool.query(
+    `SELECT rr.submitted_at
+     FROM revision_responses rr
+     JOIN revision_requests rq ON rq.id = rr.revision_request_id
+     WHERE rq.manuscript_id = $1 AND rr.submitted_at IS NOT NULL
+     ORDER BY rr.submitted_at DESC
+     LIMIT 1`,
+    [manuscriptId]
+  )
+
+  const receivedDate = manuscript.submitted_at || manuscript.created_at || null
+
+  const dates = {
+    received: receivedDate,
+    revised: revisionRes.rows[0]?.submitted_at || null,
+    accepted: acceptedDate || receivedDate || new Date().toISOString(),
   }
 
   // Load existing certificate number from publication_certificates
@@ -164,6 +225,55 @@ export async function loadManuscriptPublicationContext(manuscriptId) {
     publication,
     certificateNumber,
     journal,
+    authors,
+    dates,
+  }
+}
+
+/**
+ * Stamps an interactive clickable Link annotation over the Crossref badge button area on page 1.
+ * Guarantees clicking anywhere within the badge boundary redirects directly to the canonical DOI URL.
+ *
+ * @param {Buffer} pdfBuffer - Input PDF buffer
+ * @param {string} doiUrl - Canonical DOI URL (e.g. https://doi.org/10.68968/...)
+ * @returns {Promise<Buffer>} Modified PDF buffer
+ */
+export async function stampCrossrefLinkAnnotation(pdfBuffer, doiUrl) {
+  if (!doiUrl || !Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
+    return pdfBuffer
+  }
+
+  try {
+    const pdfDoc = await PDFDocument.load(pdfBuffer)
+    const pages = pdfDoc.getPages()
+    if (pages.length === 0) return pdfBuffer
+
+    const firstPage = pages[0]
+    const { height } = firstPage.getSize()
+
+    // Page 1 badge button boundary:
+    // Left: ~480pt, Right: ~550pt, Bottom: height - 145pt, Top: height - 85pt
+    const linkAnnotation = pdfDoc.context.obj({
+      Type: PDFName.of('Annot'),
+      Subtype: PDFName.of('Link'),
+      Rect: [480, height - 145, 550, height - 85],
+      Border: [0, 0, 0],
+      C: [0, 0, 0],
+      A: {
+        Type: PDFName.of('Action'),
+        S: PDFName.of('URI'),
+        URI: PDFString.of(doiUrl),
+      },
+    })
+
+    const linkAnnotationRef = pdfDoc.context.register(linkAnnotation)
+    firstPage.node.addAnnot(linkAnnotationRef)
+
+    const modifiedBytes = await pdfDoc.save()
+    return Buffer.from(modifiedBytes)
+  } catch {
+    // If stamping fails, return original pdfBuffer gracefully
+    return pdfBuffer
   }
 }
 
@@ -230,24 +340,50 @@ export async function generatePublishedManuscriptPdf(manuscriptId, editorId = nu
       )
     }
 
-    // Step 1: Convert to PDF if DOCX/DOC
-    let unbrandedPdfBuffer = sourceBuffer
+    let finalPdfBuffer = null
+
     if (format === 'docx' || format === 'doc') {
-      unbrandedPdfBuffer = await convertDocxToPdf(sourceBuffer, { originalExtension: format })
+      // Step 1: Generate journal-formatted DOCX from master template
+      const formattedDocxBuffer = await renderPublicationDocx({
+        sourceDocxBuffer: sourceBuffer,
+        context: {
+          ...context,
+          authors: context.authors || [],
+          dates: context.dates || {},
+        },
+      })
+
+      // Step 2: Convert formatted DOCX to PDF using LibreOffice
+      finalPdfBuffer = await convertDocxToPdf(formattedDocxBuffer, { originalExtension: 'docx' })
+    } else if (format === 'pdf') {
+      // Fallback PDF path with journal branding overlay
+      finalPdfBuffer = await renderBrandedManuscriptPdf({
+        pdfBuffer: sourceBuffer,
+        journal,
+        manuscript,
+        publication,
+        certificateNumber,
+      })
     }
 
-    // Step 2: Overlay official journal branding headers and footers
-    const brandedPdfBuffer = await renderBrandedManuscriptPdf({
-      pdfBuffer: unbrandedPdfBuffer,
-      journal,
-      manuscript,
-      publication,
-      certificateNumber,
-    })
+    // Step 2.5: Stamp full-area Crossref clickable link annotation pointing to canonical DOI URL
+    const rawDoi = publication.doi || manuscript.doi || ''
+    const { doiUrl } = deriveCanonicalDoiUrl(rawDoi, manuscript.submission_number, manuscript.id)
+    finalPdfBuffer = await stampCrossrefLinkAnnotation(finalPdfBuffer, doiUrl)
+
+    // Validate generated PDF buffer
+    if (!Buffer.isBuffer(finalPdfBuffer) || finalPdfBuffer.length < 500) {
+      throw new AppError('Generated publication PDF document is empty or invalid.', 500)
+    }
+
+    const pdfMagic = finalPdfBuffer.slice(0, 5).toString('utf-8')
+    if (!pdfMagic.startsWith('%PDF')) {
+      throw new AppError('Invalid PDF format produced by document generator.', 500)
+    }
 
     // Step 3: Upload branded PDF to Cloudinary
     const uploadResult = await uploadPublishedManuscriptPdf({
-      pdfBuffer: brandedPdfBuffer,
+      pdfBuffer: finalPdfBuffer,
       year: publication.publication_year || new Date().getFullYear(),
       submissionNumber: manuscript.submission_number,
     })

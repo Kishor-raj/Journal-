@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { promises as fs } from 'fs'
 import path from 'path'
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, PDFName } from 'pdf-lib'
 import {
   formatIssnString,
   formatCompactIssn,
@@ -20,6 +20,7 @@ import {
 } from './document-converter.js'
 import {
   generatePublishedManuscriptPdf,
+  stampCrossrefLinkAnnotation,
 } from './published-manuscript.service.js'
 
 vi.mock('../../config/db.js', () => ({
@@ -258,6 +259,37 @@ describe('Publication Workflow & Source Resolution', () => {
       expect(result.success).toBe(false)
       expect(result.document_status).toBe('failed')
     }
+  })
+})
+
+describe('Crossref Link Annotation Stamping', () => {
+  it('stamps an interactive link annotation pointing to the canonical DOI URL on page 1', async () => {
+    const doc = await PDFDocument.create()
+    doc.addPage([595.28, 841.89])
+    const bytes = Buffer.from(await doc.save())
+
+    const doiUrl = 'https://doi.org/10.68968/IJIDCR_00004'
+    const stampedBuffer = await stampCrossrefLinkAnnotation(bytes, doiUrl)
+    expect(Buffer.isBuffer(stampedBuffer)).toBe(true)
+
+    const reloaded = await PDFDocument.load(stampedBuffer)
+    const p1 = reloaded.getPages()[0]
+    const annots = p1.node.Annots()
+    expect(annots).toBeDefined()
+    expect(annots.size()).toBe(1)
+
+    const annot = reloaded.context.lookup(annots.get(0))
+    const uri = annot.get(PDFName.of('A'))?.get(PDFName.of('URI'))?.value
+    expect(uri).toBe('https://doi.org/10.68968/IJIDCR_00004')
+  })
+
+  it('handles invalid or empty buffers gracefully without crashing', async () => {
+    const emptyBuf = await stampCrossrefLinkAnnotation(null, 'https://doi.org/test')
+    expect(emptyBuf).toBeNull()
+
+    const unparseable = Buffer.from('not-a-pdf')
+    const result = await stampCrossrefLinkAnnotation(unparseable, 'https://doi.org/test')
+    expect(result).toEqual(unparseable)
   })
 })
 

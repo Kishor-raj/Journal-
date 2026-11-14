@@ -4,6 +4,14 @@ import { buildCanonicalDoiUrl } from '../publications/doi.service.js'
 
 function buildFileUrls(file) {
   if (!file || !file.public_id) return null
+
+  // Strict PDF-only enforcement for public delivery
+  const format = (file.format || '').toLowerCase()
+  const mime = (file.mime_type || '').toLowerCase()
+  const filename = (file.original_filename || '').toLowerCase()
+  const isPdf = format === 'pdf' || mime === 'application/pdf' || filename.endsWith('.pdf')
+  if (!isPdf) return null
+
   const resourceType = file.resource_type || 'raw'
   const options = { resource_type: resourceType, secure: true }
   if (resourceType !== 'raw' && file.format) options.format = file.format
@@ -63,6 +71,7 @@ export async function getPublishedArticles() {
         FROM manuscript_files mf
         WHERE mf.manuscript_id = m.id
           AND mf.file_type = 'published_manuscript'
+          AND (LOWER(mf.format) = 'pdf' OR mf.mime_type = 'application/pdf' OR LOWER(mf.original_filename) LIKE '%.pdf')
           AND mf.is_accessible = true
         ORDER BY mf.uploaded_at DESC
         LIMIT 1
@@ -135,6 +144,7 @@ export async function getPublishedArticleById(id) {
         FROM manuscript_files mf
         WHERE mf.manuscript_id = m.id
           AND mf.file_type = 'published_manuscript'
+          AND (LOWER(mf.format) = 'pdf' OR mf.mime_type = 'application/pdf' OR LOWER(mf.original_filename) LIKE '%.pdf')
           AND mf.is_accessible = true
         ORDER BY mf.uploaded_at DESC
         LIMIT 1
@@ -207,6 +217,7 @@ export async function getFeaturedArticles(limit = 6) {
         FROM manuscript_files mf
         WHERE mf.manuscript_id = m.id
           AND mf.file_type = 'published_manuscript'
+          AND (LOWER(mf.format) = 'pdf' OR mf.mime_type = 'application/pdf' OR LOWER(mf.original_filename) LIKE '%.pdf')
           AND mf.is_accessible = true
         ORDER BY mf.uploaded_at DESC
         LIMIT 1

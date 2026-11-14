@@ -1,6 +1,7 @@
 import cloudinary from '../../config/cloudinary.js'
 import pool from '../../config/db.js'
 import { AppError } from '../../shared/errors/AppError.js'
+import { validateDocxBuffer } from './docx-validator.js'
 
 export function generateSignature(manuscriptId, versionId, fileType) {
   const timestamp = Math.round(Date.now() / 1000)
@@ -64,6 +65,34 @@ export async function confirmUpload(manuscriptId, versionId, fileData, userId) {
     const ext = (original_filename || '').split('.').pop()?.toLowerCase()
     if (ext !== 'docx') {
       throw new AppError('Main manuscript file must be in .docx format', 400)
+    }
+
+    let buffer = fileData.buffer || null
+    if (!buffer && public_id && process.env.NODE_ENV !== 'test' && typeof fetch === 'function') {
+      try {
+        const downloadUrl = cloudinary.url(public_id, {
+          resource_type: resource_type || 'raw',
+          secure: true,
+        })
+        const res = await fetch(downloadUrl)
+        if (res.ok) {
+          const ab = await res.arrayBuffer()
+          buffer = Buffer.from(ab)
+        }
+      } catch {
+        // Fallback if network fetch is unavailable during testing
+      }
+    }
+
+    if (buffer) {
+      try {
+        await validateDocxBuffer(buffer)
+      } catch (valErr) {
+        if (public_id) {
+          await destroyCloudinaryAsset({ public_id, resource_type, format, mime_type }).catch(() => {})
+        }
+        throw valErr
+      }
     }
   }
 
@@ -176,6 +205,12 @@ export async function getFileAccess(fileId, user) {
 
   const file = result.rows[0]
   const role = user.role_name
+
+  // Internal generated DOCX files are restricted strictly to editors and administrators
+  if (file.file_type === 'internal_docx' && role !== 'admin' && role !== 'editor') {
+    throw new AppError('Internal publication working documents are restricted to editors and administrators.', 403)
+  }
+
   const allowed = role === 'admin' || role === 'editor' ||
     (role === 'moderator' && ['submitted', 'under_moderation'].includes(file.current_status)) ||
     (role === 'author' && (file.submitted_by === user.uid || file.is_author)) ||

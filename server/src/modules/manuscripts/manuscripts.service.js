@@ -678,7 +678,7 @@ export async function submitManuscript(manuscriptId, userId) {
        FROM manuscript_files
        WHERE manuscript_id = $1
          AND file_type = 'main_manuscript'
-       ORDER BY created_at DESC
+       ORDER BY uploaded_at DESC
        LIMIT 1`,
       [manuscriptId]
     )
