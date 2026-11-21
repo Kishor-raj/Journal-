@@ -14,6 +14,7 @@ import {
   renderPublicationDocx,
 } from './publication-docx.renderer.js'
 import { convertDocxToPdf } from './document-converter.js'
+import { stampCrossrefLinkAnnotation } from './published-manuscript.service.js'
 
 describe('Publication DOCX Renderer (Master Template Engine)', () => {
   describe('Helper Formatting Functions', () => {
@@ -54,6 +55,14 @@ describe('Publication DOCX Renderer (Master Template Engine)', () => {
       })
       expect(noRevision).toBe('Received: 10 January 2026 | Accepted: 1 March 2026')
       expect(noRevision).not.toContain('Revised')
+
+      const withPublished = buildDatesLine({
+        received: '2026-01-10T00:00:00Z',
+        revised: '2026-02-15T00:00:00Z',
+        accepted: '2026-03-01T00:00:00Z',
+        published: '2026-03-15T00:00:00Z',
+      })
+      expect(withPublished).toBe('Received: 10 January 2026 | Revised: 15 February 2026 | Accepted: 1 March 2026\nPublished: 15 March 2026')
     })
 
     it('derives canonical DOI URL and display text correctly', () => {
@@ -150,7 +159,7 @@ describe('Publication DOCX Renderer (Master Template Engine)', () => {
       expect(pdfBuf.slice(0, 5).toString('utf-8')).toMatch(/^%PDF-/)
     }, 15000)
 
-    it('applies Cormorant Garamond font to journal header, article type, article ID/vol/issue, paper title, and footer ASGARD', async () => {
+    it('applies EB Garamond font to journal header, article type, article ID/vol/issue, paper title, and footer ASGARD', async () => {
       const refPath = path.resolve(process.cwd(), '../docs/reference/IJIDCR -Paper Published design.docx')
       let sourceBuf
       try {
@@ -191,22 +200,46 @@ describe('Publication DOCX Renderer (Master Template Engine)', () => {
       const formattedDocx = await renderPublicationDocx({ sourceDocxBuffer: sourceBuf, context })
       const zip = await JSZip.loadAsync(formattedDocx)
 
-      // 1. fontTable.xml contains Cormorant Garamond
+      // 1. fontTable.xml contains EB Garamond
       const fontTableXml = await zip.file('word/fontTable.xml').async('string')
-      expect(fontTableXml).toContain('Cormorant Garamond')
+      expect(fontTableXml).toContain('EB Garamond')
 
-      // 2. footer1.xml contains Cormorant Garamond for ASGARD run
+      // 2. footer1.xml contains EB Garamond, Navy blue ASGARD, right tab, and dynamic PAGE field
       const footerXml = await zip.file('word/footer1.xml').async('string')
       expect(footerXml).toContain('ASGARD')
-      expect(footerXml).toContain('Cormorant Garamond')
+      expect(footerXml).toContain('EB Garamond')
+      expect(footerXml).toContain('0B1B3A')
+      expect(footerXml).toContain('PAGE')
+      expect(footerXml).toContain('10037')
 
-      // 3. document.xml contains Cormorant Garamond for all target elements
+      // 3. document.xml contains EB Garamond and Navy blue (0B1B3A) with no red (C00000)
       const docXml = await zip.file('word/document.xml').async('string')
-      expect(docXml).toContain('Cormorant Garamond')
+      expect(docXml).toContain('EB Garamond')
+      expect(docXml).toContain('0B1B3A')
+      expect(docXml).not.toContain('C00000')
       expect(docXml).toContain('QUANTUM MACHINE LEARNING IN CYBERSECURITY')
       expect(docXml).toContain('IJIDCR-26-00100')
       expect(docXml).toContain('RESEARCH ARTICLE')
       expect(docXml).toContain('INTERNATIONAL JOURNAL OF INTELLIGENT DIGITAL COMPUTING RESEARCH')
+
+      // Journal Title has increased font size sz="26" (13pt, increased from sz="22")
+      expect(docXml).toMatch(/<[^>]*:sz[^>]*:val="26"[\s\S]*?INTERNATIONAL JOURNAL OF INTELLIGENT DIGITAL COMPUTING RESEARCH/)
+
+      // Manuscript Title has decreased font size sz="28" (14pt, decreased from 16pt / sz="32")
+      expect(docXml).toMatch(/<[^>]*:sz[^>]*:val="28"[\s\S]*?QUANTUM MACHINE LEARNING IN CYBERSECURITY/)
+
+      // Manuscript Title has spacing before to create clear line space between dates block and title
+      expect(docXml).toMatch(/<[^>]*:spacing[^>]*:before="360"[\s\S]*?QUANTUM MACHINE LEARNING IN CYBERSECURITY/)
+
+      // Dates shape has posOffset="0" (no negative left margin shift)
+      expect(docXml).not.toContain('<wp:posOffset>-102870</wp:posOffset>')
+      expect(docXml).not.toContain('margin-left:-8.1pt')
+
+      // 4. Global font: all runs in document.xml have EB Garamond
+      const fontsInDoc = [...new Set([...docXml.matchAll(/w:ascii="([^"]+)"/g)].map((m) => m[1]))]
+      expect(fontsInDoc).toEqual(['EB Garamond'])
+      const fontsInFooter = [...new Set([...footerXml.matchAll(/w:ascii="([^"]+)"/g)].map((m) => m[1]))]
+      expect(fontsInFooter).toEqual(['EB Garamond'])
     })
 
     it('displays DOI on published document even when doi_status is reserved or doi is omitted', async () => {
@@ -272,7 +305,7 @@ describe('Publication DOCX Renderer (Master Template Engine)', () => {
       expect(docXmlOmitted).toContain('DOI: 10.68968/IJIDCR_26_00102')
     })
 
-    it('positions Crossref logo to the right of Article ID and above topic without collision', async () => {
+    it('removes legacy Crossref badge from DOCX so it does not render behind the new Crossref logo', async () => {
       const refPath = path.resolve(process.cwd(), '../docs/reference/IJIDCR -Paper Published design.docx')
       let sourceBuf
       try {
@@ -308,24 +341,16 @@ describe('Publication DOCX Renderer (Master Template Engine)', () => {
       const zip = await JSZip.loadAsync(formattedDocx)
       const docXml = await zip.file('word/document.xml').async('string')
 
-      // Verify Crossref compact size and offsets place it on the right side
-      expect(docXml).toContain('posOffset>5537200</')
-      expect(docXml).toContain('posOffset>-30000</')
-      expect(docXml).toContain('Crossref')
-      expect(docXml).toContain('for updates')
-      expect(docXml).toContain('rIdDoiCrossref')
-      expect(docXml).toContain('<w:hyperlink')
+      // Verify legacy Crossref badge text and shapes are completely removed from DOCX
+      expect(docXml).not.toContain('for updates')
 
-      const relsXml = await zip.file('word/_rels/document.xml.rels').async('string')
-      expect(relsXml).toContain('Target="https://doi.org/10.68968/IJIDCR_26103"')
-      expect(relsXml).toContain('TargetMode="External"')
+      // Verify converting to PDF and stamping Crossref generates interactive DOI link annotations with zero errors
+      const rawPdfBuf = await convertDocxToPdf(formattedDocx)
+      expect(Buffer.isBuffer(rawPdfBuf)).toBe(true)
+      expect(rawPdfBuf.slice(0, 5).toString('utf-8')).toMatch(/^%PDF-/)
 
-      // Verify converting to PDF succeeds with 0 errors and generates interactive link annotations
-      const pdfBuf = await convertDocxToPdf(formattedDocx)
-      expect(Buffer.isBuffer(pdfBuf)).toBe(true)
-      expect(pdfBuf.slice(0, 5).toString('utf-8')).toMatch(/^%PDF-/)
-
-      const pdfDoc = await PDFDocument.load(pdfBuf)
+      const stampedPdfBuf = await stampCrossrefLinkAnnotation(rawPdfBuf, 'https://doi.org/10.68968/IJIDCR_26103')
+      const pdfDoc = await PDFDocument.load(stampedPdfBuf)
       const p1 = pdfDoc.getPages()[0]
       const annots = p1.node.Annots()
       expect(annots ? annots.size() : 0).toBeGreaterThanOrEqual(1)
@@ -374,6 +399,7 @@ describe('Publication DOCX Renderer (Master Template Engine)', () => {
           received: '2026-01-15T00:00:00Z',
           revised: '2026-02-10T00:00:00Z',
           accepted: '2026-02-28T00:00:00Z',
+          published: '2026-03-05T00:00:00Z',
         },
       }
 
@@ -384,6 +410,23 @@ describe('Publication DOCX Renderer (Master Template Engine)', () => {
       expect(docXml).toContain('Received: 15 January 2026')
       expect(docXml).toContain('Revised: 10 February 2026')
       expect(docXml).toContain('Accepted: 28 February 2026')
+      expect(docXml).toContain('Published: 5 March 2026')
+
+      // Published date is formatted on the second line using a line break
+      expect(docXml).toMatch(/<[^>]*:br[^>]*><[^>]*:t[^>]*>Published: 5 March 2026/)
+
+      // Dates shape has posOffset="0" (no negative left margin shift)
+      expect(docXml).not.toContain('<wp:posOffset>-102870</wp:posOffset>')
+      expect(docXml).not.toContain('margin-left:-8.1pt')
+
+      // 4. Global font: all runs in document.xml have EB Garamond
+      const fontsInDoc = [...new Set([...docXml.matchAll(/w:ascii="([^"]+)"/g)].map((m) => m[1]))]
+      expect(fontsInDoc).toEqual(['EB Garamond'])
+
+      // White rectangle box and outline must be removed
+      expect(docXml).toContain('noFill')
+      expect(docXml).not.toContain('<a:solidFill><a:schemeClr val="bg1"/></a:solidFill>')
+      expect(docXml).not.toContain('fillcolor="white [3212]"')
 
       const pdfBuf = await convertDocxToPdf(formattedDocx)
       expect(Buffer.isBuffer(pdfBuf)).toBe(true)
@@ -593,6 +636,57 @@ describe('Publication DOCX Renderer (Master Template Engine)', () => {
       const pdfBuf = await convertDocxToPdf(formattedDocx)
       expect(Buffer.isBuffer(pdfBuf)).toBe(true)
       expect(pdfBuf.slice(0, 5).toString('utf-8')).toMatch(/^%PDF-/)
+    }, 15000)
+
+    it('sanitizes author document breaks to eliminate empty column spaces in two-column published layout', async () => {
+      // Author document with manual column breaks, page breaks, embedded sectPr, and trailing empty paragraphs
+      const zip = new JSZip()
+      zip.file('[Content_Types].xml', '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+      zip.file('word/document.xml', `
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+          <w:body>
+            <w:p><w:r><w:t>1. Introduction</w:t></w:r></w:p>
+            <w:p><w:r><w:t>First section content paragraph.</w:t><w:br w:type="column"/></w:r></w:p>
+            <w:p><w:pPr><w:pageBreakBefore/><w:sectPr><w:type w:val="nextPage"/></w:sectPr></w:pPr><w:r><w:t>Second section paragraph.</w:t><w:br w:type="page"/></w:r></w:p>
+            <w:p><w:r><w:t>Third section paragraph.</w:t></w:r></w:p>
+            <w:p><w:r><w:t></w:t></w:r></w:p>
+            <w:p><w:pPr><w:spacing w:line="400"/></w:pPr></w:p>
+          </w:body>
+        </w:document>
+      `)
+      const authorDocxBuf = await zip.generateAsync({ type: 'nodebuffer' })
+
+      const context = {
+        manuscript: {
+          id: 'test-empty-column-sanitization',
+          submission_number: 'IJIDCR-26-00110',
+          title: 'Empty Column Space Prevention Test',
+          category_name: 'Research Article',
+        },
+      }
+
+      const formattedDocx = await renderPublicationDocx({ sourceDocxBuffer: authorDocxBuf, context })
+      const outZip = await JSZip.loadAsync(formattedDocx)
+      const docXml = await outZip.file('word/document.xml').async('string')
+
+      // Body content should not have stray manual column breaks or page breaks from author
+      expect(docXml).toContain('First section content paragraph.')
+      expect(docXml).toContain('Second section paragraph.')
+      expect(docXml).toContain('Third section paragraph.')
+
+      // Author's embedded sectPr must be stripped
+      expect(docXml).not.toContain('<w:type w:val="nextPage"/>')
+
+      // Author's pageBreakBefore must be stripped
+      expect(docXml).not.toContain('<w:pageBreakBefore/>')
+
+      // Column break exists before ABSTRACT to prevent Section 2 sidebar collapse
+      expect(docXml).toMatch(/<[^>]*:br[^>]*:type="column"[^>]*>.*?:t>ABSTRACT/)
+
+      // Footer has page number field code
+      const footerXml = await outZip.file('word/footer1.xml').async('string')
+      expect(footerXml).toContain('w:fldSimple w:instr="PAGE"')
+      expect(footerXml).toContain('10037')
     }, 15000)
   })
 })

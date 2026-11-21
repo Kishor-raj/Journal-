@@ -1,10 +1,14 @@
 import pool from '../../config/db.js'
 import cloudinary from '../../config/cloudinary.js'
-import { PDFDocument, PDFName, PDFString } from 'pdf-lib'
+import { PDFDocument } from 'pdf-lib'
 import { AppError } from '../../shared/errors/AppError.js'
 import { buildCertificateNumber } from './publication.service.js'
 import { convertDocxToPdf } from './document-converter.js'
-import { renderBrandedManuscriptPdf } from './published-manuscript.renderer.js'
+import {
+  renderBrandedManuscriptPdf,
+  stampPublishedManuscriptHeadersAndOrcid,
+  stampCrossrefLogoOnPage1,
+} from './published-manuscript.renderer.js'
 import { renderPublicationDocx, deriveCanonicalDoiUrl } from './publication-docx.renderer.js'
 import {
   uploadPublishedManuscriptPdf,
@@ -139,13 +143,15 @@ export async function loadManuscriptPublicationContext(manuscriptId) {
     document_status: 'pending',
   }
 
-  // Load authors
+  // Load authors with resolved orcid_id from manuscript_authors and users
   const authorsRes = await pool.query(
-    `SELECT id, first_name, last_name, email, institution, department, country, orcid_id,
-            is_corresponding, author_order, contribution_roles
-     FROM manuscript_authors
-     WHERE manuscript_id = $1
-     ORDER BY author_order ASC`,
+    `SELECT ma.id, ma.first_name, ma.last_name, ma.email, ma.institution, ma.department, ma.country,
+            COALESCE(u.orcid_id, ma.orcid_id) AS orcid_id,
+            ma.is_corresponding, ma.author_order, ma.contribution_roles
+     FROM manuscript_authors ma
+     LEFT JOIN users u ON u.id = ma.user_id
+     WHERE ma.manuscript_id = $1
+     ORDER BY ma.author_order ASC`,
     [manuscriptId]
   )
   const authors = authorsRes.rows || []
@@ -187,10 +193,16 @@ export async function loadManuscriptPublicationContext(manuscriptId) {
 
   const receivedDate = manuscript.submitted_at || manuscript.created_at || null
 
+  const publishedDate =
+    publication.publication_date ||
+    publication.published_at ||
+    (publication.document_status === 'published' ? publication.updated_at : null)
+
   const dates = {
     received: receivedDate,
     revised: revisionRes.rows[0]?.submitted_at || null,
     accepted: acceptedDate || receivedDate || new Date().toISOString(),
+    published: publishedDate || acceptedDate || new Date().toISOString(),
   }
 
   // Load existing certificate number from publication_certificates
@@ -231,15 +243,16 @@ export async function loadManuscriptPublicationContext(manuscriptId) {
 }
 
 /**
- * Stamps an interactive clickable Link annotation over the Crossref badge button area on page 1.
- * Guarantees clicking anywhere within the badge boundary redirects directly to the canonical DOI URL.
+ * Removes the existing Crossref badge icon, stamps the new Crossref logo on page 1
+ * (using metadata-from-crossref-logo-200.svg), and attaches an interactive clickable
+ * Link annotation directly over the logo area pointing to the canonical DOI URL.
  *
  * @param {Buffer} pdfBuffer - Input PDF buffer
- * @param {string} doiUrl - Canonical DOI URL (e.g. https://doi.org/10.68968/...)
+ * @param {string} [doiUrl] - Canonical DOI URL (e.g. https://doi.org/10.68968/...)
  * @returns {Promise<Buffer>} Modified PDF buffer
  */
-export async function stampCrossrefLinkAnnotation(pdfBuffer, doiUrl) {
-  if (!doiUrl || !Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
+export async function stampCrossrefLinkAnnotation(pdfBuffer, doiUrl = null, options = {}) {
+  if (!Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
     return pdfBuffer
   }
 
@@ -249,25 +262,7 @@ export async function stampCrossrefLinkAnnotation(pdfBuffer, doiUrl) {
     if (pages.length === 0) return pdfBuffer
 
     const firstPage = pages[0]
-    const { height } = firstPage.getSize()
-
-    // Page 1 badge button boundary:
-    // Left: ~480pt, Right: ~550pt, Bottom: height - 145pt, Top: height - 85pt
-    const linkAnnotation = pdfDoc.context.obj({
-      Type: PDFName.of('Annot'),
-      Subtype: PDFName.of('Link'),
-      Rect: [480, height - 145, 550, height - 85],
-      Border: [0, 0, 0],
-      C: [0, 0, 0],
-      A: {
-        Type: PDFName.of('Action'),
-        S: PDFName.of('URI'),
-        URI: PDFString.of(doiUrl),
-      },
-    })
-
-    const linkAnnotationRef = pdfDoc.context.register(linkAnnotation)
-    firstPage.node.addAnnot(linkAnnotationRef)
+    await stampCrossrefLogoOnPage1(pdfDoc, firstPage, doiUrl, options)
 
     const modifiedBytes = await pdfDoc.save()
     return Buffer.from(modifiedBytes)
@@ -355,6 +350,15 @@ export async function generatePublishedManuscriptPdf(manuscriptId, editorId = nu
 
       // Step 2: Convert formatted DOCX to PDF using LibreOffice
       finalPdfBuffer = await convertDocxToPdf(formattedDocxBuffer, { originalExtension: 'docx' })
+
+      // Step 2.1: Stamp Page 2+ header rule with 2 authors per page and Page 1 author ORCID icons + links
+      finalPdfBuffer = await stampPublishedManuscriptHeadersAndOrcid({
+        pdfBuffer: finalPdfBuffer,
+        authors: context.authors || [],
+        journal,
+        manuscript,
+        publication,
+      })
     } else if (format === 'pdf') {
       // Fallback PDF path with journal branding overlay
       finalPdfBuffer = await renderBrandedManuscriptPdf({
@@ -363,6 +367,7 @@ export async function generatePublishedManuscriptPdf(manuscriptId, editorId = nu
         manuscript,
         publication,
         certificateNumber,
+        authors: context.authors || [],
       })
     }
 

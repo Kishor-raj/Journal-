@@ -206,6 +206,7 @@ export default function CompleteProfile() {
           <div style={styles.row}>
             <FormField label="First Name" required>
               <input
+                maxLength={100}
                 type="text"
                 style={styles.input}
                 value={formData.first_name}
@@ -215,6 +216,7 @@ export default function CompleteProfile() {
             </FormField>
             <FormField label="Last Name" required>
               <input
+                maxLength={100}
                 type="text"
                 style={styles.input}
                 value={formData.last_name}
@@ -226,6 +228,7 @@ export default function CompleteProfile() {
 
           <FormField label="Display Name / Public Citation Name" required>
             <input
+                maxLength={200}
               type="text"
               style={styles.input}
               value={formData.display_name}
@@ -238,6 +241,7 @@ export default function CompleteProfile() {
           <div style={styles.row}>
             <FormField label="Institution / University" required>
               <input
+                maxLength={255}
                 type="text"
                 style={styles.input}
                 value={formData.institution}
@@ -248,6 +252,7 @@ export default function CompleteProfile() {
             </FormField>
             <FormField label="College (optional)">
               <input
+                maxLength={255}
                 type="text"
                 style={styles.input}
                 value={formData.college}
@@ -260,6 +265,7 @@ export default function CompleteProfile() {
           <div style={styles.row}>
             <FormField label="Department" required>
               <input
+                maxLength={255}
                 type="text"
                 style={styles.input}
                 value={formData.department}
@@ -270,6 +276,7 @@ export default function CompleteProfile() {
             </FormField>
             <FormField label="Course / Program (optional)">
               <input
+                maxLength={255}
                 type="text"
                 style={styles.input}
                 value={formData.course}
@@ -282,6 +289,7 @@ export default function CompleteProfile() {
           <div style={styles.row}>
             <FormField label="State / Province" required>
               <input
+                maxLength={100}
                 type="text"
                 style={styles.input}
                 value={formData.state}
@@ -292,6 +300,7 @@ export default function CompleteProfile() {
             </FormField>
             <FormField label="Country" required>
               <input
+                maxLength={100}
                 type="text"
                 style={styles.input}
                 value={formData.country}
@@ -302,6 +311,7 @@ export default function CompleteProfile() {
             </FormField>
             <FormField label="Phone (optional)">
               <input
+                maxLength={50}
                 type="tel"
                 style={styles.input}
                 value={formData.phone}
@@ -313,6 +323,7 @@ export default function CompleteProfile() {
 
           <FormField label="ORCID ID (optional)">
             <input
+                maxLength={100}
               type="text"
               style={styles.input}
               value={formData.orcid_id}

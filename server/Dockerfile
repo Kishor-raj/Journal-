@@ -6,6 +6,8 @@ WORKDIR /app
 
 RUN apk add --no-cache \
     libreoffice \
+    poppler-utils \
+    fontconfig \
     ttf-dejavu \
     ttf-liberation \
     font-noto
@@ -18,6 +20,11 @@ RUN npm ci --workspace=server --omit=dev --ignore-scripts
 COPY server ./server
 
 WORKDIR /app/server
+
+# Install EB Garamond font for LibreOffice headless rendering
+RUN mkdir -p /usr/share/fonts/ebgaramond && \
+    cp src/assets/fonts/* /usr/share/fonts/ebgaramond/ && \
+    fc-cache -f /usr/share/fonts/ebgaramond
 
 EXPOSE 3001
 

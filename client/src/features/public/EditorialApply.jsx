@@ -592,6 +592,7 @@ export default function EditorialApply() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="+1 234 567 8900"
+                  maxLength={50}
                   style={inputStyle}
                 />
               </div>
@@ -643,6 +644,7 @@ export default function EditorialApply() {
                   value={formData.orcid_id}
                   onChange={handleChange}
                   placeholder="0000-0002-1825-0097"
+                  maxLength={100}
                   style={inputStyle}
                 />
               </div>

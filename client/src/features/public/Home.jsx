@@ -17,6 +17,7 @@ const FACTS = [
   { k: 'Access', v: 'Fully open' },
   { k: 'Licence', v: 'CC BY 4.0' },
   { k: 'Founded', v: '2026' },
+  { k: 'ISSN', v: '2654-6725' },
 ]
 
 const INDEXES = ['Scopus', 'Web of Science', 'DOAJ', 'ERIC', 'JSTOR']

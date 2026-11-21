@@ -97,12 +97,59 @@ export async function processQueuedCrossrefJobs(limit = 5) {
       [limit]
     )
 
+    // Atomic job claiming: transition status to 'submitting' within the transaction
+    // so that other worker instances cannot claim the same job.
+    await client.query(
+      `UPDATE crossref_deposit_jobs
+       SET status = 'submitting',
+           last_attempt_at = now(),
+           next_attempt_at = now() + INTERVAL '1 minute'
+       WHERE id IN (
+         SELECT id
+         FROM crossref_deposit_jobs
+         WHERE status = 'queued'
+           AND next_attempt_at <= now()
+         ORDER BY created_at ASC
+         LIMIT $1
+         FOR UPDATE SKIP LOCKED
+       )`,
+      [limit]
+    )
+
+    // Re-fetch jobs that were successfully claimed (status changed to 'submitting')
+    const claimedJobsRes = await client.query(
+      `SELECT *
+       FROM crossref_deposit_jobs
+       WHERE status = 'submitting'
+       ORDER BY created_at ASC
+       LIMIT $1`,
+      [limit]
+    )
+
+    // Commit the transaction now that jobs are claimed
     await client.query('COMMIT')
 
-    for (const job of jobsRes.rows) {
+    if (claimedJobsRes.rows.length === 0) {
+      // No jobs were claimed (all were either already processing or ineligible)
+      return { total: 0, results: [] }
+    }
+
+    for (const job of claimedJobsRes.rows) {
       try {
         const { manuscript, publication, journal, authors } = await loadDepositContext(pool, job.manuscript_id)
-        const articleLandingUrl = publication.article_url || buildArticleLandingUrl(job.manuscript_id)
+        let articleLandingUrl = publication.article_url || buildArticleLandingUrl(job.manuscript_id)
+
+        // If stored landing URL was generated on localhost, dynamically resolve using production PUBLIC_APP_ORIGIN
+        if (articleLandingUrl && (articleLandingUrl.includes('localhost') || articleLandingUrl.includes('127.0.0.1'))) {
+          const publicOrigin = (env.PUBLIC_APP_ORIGIN || '').trim().replace(/\/+$/, '')
+          if (publicOrigin && !publicOrigin.includes('localhost') && !publicOrigin.includes('127.0.0.1')) {
+            articleLandingUrl = articleLandingUrl.replace(/^https?:\/\/[^/]+/, publicOrigin)
+            await pool.query(
+              `UPDATE publications SET article_url = $1 WHERE manuscript_id = $2`,
+              [articleLandingUrl, job.manuscript_id]
+            ).catch(() => {})
+          }
+        }
 
         const xmlContent = generateCrossrefDepositXml({
           batchId: job.batch_id,
@@ -374,6 +421,18 @@ export async function processPendingCrossrefVerifications(limit = 5) {
  * Runs one worker tick (queues & verifications).
  */
 export async function runCrossrefWorkerOnce() {
+  // **Crash recovery**: reset any jobs stuck in 'submitting' state.
+  // If a worker crashed after marking a job 'submitting' but before submitting,
+  // the job would otherwise remain permanently locked. We reset such jobs
+  // to 'queued' after a generous timeout (15 minutes) so they can be reprocessed.
+  await pool.query(
+    `UPDATE crossref_deposit_jobs
+     SET status = 'queued',
+         next_attempt_at = now() + INTERVAL '1 minute'
+     WHERE status = 'submitting'
+       AND last_attempt_at < now() - INTERVAL '15 minutes'`
+  )
+
   const queued = await processQueuedCrossrefJobs(5)
   const verifications = await processPendingCrossrefVerifications(5)
   return { queued, verifications }

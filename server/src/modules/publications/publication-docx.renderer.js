@@ -8,6 +8,9 @@ import { AppError } from '../../shared/errors/AppError.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+// EB Garamond font family
+const EB_GARAMOND = 'EB Garamond'
+
 const TEMPLATE_PATH = path.resolve(__dirname, '../../assets/templates/IJIDCR_Publication_Template.docx')
 
 const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
@@ -37,6 +40,11 @@ function toSuperscript(num) {
     .join('')
 }
 
+// Space reserved after an author name so the ORCID icon stamped onto page 1
+// during PDF post-processing (published-manuscript.renderer.js) sits in its own
+// gap instead of overlapping the next author when several share a line.
+const ORCID_ICON_SPACER = '    '
+
 /**
  * Formats the author list and affiliations block according to the IJIDCR reference design.
  */
@@ -44,8 +52,10 @@ export function formatAuthorsAndAffiliations(authors = []) {
   if (!Array.isArray(authors) || authors.length === 0) {
     return {
       authorsLine: 'Author(s)',
+      authorEntries: ['Author(s)'],
       affiliationsLine: '',
       correspondingLine: '',
+      authorItems: [],
     }
   }
 
@@ -53,8 +63,9 @@ export function formatAuthorsAndAffiliations(authors = []) {
   const affiliationMap = new Map()
   let affIndex = 1
 
+  const authorItems = []
   const authorEntries = authors.map((a) => {
-    const name = [a.first_name, a.last_name].filter(Boolean).join(' ') || 'Author'
+    const name = [a.first_name, a.last_name].filter(Boolean).join(' ') || a.name || 'Author'
     const affParts = [a.department, a.institution, a.country].filter(Boolean).map((s) => s.trim())
     const affKey = affParts.join(', ')
 
@@ -67,7 +78,26 @@ export function formatAuthorsAndAffiliations(authors = []) {
     }
 
     const star = a.is_corresponding ? '*' : ''
-    return `${name}${superTag}${star}`
+    const displayName = `${name}${superTag}${star}`
+    const rawOrcid = a.orcid_id || a.orcid || ''
+    const validOrcid = typeof rawOrcid === 'string'
+      ? rawOrcid.replace(/^https?:\/\/orcid\.org\//i, '').replace(/^orcid\.org\//i, '').trim().toUpperCase()
+      : null
+    const orcidUrl = validOrcid && /^\d{4}-\d{4}-\d{4}-[\dX]{4}$/.test(validOrcid)
+      ? `https://orcid.org/${validOrcid}`
+      : (String(rawOrcid).startsWith('http') ? rawOrcid : null)
+
+    authorItems.push({
+      ...a,
+      name,
+      displayName,
+      superTag,
+      star,
+      orcid: validOrcid,
+      orcidUrl,
+    })
+
+    return displayName
   })
 
   // Format affiliations
@@ -80,32 +110,44 @@ export function formatAuthorsAndAffiliations(authors = []) {
 
   return {
     authorsLine: authorEntries.join(', '),
+    authorEntries,
     affiliationsLine: affItems.join(' | '),
     correspondingLine: corrEmail ? `Corresponding Author: ${corrEmail}` : '',
+    authorItems,
   }
 }
 
 /**
- * Builds the received/revised/accepted string.
+ * Builds the received/revised/accepted/published string.
+ * Formats across two lines when published is present:
+ * Line 1: Received: ... | Accepted: ...
+ * Line 2: Published: ...
  */
 export function buildDatesLine(dates = {}) {
-  const { received, revised, accepted } = dates || {}
-  const parts = []
+  const { received, revised, accepted, published } = dates || {}
+  const line1Parts = []
   const recStr = formatPublicationDate(received)
-  if (recStr) parts.push(`Received: ${recStr}`)
+  if (recStr) line1Parts.push(`Received: ${recStr}`)
 
   const revStr = formatPublicationDate(revised)
-  if (revStr) parts.push(`Revised: ${revStr}`)
+  if (revStr) line1Parts.push(`Revised: ${revStr}`)
 
   const accStr = formatPublicationDate(accepted)
-  if (accStr) parts.push(`Accepted: ${accStr}`)
+  if (accStr) line1Parts.push(`Accepted: ${accStr}`)
 
-  if (parts.length === 0) {
+  const pubStr = formatPublicationDate(published)
+
+  if (line1Parts.length === 0 && !pubStr) {
     const today = formatPublicationDate(new Date())
-    return `Received: ${today} | Accepted: ${today}`
+    return `Received: ${today} | Accepted: ${today}\nPublished: ${today}`
   }
 
-  return parts.join(' | ')
+  const line1 = line1Parts.join(' | ')
+  if (pubStr) {
+    return line1 ? `${line1}\nPublished: ${pubStr}` : `Published: ${pubStr}`
+  }
+
+  return line1
 }
 
 /**
@@ -127,6 +169,11 @@ function setText(doc, element, text) {
     element.appendChild(tNode)
   }
   tNode.textContent = text
+  // Keep intentional spacing (e.g. the ORCID icon gap) when Word/LibreOffice
+  // would otherwise collapse it.
+  if (typeof text === 'string' && /^\s|\s$|\s{2,}/.test(text)) {
+    tNode.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve')
+  }
 }
 
 /**
@@ -134,7 +181,7 @@ function setText(doc, element, text) {
  */
 export function setRunFont(doc, runNode, fontName) {
   if (!runNode) return
-  const prefix = runNode.prefix || doc.documentElement.prefix || 'w'
+  const prefix = runNode.prefix || doc.documentElement?.prefix || 'w'
   let rPr = runNode.getElementsByTagNameNS(W_NS, 'rPr')[0]
   if (!rPr) {
     rPr = doc.createElementNS(W_NS, `${prefix}:rPr`)
@@ -148,6 +195,11 @@ export function setRunFont(doc, runNode, fontName) {
   rFonts.setAttributeNS(W_NS, `${prefix}:ascii`, fontName)
   rFonts.setAttributeNS(W_NS, `${prefix}:hAnsi`, fontName)
   rFonts.setAttributeNS(W_NS, `${prefix}:cs`, fontName)
+  for (const attr of ['asciiTheme', 'hAnsiTheme', 'cstheme', 'eastAsiaTheme']) {
+    if (rFonts.hasAttributeNS(W_NS, attr)) rFonts.removeAttributeNS(W_NS, attr)
+    if (rFonts.hasAttribute(`${prefix}:${attr}`)) rFonts.removeAttribute(`${prefix}:${attr}`)
+    if (rFonts.hasAttribute(`w:${attr}`)) rFonts.removeAttribute(`w:${attr}`)
+  }
 }
 
 /**
@@ -155,7 +207,7 @@ export function setRunFont(doc, runNode, fontName) {
  */
 export function setParagraphFont(doc, pNode, fontName) {
   if (!pNode) return
-  const prefix = pNode.prefix || doc.documentElement.prefix || 'w'
+  const prefix = pNode.prefix || doc.documentElement?.prefix || 'w'
   let pPr = pNode.getElementsByTagNameNS(W_NS, 'pPr')[0]
   if (!pPr) {
     pPr = doc.createElementNS(W_NS, `${prefix}:pPr`)
@@ -174,6 +226,234 @@ export function setParagraphFont(doc, pNode, fontName) {
   rFonts.setAttributeNS(W_NS, `${prefix}:ascii`, fontName)
   rFonts.setAttributeNS(W_NS, `${prefix}:hAnsi`, fontName)
   rFonts.setAttributeNS(W_NS, `${prefix}:cs`, fontName)
+  for (const attr of ['asciiTheme', 'hAnsiTheme', 'cstheme', 'eastAsiaTheme']) {
+    if (rFonts.hasAttributeNS(W_NS, attr)) rFonts.removeAttributeNS(W_NS, attr)
+    if (rFonts.hasAttribute(`${prefix}:${attr}`)) rFonts.removeAttribute(`${prefix}:${attr}`)
+    if (rFonts.hasAttribute(`w:${attr}`)) rFonts.removeAttribute(`w:${attr}`)
+  }
+}
+
+/**
+ * Enforces a global font across all paragraphs and runs throughout
+ * the OpenXML document (including titles, headings, body, tables, and footers).
+ */
+export function enforceGlobalFont(doc, fontName = EB_GARAMOND) {
+  if (!doc) return
+  const paragraphs = Array.from(doc.getElementsByTagNameNS(W_NS, 'p'))
+  for (const p of paragraphs) {
+    setParagraphFont(doc, p, fontName)
+  }
+  const runs = Array.from(doc.getElementsByTagNameNS(W_NS, 'r'))
+  for (const r of runs) {
+    setRunFont(doc, r, fontName)
+  }
+}
+
+/**
+ * Helper to set text color on a run element.
+ */
+export function setRunColor(doc, runNode, hexColor) {
+  if (!runNode) return
+  const prefix = runNode.prefix || doc.documentElement?.prefix || 'w'
+  let rPr = runNode.getElementsByTagNameNS(W_NS, 'rPr')[0]
+  if (!rPr) {
+    rPr = doc.createElementNS(W_NS, `${prefix}:rPr`)
+    runNode.insertBefore(rPr, runNode.firstChild)
+  }
+  let color = rPr.getElementsByTagNameNS(W_NS, 'color')[0]
+  if (!color) {
+    color = doc.createElementNS(W_NS, `${prefix}:color`)
+    rPr.appendChild(color)
+  }
+  color.setAttributeNS(W_NS, `${prefix}:val`, hexColor)
+}
+
+/**
+ * Helper to set default run text color on a paragraph element.
+ */
+export function setParagraphColor(doc, pNode, hexColor) {
+  if (!pNode) return
+  const prefix = pNode.prefix || doc.documentElement?.prefix || 'w'
+  let pPr = pNode.getElementsByTagNameNS(W_NS, 'pPr')[0]
+  if (!pPr) {
+    pPr = doc.createElementNS(W_NS, `${prefix}:pPr`)
+    pNode.insertBefore(pPr, pNode.firstChild)
+  }
+  let rPr = pPr.getElementsByTagNameNS(W_NS, 'rPr')[0]
+  if (!rPr) {
+    rPr = doc.createElementNS(W_NS, `${prefix}:rPr`)
+    pPr.appendChild(rPr)
+  }
+  let color = rPr.getElementsByTagNameNS(W_NS, 'color')[0]
+  if (!color) {
+    color = doc.createElementNS(W_NS, `${prefix}:color`)
+    rPr.appendChild(color)
+  }
+  color.setAttributeNS(W_NS, `${prefix}:val`, hexColor)
+}
+
+/**
+ * Helper to set font size on a run element (in half-points, e.g. 20 = 10pt).
+ */
+export function setRunFontSize(doc, runNode, halfPoints) {
+  if (!runNode) return
+  const prefix = runNode.prefix || doc.documentElement?.prefix || 'w'
+  let rPr = runNode.getElementsByTagNameNS(W_NS, 'rPr')[0]
+  if (!rPr) {
+    rPr = doc.createElementNS(W_NS, `${prefix}:rPr`)
+    runNode.insertBefore(rPr, runNode.firstChild)
+  }
+  let sz = rPr.getElementsByTagNameNS(W_NS, 'sz')[0]
+  if (!sz) {
+    sz = doc.createElementNS(W_NS, `${prefix}:sz`)
+    rPr.appendChild(sz)
+  }
+  sz.setAttributeNS(W_NS, `${prefix}:val`, String(halfPoints))
+
+  let szCs = rPr.getElementsByTagNameNS(W_NS, 'szCs')[0]
+  if (!szCs) {
+    szCs = doc.createElementNS(W_NS, `${prefix}:szCs`)
+    rPr.appendChild(szCs)
+  }
+  szCs.setAttributeNS(W_NS, `${prefix}:val`, String(halfPoints))
+}
+
+/**
+ * Helper to set default run font size on a paragraph element (in half-points, e.g. 20 = 10pt).
+ */
+export function setParagraphFontSize(doc, pNode, halfPoints) {
+  if (!pNode) return
+  const prefix = pNode.prefix || doc.documentElement?.prefix || 'w'
+  let pPr = pNode.getElementsByTagNameNS(W_NS, 'pPr')[0]
+  if (!pPr) {
+    pPr = doc.createElementNS(W_NS, `${prefix}:pPr`)
+    pNode.insertBefore(pPr, pNode.firstChild)
+  }
+  let rPr = pPr.getElementsByTagNameNS(W_NS, 'rPr')[0]
+  if (!rPr) {
+    rPr = doc.createElementNS(W_NS, `${prefix}:rPr`)
+    pPr.appendChild(rPr)
+  }
+  let sz = rPr.getElementsByTagNameNS(W_NS, 'sz')[0]
+  if (!sz) {
+    sz = doc.createElementNS(W_NS, `${prefix}:sz`)
+    rPr.appendChild(sz)
+  }
+  sz.setAttributeNS(W_NS, `${prefix}:val`, String(halfPoints))
+
+  let szCs = rPr.getElementsByTagNameNS(W_NS, 'szCs')[0]
+  if (!szCs) {
+    szCs = doc.createElementNS(W_NS, `${prefix}:szCs`)
+    rPr.appendChild(szCs)
+  }
+  szCs.setAttributeNS(W_NS, `${prefix}:val`, String(halfPoints))
+}
+
+/**
+ * Helper to set paragraph spacing (e.g. before, after in dxa, where 20 dxa = 1 pt).
+ */
+export function setParagraphSpacing(doc, pNode, { before, after, line, lineRule } = {}) {
+  if (!pNode) return
+  const prefix = pNode.prefix || doc.documentElement?.prefix || 'w'
+  let pPr = pNode.getElementsByTagNameNS(W_NS, 'pPr')[0]
+  if (!pPr) {
+    pPr = doc.createElementNS(W_NS, `${prefix}:pPr`)
+    pNode.insertBefore(pPr, pNode.firstChild)
+  }
+  let spacing = pPr.getElementsByTagNameNS(W_NS, 'spacing')[0]
+  if (!spacing) {
+    spacing = doc.createElementNS(W_NS, `${prefix}:spacing`)
+    pPr.insertBefore(spacing, pPr.firstChild)
+  }
+  if (before !== undefined) {
+    spacing.setAttributeNS(W_NS, `${prefix}:before`, String(before))
+  }
+  if (after !== undefined) {
+    spacing.setAttributeNS(W_NS, `${prefix}:after`, String(after))
+  }
+  if (line !== undefined) {
+    spacing.setAttributeNS(W_NS, `${prefix}:line`, String(line))
+  }
+  if (lineRule !== undefined) {
+    spacing.setAttributeNS(W_NS, `${prefix}:lineRule`, String(lineRule))
+  }
+}
+
+/**
+ * Sets text on a run element, converting newline '\n' characters into '<w:br/>' line breaks.
+ */
+export function setRunWithBreaks(doc, runNode, text) {
+  if (!runNode) return
+  const prefix = runNode.prefix || doc.documentElement?.prefix || 'w'
+  const children = Array.from(runNode.childNodes)
+  for (const child of children) {
+    const name = child.localName || ''
+    if (name === 't' || name === 'br') {
+      runNode.removeChild(child)
+    }
+  }
+  const lines = String(text || '').split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    const t = doc.createElementNS(W_NS, `${prefix}:t`)
+    t.setAttribute('xml:space', 'preserve')
+    t.textContent = lines[i]
+    runNode.appendChild(t)
+    if (i < lines.length - 1) {
+      const br = doc.createElementNS(W_NS, `${prefix}:br`)
+      runNode.appendChild(br)
+    }
+  }
+}
+
+/**
+ * Sets multi-line dates inside a textbox paragraph (Tw Cen MT bold 8.5pt, separated by <w:br/>).
+ */
+export function setDatesInParagraph(doc, pNode, datesLine) {
+  if (!pNode) return
+  const prefix = pNode.prefix || doc.documentElement?.prefix || 'w'
+  const children = Array.from(pNode.childNodes)
+  for (const child of children) {
+    if (child.nodeType === 1 && (child.localName || '').toLowerCase() === 'ppr') {
+      continue
+    }
+    pNode.removeChild(child)
+  }
+
+  const r = doc.createElementNS(W_NS, `${prefix}:r`)
+  const rPr = doc.createElementNS(W_NS, `${prefix}:rPr`)
+  const rFonts = doc.createElementNS(W_NS, `${prefix}:rFonts`)
+  rFonts.setAttributeNS(W_NS, `${prefix}:ascii`, EB_GARAMOND)
+  rFonts.setAttributeNS(W_NS, `${prefix}:hAnsi`, EB_GARAMOND)
+  rFonts.setAttributeNS(W_NS, `${prefix}:cs`, EB_GARAMOND)
+  rPr.appendChild(rFonts)
+
+  const bold = doc.createElementNS(W_NS, `${prefix}:b`)
+  rPr.appendChild(bold)
+
+  const sz = doc.createElementNS(W_NS, `${prefix}:sz`)
+  sz.setAttributeNS(W_NS, `${prefix}:val`, '17') // 8.5 pt
+  rPr.appendChild(sz)
+
+  const szCs = doc.createElementNS(W_NS, `${prefix}:szCs`)
+  szCs.setAttributeNS(W_NS, `${prefix}:val`, '17')
+  rPr.appendChild(szCs)
+
+  r.appendChild(rPr)
+
+  const lines = String(datesLine || '').split('\n').filter(Boolean)
+  for (let idx = 0; idx < lines.length; idx++) {
+    const t = doc.createElementNS(W_NS, `${prefix}:t`)
+    t.setAttribute('xml:space', 'preserve')
+    t.textContent = lines[idx]
+    r.appendChild(t)
+
+    if (idx < lines.length - 1) {
+      const br = doc.createElementNS(W_NS, `${prefix}:br`)
+      r.appendChild(br)
+    }
+  }
+
+  pNode.appendChild(r)
 }
 
 /**
@@ -199,233 +479,55 @@ export function deriveCanonicalDoiUrl(rawDoi, submissionNumber, manuscriptId) {
 }
 
 /**
- * Formats a single Crossref paragraph inside the badge shape.
+ * Completely removes any legacy Crossref badge shapes and text ("Crossref", "for updates")
+ * from the DOCX body. This ensures the old logo is never rendered into the intermediate PDF
+ * behind the official "Metadata from Crossref" logo asset.
+ *
+ * @param {Document} doc - DOM document
+ * @param {Element} body - w:body element
  */
-function formatCrossrefParagraph(doc, p, text, halfPtSize, rId = null) {
-  const prefix = p.prefix || 'w'
-  while (p.firstChild) {
-    p.removeChild(p.firstChild)
+export function removeLegacyCrossrefLogo(doc, body) {
+  if (!body) return
+
+  // 1. Remove all runs containing Crossref or "for updates" text or associated drawing/pict shapes
+  const runs = Array.from(body.getElementsByTagNameNS(W_NS, 'r'))
+  for (const r of runs) {
+    const text = (r.textContent || '').trim()
+    const hasDrawing =
+      r.getElementsByTagNameNS(W_NS, 'drawing').length > 0 ||
+      r.getElementsByTagNameNS(W_NS, 'pict').length > 0
+    if (
+      text.includes('Crossref') ||
+      text.includes('for updates') ||
+      (hasDrawing && (text.includes('Cross') || text.includes('update')))
+    ) {
+      if (r.parentNode) {
+        r.parentNode.removeChild(r)
+      }
+    }
   }
 
-  const pPr = doc.createElementNS(W_NS, `${prefix}:pPr`)
-  const jc = doc.createElementNS(W_NS, `${prefix}:jc`)
-  jc.setAttributeNS(W_NS, `${prefix}:val`, 'center')
-  pPr.appendChild(jc)
-
-  const spacing = doc.createElementNS(W_NS, `${prefix}:spacing`)
-  spacing.setAttributeNS(W_NS, `${prefix}:line`, '180')
-  spacing.setAttributeNS(W_NS, `${prefix}:lineRule`, 'auto')
-  spacing.setAttributeNS(W_NS, `${prefix}:before`, '0')
-  spacing.setAttributeNS(W_NS, `${prefix}:after`, '0')
-  pPr.appendChild(spacing)
-  p.appendChild(pPr)
-
-  const r = doc.createElementNS(W_NS, `${prefix}:r`)
-  const rPr = doc.createElementNS(W_NS, `${prefix}:rPr`)
-  const b = doc.createElementNS(W_NS, `${prefix}:b`)
-  rPr.appendChild(b)
-
-  const sz = doc.createElementNS(W_NS, `${prefix}:sz`)
-  sz.setAttributeNS(W_NS, `${prefix}:val`, String(halfPtSize))
-  rPr.appendChild(sz)
-
-  const szCs = doc.createElementNS(W_NS, `${prefix}:szCs`)
-  szCs.setAttributeNS(W_NS, `${prefix}:val`, String(halfPtSize))
-  rPr.appendChild(szCs)
-
-  const rFonts = doc.createElementNS(W_NS, `${prefix}:rFonts`)
-  rFonts.setAttributeNS(W_NS, `${prefix}:ascii`, 'Tw Cen MT')
-  rFonts.setAttributeNS(W_NS, `${prefix}:hAnsi`, 'Tw Cen MT')
-  rPr.appendChild(rFonts)
-
-  r.appendChild(rPr)
-
-  const t = doc.createElementNS(W_NS, `${prefix}:t`)
-  t.textContent = text
-  r.appendChild(t)
-
-  if (rId) {
-    const hlink = doc.createElementNS(W_NS, `${prefix}:hyperlink`)
-    hlink.setAttributeNS(R_NS, 'r:id', rId)
-    hlink.appendChild(r)
-    p.appendChild(hlink)
-  } else {
-    p.appendChild(r)
+  // 2. Remove any residual paragraphs that only contained the Crossref badge text
+  const paragraphs = Array.from(body.getElementsByTagNameNS(W_NS, 'p'))
+  for (const p of paragraphs) {
+    const text = (p.textContent || '').trim()
+    if (text === 'Crossref' || text === 'for updates' || text === 'Crossref for updates') {
+      if (p.parentNode) {
+        p.parentNode.removeChild(p)
+      }
+    }
   }
 }
 
 /**
- * Ensures the Crossref badge is styled to compact size (52x26 pt), positioned
- * to the right side of Article ID above topic, and configured as a clickable DOI hyperlink.
+ * Legacy wrapper: ensures the legacy Crossref shape is removed from the DOCX.
  */
-export function repositionCrossrefLogo(doc, body, relsDoc = null, doiUrl = null) {
-  const paragraphs = Array.from(body.getElementsByTagNameNS(W_NS, 'p'))
-  let articleIdP = null
-  let crossrefRun = null
-  let crossrefP = null
-
-  for (const p of paragraphs) {
-    const text = (p.textContent || '').trim()
-    if (text.includes('Article ID:')) {
-      articleIdP = p
-    }
-    const runs = Array.from(p.getElementsByTagNameNS(W_NS, 'r'))
-    for (const r of runs) {
-      const rText = r.textContent || ''
-      if (
-        rText.includes('Crossref') &&
-        (r.getElementsByTagNameNS(W_NS, 'drawing').length > 0 ||
-         r.getElementsByTagNameNS(W_NS, 'pict').length > 0)
-      ) {
-        crossrefRun = r
-        crossrefP = p
-        break
-      }
-    }
-  }
-
-  if (!crossrefRun) return
-
-  // Register external hyperlink relationship in relsDoc if provided
-  if (relsDoc && doiUrl) {
-    const rels = relsDoc.getElementsByTagName('Relationship')
-    let existingRel = null
-    for (let i = 0; i < rels.length; i++) {
-      if (rels[i].getAttribute('Id') === 'rIdDoiCrossref') {
-        existingRel = rels[i]
-        break
-      }
-    }
-    if (!existingRel) {
-      existingRel = relsDoc.createElement('Relationship')
-      existingRel.setAttribute('Id', 'rIdDoiCrossref')
-      existingRel.setAttribute('Type', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink')
-      existingRel.setAttribute('TargetMode', 'External')
-      relsDoc.documentElement.appendChild(existingRel)
-    }
-    existingRel.setAttribute('Target', doiUrl)
-  }
-
-  // Update DrawingML extent to compact dimensions: 52 pt width (660400 EMUs), 26 pt height (330200 EMUs)
-  const extents = Array.from(crossrefRun.getElementsByTagNameNS(WP_NS, 'extent'))
-  for (const ext of extents) {
-    ext.setAttribute('cx', '660400')
-    ext.setAttribute('cy', '330200')
-  }
-  const aExtents = Array.from(crossrefRun.getElementsByTagNameNS(A_NS, 'ext'))
-  for (const ext of aExtents) {
-    ext.setAttribute('cx', '660400')
-    ext.setAttribute('cy', '330200')
-  }
-
-  // Position drawing to the far right margin and vertically aligned with Article ID box
-  const posH = crossrefRun.getElementsByTagNameNS(WP_NS, 'positionH')[0]
-  if (posH) {
-    posH.setAttribute('relativeFrom', 'column')
-    let offset = posH.getElementsByTagNameNS(WP_NS, 'posOffset')[0]
-    if (!offset) {
-      const prefix = posH.prefix ? `${posH.prefix}:` : ''
-      offset = doc.createElementNS(WP_NS, `${prefix}posOffset`)
-      posH.appendChild(offset)
-    }
-    offset.textContent = '5537200'
-  }
-
-  const posV = crossrefRun.getElementsByTagNameNS(WP_NS, 'positionV')[0]
-  if (posV) {
-    posV.setAttribute('relativeFrom', 'paragraph')
-    let offset = posV.getElementsByTagNameNS(WP_NS, 'posOffset')[0]
-    if (!offset) {
-      const prefix = posV.prefix ? `${posV.prefix}:` : ''
-      offset = doc.createElementNS(WP_NS, `${prefix}posOffset`)
-      posV.appendChild(offset)
-    }
-    offset.textContent = '-30000'
-  }
-
-  // Add click action to DrawingML docPr
-  if (relsDoc && doiUrl) {
-    const docPrList = Array.from(crossrefRun.getElementsByTagNameNS(WP_NS, 'docPr'))
-    if (docPrList.length === 0) {
-      docPrList.push(...Array.from(crossrefRun.getElementsByTagName('wp:docPr')))
-    }
-    for (const docPr of docPrList) {
-      let hlinkClick = docPr.getElementsByTagNameNS(A_NS, 'hlinkClick')[0] || docPr.getElementsByTagName('a:hlinkClick')[0]
-      if (!hlinkClick) {
-        hlinkClick = doc.createElementNS(A_NS, 'a:hlinkClick')
-        docPr.appendChild(hlinkClick)
-      }
-      hlinkClick.setAttributeNS(R_NS, 'r:id', 'rIdDoiCrossref')
-    }
-  }
-
-  // Format text content inside shape as 2 compact lines with hyperlink
-  const txbxList = Array.from(crossrefRun.getElementsByTagNameNS(W_NS, 'txbxContent'))
-  for (const txbx of txbxList) {
-    let pList = Array.from(txbx.getElementsByTagNameNS(W_NS, 'p'))
-    if (pList.length === 0) pList = Array.from(txbx.getElementsByTagNameNS('*', 'p'))
-
-    const rId = relsDoc && doiUrl ? 'rIdDoiCrossref' : null
-    if (pList.length >= 2) {
-      formatCrossrefParagraph(doc, pList[0], 'Crossref', 15, rId)
-      formatCrossrefParagraph(doc, pList[1], 'for updates', 13, rId)
-    } else if (pList.length === 1) {
-      const p1 = pList[0]
-      const prefix = p1.prefix || 'w'
-      formatCrossrefParagraph(doc, p1, 'Crossref', 15, rId)
-      const p2 = doc.createElementNS(W_NS, `${prefix}:p`)
-      formatCrossrefParagraph(doc, p2, 'for updates', 13, rId)
-      txbx.appendChild(p2)
-    }
-  }
-
-  // Tight internal margins (padding) inside shape
-  const bodyPrList = Array.from(crossrefRun.getElementsByTagNameNS('*', 'bodyPr'))
-  for (const bodyPr of bodyPrList) {
-    bodyPr.setAttribute('lIns', '12700')
-    bodyPr.setAttribute('tIns', '12700')
-    bodyPr.setAttribute('rIns', '12700')
-    bodyPr.setAttribute('bIns', '12700')
-  }
-
-  // Update VML Fallback rect style and href if present
-  const vmlRects = Array.from(crossrefRun.getElementsByTagNameNS(VML_NS, 'rect'))
-  for (const rect of vmlRects) {
-    let style = rect.getAttribute('style') || ''
-    style = style.replace(/margin-left:[^;]+;/i, 'margin-left:436.0pt;')
-    style = style.replace(/margin-top:[^;]+;/i, 'margin-top:-2.4pt;')
-    style = style.replace(/width:[^;]+;/i, 'width:52pt;')
-    style = style.replace(/height:[^;]+;/i, 'height:26pt;')
-    if (!style.includes('margin-left:436.0pt;')) {
-      style = `margin-left:436.0pt;${style}`
-    }
-    if (!style.includes('margin-top:-2.4pt;')) {
-      style = `margin-top:-2.4pt;${style}`
-    }
-    if (!style.includes('width:52pt;')) {
-      style = `width:52pt;${style}`
-    }
-    if (!style.includes('height:26pt;')) {
-      style = `height:26pt;${style}`
-    }
-    rect.setAttribute('style', style)
-    if (doiUrl) {
-      rect.setAttribute('href', doiUrl)
-    }
-  }
-
-  // If crossref was in a separate paragraph below, move it into the Article ID paragraph
-  if (articleIdP && crossrefP && crossrefP !== articleIdP) {
-    articleIdP.appendChild(crossrefRun)
-    const remainingText = (crossrefP.textContent || '').trim()
-    if (!remainingText || remainingText === 'Crossref for updates' || remainingText === 'Crossref') {
-      if (crossrefP.parentNode) {
-        crossrefP.parentNode.removeChild(crossrefP)
-      }
-    }
-  }
+export function repositionCrossrefLogo(doc, body, _relsDoc = null, _doiUrl = null) {
+  removeLegacyCrossrefLogo(doc, body)
 }
 
+// Attempt to replace Crossref logo with new image from Crossref CDN
+// Note: DOCX files cannot directly reference external URLs for images.
 /**
  * Copies embedded images from author package into the publication package.
  */
@@ -517,8 +619,77 @@ export function isMatchingTitle(text, title) {
 }
 
 /**
+ * Checks whether a paragraph or element is empty (no text, no images, no drawings, no tables).
+ */
+export function isElementEmpty(element) {
+  if (!element) return true
+  const text = (element.textContent || '').trim()
+  if (text) return false
+  const drawings =
+    element.getElementsByTagNameNS(WP_NS, 'anchor').length ||
+    element.getElementsByTagNameNS(W_NS, 'drawing').length
+  if (drawings > 0) return false
+  const picts = element.getElementsByTagNameNS(W_NS, 'pict').length
+  if (picts > 0) return false
+  const tables = element.getElementsByTagNameNS(W_NS, 'tbl').length
+  if (tables > 0) return false
+  return true
+}
+
+/**
+ * Sanitizes author body elements to prevent premature column / page breaks,
+ * embedded section breaks, and pageBreakBefore flags that leave empty columns.
+ */
+export function sanitizeAuthorBodyElement(doc, element) {
+  if (!element) return
+
+  // 1. Strip embedded sectPr inside pPr
+  const sectPrs = Array.from(element.getElementsByTagNameNS(W_NS, 'sectPr'))
+  for (const sp of sectPrs) {
+    if (sp.parentNode) sp.parentNode.removeChild(sp)
+  }
+
+  // 2. Strip manual column breaks and page breaks
+  const brs = Array.from(element.getElementsByTagNameNS(W_NS, 'br'))
+  for (const br of brs) {
+    const type = br.getAttributeNS(W_NS, 'type') || br.getAttribute('w:type')
+    if (type === 'column' || type === 'page') {
+      if (br.parentNode) br.parentNode.removeChild(br)
+    }
+  }
+
+  const pBreaks = Array.from(element.getElementsByTagNameNS(W_NS, 'lastRenderedPageBreak'))
+  for (const pb of pBreaks) {
+    if (pb.parentNode) pb.parentNode.removeChild(pb)
+  }
+
+  // 3. Strip pageBreakBefore inside pPr
+  const pbBefores = Array.from(element.getElementsByTagNameNS(W_NS, 'pageBreakBefore'))
+  for (const pbb of pbBefores) {
+    if (pbb.parentNode) pbb.parentNode.removeChild(pbb)
+  }
+
+  // 4. Sanitize negative paragraph indents to prevent content shifting into margins
+  const pPr = element.getElementsByTagNameNS(W_NS, 'pPr')[0]
+  if (pPr) {
+    const inds = Array.from(pPr.getElementsByTagNameNS(W_NS, 'ind'))
+    for (const ind of inds) {
+      const left = parseInt(ind.getAttributeNS(W_NS, 'left') || ind.getAttribute('w:left') || '0', 10)
+      if (left < 0) {
+        ind.setAttributeNS(W_NS, `${ind.prefix || 'w'}:left`, '0')
+      }
+      const firstLine = parseInt(ind.getAttributeNS(W_NS, 'firstLine') || ind.getAttribute('w:firstLine') || '0', 10)
+      if (firstLine < 0) {
+        ind.setAttributeNS(W_NS, `${ind.prefix || 'w'}:firstLine`, '0')
+      }
+    }
+  }
+}
+
+/**
  * Extracts body paragraphs, headings, tables, and figures from author document,
- * stripping front-matter (title, authors, abstract, keywords) to prevent duplicate titles.
+ * stripping front-matter (title, authors, abstract, keywords) to prevent duplicate titles,
+ * and sanitizing breaks to ensure two-column layout does not produce empty column spaces.
  */
 async function extractAuthorBodyElements(authorZip, relIdMap, parser, context = {}) {
   const authorDocXml = await authorZip.file('word/document.xml')?.async('string')
@@ -537,7 +708,7 @@ async function extractAuthorBodyElements(authorZip, relIdMap, parser, context = 
   for (const child of children) {
     const tagName = child.localName || child.nodeName.split(':').pop()
 
-    // Skip section properties (we use template's section structure)
+    // Skip top-level section properties (we use template's section structure)
     if (tagName === 'sectPr') continue
 
     const text = (child.textContent || '').trim()
@@ -570,9 +741,15 @@ async function extractAuthorBodyElements(authorZip, relIdMap, parser, context = 
       }
     }
 
-    // Skip stray blank lines right at the start of body
-    if (!text && bodyElements.length === 0) {
-      continue
+    // Sanitize element to eliminate stray column/page breaks and embedded sectPr
+    sanitizeAuthorBodyElement(authorDoc, child)
+
+    // Skip stray blank lines right at the start of body or consecutive blank lines
+    const empty = isElementEmpty(child)
+    if (empty) {
+      if (bodyElements.length === 0 || isElementEmpty(bodyElements[bodyElements.length - 1])) {
+        continue
+      }
     }
 
     // Update image embed references with new rel IDs
@@ -590,7 +767,7 @@ async function extractAuthorBodyElements(authorZip, relIdMap, parser, context = 
 
   // If we never hit an 'Introduction' marker, treat non-empty elements as body but filter out title and front-matter
   if (bodyElements.length === 0 && children.length > 0) {
-    return children.filter((n) => {
+    const fallbackList = children.filter((n) => {
       const tagName = n.localName || n.nodeName.split(':').pop()
       if (tagName === 'sectPr') return false
       const text = (n.textContent || '').trim()
@@ -600,6 +777,17 @@ async function extractAuthorBodyElements(authorZip, relIdMap, parser, context = 
       if (lower.startsWith('abstract') || lower.startsWith('keywords:') || lower.startsWith('correspondence')) return false
       return true
     })
+    for (const elem of fallbackList) {
+      sanitizeAuthorBodyElement(authorDoc, elem)
+      if (!isElementEmpty(elem)) {
+        bodyElements.push(elem)
+      }
+    }
+  }
+
+  // Pop any trailing empty paragraphs to prevent empty column space at the end
+  while (bodyElements.length > 0 && isElementEmpty(bodyElements[bodyElements.length - 1])) {
+    bodyElements.pop()
   }
 
   return bodyElements
@@ -786,64 +974,267 @@ export function updateDatesInDocument(doc, body, datesLine) {
 
     // 1. Update the date box shape (Rectangle 2) anchored in Article ID paragraph
     if (text.includes('Article ID:')) {
-      const txbxList = Array.from(p.getElementsByTagNameNS(W_NS, 'txbxContent'))
-      for (const txbx of txbxList) {
-        // Skip Crossref drawing textbox
-        if (txbx.textContent && txbx.textContent.includes('Crossref')) {
-          continue
-        }
-        let innerP = txbx.getElementsByTagNameNS(W_NS, 'p')[0]
-        if (!innerP) {
-          const prefix = p.prefix || 'w'
-          innerP = doc.createElementNS(W_NS, `${prefix}:p`)
-          txbx.appendChild(innerP)
-        }
-        let innerR = innerP.getElementsByTagNameNS(W_NS, 'r')[0]
-        if (!innerR) {
-          const prefix = p.prefix || 'w'
-          innerR = doc.createElementNS(W_NS, `${prefix}:r`)
-          innerP.appendChild(innerR)
-        }
-        // Ensure bold Tw Cen MT styling matching reference design
-        const prefix = innerR.prefix || p.prefix || 'w'
-        let rPr = innerR.getElementsByTagNameNS(W_NS, 'rPr')[0]
-        if (!rPr) {
-          rPr = doc.createElementNS(W_NS, `${prefix}:rPr`)
-          innerR.insertBefore(rPr, innerR.firstChild)
-        }
-        let rFonts = rPr.getElementsByTagNameNS(W_NS, 'rFonts')[0]
-        if (!rFonts) {
-          rFonts = doc.createElementNS(W_NS, `${prefix}:rFonts`)
-          rPr.appendChild(rFonts)
-        }
-        rFonts.setAttributeNS(W_NS, `${prefix}:ascii`, 'Tw Cen MT')
-        rFonts.setAttributeNS(W_NS, `${prefix}:hAnsi`, 'Tw Cen MT')
+      // 1.1 DrawingML dates shape (wps:wsp)
+      const wsps = Array.from(p.getElementsByTagNameNS('*', 'wsp'))
+      for (const wsp of wsps) {
+        // Skip Crossref drawing shape
+        const wspText = wsp.textContent || ''
+        if (wspText.includes('Crossref')) continue
 
-        let bold = rPr.getElementsByTagNameNS(W_NS, 'b')[0]
-        if (!bold) {
-          bold = doc.createElementNS(W_NS, `${prefix}:b`)
-          rPr.appendChild(bold)
+        // Remove fill & line border (Item 2: remove white rectangle box behind dates)
+        let spPr = wsp.getElementsByTagNameNS('*', 'spPr')[0]
+        if (spPr) {
+          // Remove existing fills
+          const fills = Array.from(spPr.childNodes).filter((n) => n.nodeType === 1 && (n.localName || '').endsWith('Fill'))
+          for (const f of fills) spPr.removeChild(f)
+          const noFill = doc.createElementNS(A_NS, 'a:noFill')
+          spPr.appendChild(noFill)
+
+          // Border outline: noFill
+          let ln = spPr.getElementsByTagNameNS('*', 'ln')[0]
+          if (!ln) {
+            ln = doc.createElementNS(A_NS, 'a:ln')
+            spPr.appendChild(ln)
+          } else {
+            while (ln.firstChild) ln.removeChild(ln.firstChild)
+          }
+          const lnNoFill = doc.createElementNS(A_NS, 'a:noFill')
+          ln.appendChild(lnNoFill)
+
+          // Widen shape extent to 410pt (5207000 EMU) and height to 28pt (355600 EMU) to fit Received | Accepted | Published cleanly
+          const ext = spPr.getElementsByTagNameNS('*', 'ext')[0]
+          if (ext) {
+            ext.setAttribute('cx', '5207000')
+            ext.setAttribute('cy', '355600')
+          }
         }
 
-        setText(doc, innerR, datesLine)
-        datesUpdated = true
+        // Remove shape theme styles / shadow effects
+        const style = wsp.getElementsByTagNameNS('*', 'style')[0]
+        if (style && style.parentNode) {
+          style.parentNode.removeChild(style)
+        }
+
+        // Set body padding to 0 so full width is available
+        const bodyPr = wsp.getElementsByTagNameNS('*', 'bodyPr')[0]
+        if (bodyPr) {
+          bodyPr.setAttribute('lIns', '0')
+          bodyPr.setAttribute('tIns', '0')
+          bodyPr.setAttribute('rIns', '0')
+          bodyPr.setAttribute('bIns', '0')
+        }
+
+        // Update anchor extent, remove shadow effects extent, and align to 0 margin (no negative offset)
+        let parent = wsp.parentNode
+        while (parent && parent !== p) {
+          if ((parent.localName || '').toLowerCase() === 'anchor') {
+            const ext = parent.getElementsByTagNameNS('*', 'extent')[0]
+            if (ext) {
+              ext.setAttribute('cx', '5207000')
+              ext.setAttribute('cy', '355600')
+            }
+            const effectExt = parent.getElementsByTagNameNS('*', 'effectExtent')[0]
+            if (effectExt) {
+              effectExt.setAttribute('l', '0')
+              effectExt.setAttribute('t', '0')
+              effectExt.setAttribute('r', '0')
+              effectExt.setAttribute('b', '0')
+            }
+            parent.setAttribute('distL', '0')
+            parent.setAttribute('distR', '0')
+            const posH = parent.getElementsByTagNameNS('*', 'positionH')[0]
+            if (posH) {
+              const posOffset = posH.getElementsByTagNameNS('*', 'posOffset')[0]
+              if (posOffset) {
+                posOffset.textContent = '0'
+              }
+            }
+            break
+          }
+          parent = parent.parentNode
+        }
+
+        // Update text run inside txbx
+        const txbx = wsp.getElementsByTagNameNS(W_NS, 'txbxContent')[0] || wsp.getElementsByTagNameNS('*', 'txbxContent')[0]
+        if (txbx) {
+          let innerP = txbx.getElementsByTagNameNS(W_NS, 'p')[0]
+          if (!innerP) {
+            innerP = doc.createElementNS(W_NS, 'w:p')
+            txbx.appendChild(innerP)
+          }
+          setDatesInParagraph(doc, innerP, datesLine)
+          datesUpdated = true
+        }
+      }
+
+      // 1.2 VML fallback rect (Rectangle 2)
+      const vmlRects = Array.from(p.getElementsByTagNameNS(VML_NS, 'rect'))
+      for (const rect of vmlRects) {
+        const id = rect.getAttribute('id') || ''
+        if (id.includes('Rectangle 2') || (!id.includes('Rectangle 1') && !rect.textContent.includes('Crossref'))) {
+          rect.setAttribute('fillcolor', 'none')
+          rect.setAttribute('filled', 'f')
+          rect.setAttribute('stroked', 'f')
+          rect.setAttribute('strokecolor', 'none')
+          let style = rect.getAttribute('style') || ''
+          style = style.replace(/width:[^;]+;/i, 'width:410pt;')
+          style = style.replace(/margin-left:[^;]+;/i, 'margin-left:0pt;')
+          style = style.replace(/height:[^;]+;/i, 'height:28pt;')
+          rect.setAttribute('style', style)
+          const shadows = Array.from(rect.getElementsByTagNameNS(VML_NS, 'shadow'))
+          for (const s of shadows) {
+            s.setAttribute('on', 'f')
+          }
+          const txbx = rect.getElementsByTagNameNS(W_NS, 'txbxContent')[0] || rect.getElementsByTagNameNS('*', 'txbxContent')[0]
+          if (txbx) {
+            let innerP = txbx.getElementsByTagNameNS(W_NS, 'p')[0]
+            if (innerP) {
+              setDatesInParagraph(doc, innerP, datesLine)
+            }
+          }
+        }
       }
     }
 
-    // 2. Also check if any standalone paragraph contains Received:
-    if (text.includes('Received: 8 August 2019') || text.includes('Received:')) {
-      const runs = p.getElementsByTagNameNS(W_NS, 'r')
-      for (let i = 0; i < runs.length; i++) {
-        const rText = getText(runs[i])
-        if (rText.includes('Received:')) {
-          setText(doc, runs[i], datesLine)
-          datesUpdated = true
+    // 2. Also check if any standalone paragraph outside txbxContent contains Received:
+    if ((p.parentNode?.localName || '') !== 'txbxContent') {
+      if (text.includes('Received: 8 August 2019') || text.includes('Received:')) {
+        const runs = Array.from(p.getElementsByTagNameNS(W_NS, 'r'))
+        for (let i = 0; i < runs.length; i++) {
+          if (runs[i].getElementsByTagNameNS('*', 'drawing').length > 0 || runs[i].getElementsByTagNameNS('*', 'pict').length > 0) continue
+          const rText = getText(runs[i])
+          if (rText.includes('Received:')) {
+            setRunWithBreaks(doc, runs[i], datesLine)
+            datesUpdated = true
+          }
         }
       }
     }
   }
 
   return datesUpdated
+}
+
+/**
+ * Updates footer1.xml to ensure ASGARD branding styling and right-aligned page numbering.
+ */
+export function updateFooter(footerDoc) {
+  if (!footerDoc) return
+  const paragraphs = Array.from(footerDoc.getElementsByTagNameNS(W_NS, 'p'))
+  for (const p of paragraphs) {
+    const text = (p.textContent || '').trim()
+    if (text.includes('ASGARD')) {
+      const prefix = p.prefix || 'w'
+
+      // 1. Set right tab stop at 10037 dxa
+      let pPr = p.getElementsByTagNameNS(W_NS, 'pPr')[0]
+      if (!pPr) {
+        pPr = footerDoc.createElementNS(W_NS, `${prefix}:pPr`)
+        p.insertBefore(pPr, p.firstChild)
+      }
+      let tabs = pPr.getElementsByTagNameNS(W_NS, 'tabs')[0]
+      if (!tabs) {
+        tabs = footerDoc.createElementNS(W_NS, `${prefix}:tabs`)
+        pPr.appendChild(tabs)
+      }
+      let rightTab = null
+      const tabList = Array.from(tabs.getElementsByTagNameNS(W_NS, 'tab'))
+      for (const t of tabList) {
+        if ((t.getAttributeNS(W_NS, 'val') || t.getAttribute(`${prefix}:val`)) === 'right') {
+          rightTab = t
+          break
+        }
+      }
+      if (!rightTab) {
+        rightTab = footerDoc.createElementNS(W_NS, `${prefix}:tab`)
+        tabs.appendChild(rightTab)
+      }
+      rightTab.setAttributeNS(W_NS, `${prefix}:val`, 'right')
+      rightTab.setAttributeNS(W_NS, `${prefix}:pos`, '10037')
+
+      // 2. Format ASGARD run with EB Garamond and Navy blue color
+      const runs = Array.from(p.getElementsByTagNameNS(W_NS, 'r'))
+      let asgardRun = null
+      for (const r of runs) {
+        const rText = (r.textContent || '').trim()
+        if (rText.includes('ASGARD')) {
+          asgardRun = r
+          setRunFont(footerDoc, r, EB_GARAMOND)
+          setRunColor(footerDoc, r, '0B1B3A')
+        } else if (asgardRun && !r.getElementsByTagNameNS(W_NS, 'fldSimple').length && !r.getElementsByTagNameNS(W_NS, 'tab').length) {
+          // Remove stray spacer runs after ASGARD
+          if (r.parentNode) r.parentNode.removeChild(r)
+        }
+      }
+
+      // 3. Check if page number field already exists
+      let hasPageField = false
+      const flds = Array.from(p.getElementsByTagNameNS(W_NS, 'fldSimple'))
+      for (const fld of flds) {
+        const instr = fld.getAttributeNS(W_NS, 'instr') || fld.getAttribute('w:instr') || ''
+        if (instr.includes('PAGE')) {
+          hasPageField = true
+          break
+        }
+      }
+
+      if (!hasPageField) {
+        // Tab run to jump to right tab stop
+        const tabRun = footerDoc.createElementNS(W_NS, `${prefix}:r`)
+        const tabEl = footerDoc.createElementNS(W_NS, `${prefix}:tab`)
+        tabRun.appendChild(tabEl)
+        p.appendChild(tabRun)
+
+        // "Page " label run
+        const labelRun = footerDoc.createElementNS(W_NS, `${prefix}:r`)
+        const labelRPr = footerDoc.createElementNS(W_NS, `${prefix}:rPr`)
+        const labelFonts = footerDoc.createElementNS(W_NS, `${prefix}:rFonts`)
+        labelFonts.setAttributeNS(W_NS, `${prefix}:ascii`, EB_GARAMOND)
+        labelFonts.setAttributeNS(W_NS, `${prefix}:hAnsi`, EB_GARAMOND)
+        labelFonts.setAttributeNS(W_NS, `${prefix}:cs`, EB_GARAMOND)
+        labelRPr.appendChild(labelFonts)
+        const labelColor = footerDoc.createElementNS(W_NS, `${prefix}:color`)
+        labelColor.setAttributeNS(W_NS, `${prefix}:val`, '0B1B3A')
+        labelRPr.appendChild(labelColor)
+        const labelBold = footerDoc.createElementNS(W_NS, `${prefix}:b`)
+        labelRPr.appendChild(labelBold)
+        const labelSz = footerDoc.createElementNS(W_NS, `${prefix}:sz`)
+        labelSz.setAttributeNS(W_NS, `${prefix}:val`, '20')
+        labelRPr.appendChild(labelSz)
+        labelRun.appendChild(labelRPr)
+        const labelT = footerDoc.createElementNS(W_NS, `${prefix}:t`)
+        labelT.setAttribute('xml:space', 'preserve')
+        labelT.textContent = 'Page '
+        labelRun.appendChild(labelT)
+        p.appendChild(labelRun)
+
+        // Dynamic PAGE field
+        const fldSimple = footerDoc.createElementNS(W_NS, `${prefix}:fldSimple`)
+        fldSimple.setAttributeNS(W_NS, `${prefix}:instr`, 'PAGE')
+        const fieldRun = footerDoc.createElementNS(W_NS, `${prefix}:r`)
+        const fieldRPr = footerDoc.createElementNS(W_NS, `${prefix}:rPr`)
+        const fieldFonts = footerDoc.createElementNS(W_NS, `${prefix}:rFonts`)
+        fieldFonts.setAttributeNS(W_NS, `${prefix}:ascii`, EB_GARAMOND)
+        fieldFonts.setAttributeNS(W_NS, `${prefix}:hAnsi`, EB_GARAMOND)
+        fieldFonts.setAttributeNS(W_NS, `${prefix}:cs`, EB_GARAMOND)
+        fieldRPr.appendChild(fieldFonts)
+        const fieldColor = footerDoc.createElementNS(W_NS, `${prefix}:color`)
+        fieldColor.setAttributeNS(W_NS, `${prefix}:val`, '0B1B3A')
+        fieldRPr.appendChild(fieldColor)
+        const fieldBold = footerDoc.createElementNS(W_NS, `${prefix}:b`)
+        fieldRPr.appendChild(fieldBold)
+        const fieldSz = footerDoc.createElementNS(W_NS, `${prefix}:sz`)
+        fieldSz.setAttributeNS(W_NS, `${prefix}:val`, '20')
+        fieldRPr.appendChild(fieldSz)
+        fieldRun.appendChild(fieldRPr)
+        const fieldT = footerDoc.createElementNS(W_NS, `${prefix}:t`)
+        fieldT.textContent = '1'
+        fieldRun.appendChild(fieldT)
+        fldSimple.appendChild(fieldRun)
+        p.appendChild(fldSimple)
+      }
+    }
+  }
 }
 
 /**
@@ -900,7 +1291,7 @@ export async function renderPublicationDocx({ templateBuffer = null, sourceDocxB
     manuscript.subject_category ||
     manuscript.article_type ||
     'RESEARCH ARTICLE'
-  ).toUpperCase()
+  ).toUpperCase().trim()
   const articleId = manuscript.submission_number || `IJIDCR-${String(manuscript.id || '26-00001').slice(0, 10)}`
   const volume = publication.volume || 1
   const issue = publication.issue || 1
@@ -908,10 +1299,16 @@ export async function renderPublicationDocx({ templateBuffer = null, sourceDocxB
 
   // DOI display rule: ensure canonical DOI URL and display text are always present
   const rawDoi = publication.doi || manuscript.doi || context.doi || ''
-  const { cleanDoi, doiUrl, doiText } = deriveCanonicalDoiUrl(rawDoi, manuscript.submission_number, manuscript.id)
+  const { doiUrl, doiText } = deriveCanonicalDoiUrl(rawDoi, manuscript.submission_number, manuscript.id)
 
   const datesLine = buildDatesLine(dates)
-  const { authorsLine, affiliationsLine, correspondingLine } = formatAuthorsAndAffiliations(authors)
+  const { authorsLine, authorEntries = [], authorItems = [], affiliationsLine, correspondingLine } = formatAuthorsAndAffiliations(authors)
+
+  // Only reserve an icon gap for authors whose ORCID will actually be stamped.
+  const orcidGap = (idx) => {
+    const url = authorItems[idx]?.orcidUrl || ''
+    return url.startsWith('https://orcid.org/') ? ORCID_ICON_SPACER : ''
+  }
 
   const titleText = (manuscript.title || 'Untitled Manuscript').toUpperCase()
   const abstractText = (manuscript.abstract || '').trim()
@@ -930,22 +1327,78 @@ export async function renderPublicationDocx({ templateBuffer = null, sourceDocxB
   const paragraphs = Array.from(body.getElementsByTagNameNS(W_NS, 'p'))
 
   for (const p of paragraphs) {
+    if ((p.parentNode?.localName || '') === 'txbxContent') {
+      continue
+    }
     const text = (p.textContent || '').trim()
 
     // Replace Subject/Category and DOI on Line 1
     if (text.includes('RESEARCH ARTICLE') || text.includes('DOI:') || text.includes('10.68968')) {
+      // 1. Remove underline from paragraph properties (pPr) if present
+      const pPr = p.getElementsByTagNameNS(W_NS, 'pPr')[0]
+      if (pPr) {
+        const uEls = Array.from(pPr.getElementsByTagNameNS(W_NS, 'u'))
+        for (const u of uEls) {
+          pPr.removeChild(u)
+        }
+      }
+
       const runs = p.getElementsByTagNameNS(W_NS, 'r')
       for (let i = 0; i < runs.length; i++) {
         const rText = getText(runs[i])
         if (rText.includes('RESEARCH ARTICLE')) {
           setText(doc, runs[i], subjectCategory)
-          setRunFont(doc, runs[i], 'Cormorant Garamond')
+          setRunFont(doc, runs[i], EB_GARAMOND)
+          setRunColor(doc, runs[i], 'C4A24C') // rgb(196, 162, 76) - Subject/Category color
+          // Make Subject/Category bold
+          let rPr = runs[i].getElementsByTagNameNS(W_NS, 'rPr')[0]
+          if (!rPr) {
+            rPr = doc.createElementNS(W_NS, `${runs[i].prefix || 'w'}:rPr`)
+            runs[i].insertBefore(rPr, runs[i].firstChild)
+          }
+          let bEl = rPr.getElementsByTagNameNS(W_NS, 'b')[0]
+          if (!bEl) {
+            bEl = doc.createElementNS(W_NS, `${runs[i].prefix || 'w'}:b`)
+            rPr.appendChild(bEl)
+          }
+          // Ensure ONLY this run has underline
+          rPr = runs[i].getElementsByTagNameNS(W_NS, 'rPr')[0]
+          if (!rPr) {
+            rPr = doc.createElementNS(W_NS, `${runs[i].prefix || 'w'}:rPr`)
+            runs[i].insertBefore(rPr, runs[i].firstChild)
+          }
+          let uEl = rPr.getElementsByTagNameNS(W_NS, 'u')[0]
+          if (!uEl) {
+            uEl = doc.createElementNS(W_NS, `${runs[i].prefix || 'w'}:u`)
+            rPr.appendChild(uEl)
+          }
+          uEl.setAttributeNS(W_NS, `${runs[i].prefix || 'w'}:val`, 'single')
         } else if (rText.includes('DOI:') || rText.includes('10.68968')) {
           setText(doc, runs[i], doiText)
+          const rPr = runs[i].getElementsByTagNameNS(W_NS, 'rPr')[0]
+          if (rPr) {
+            const uEls = Array.from(rPr.getElementsByTagNameNS(W_NS, 'u'))
+            for (const u of uEls) rPr.removeChild(u)
+          }
+        } else {
+          // Spacer runs between Category and DOI must NOT have underline
+          const rPr = runs[i].getElementsByTagNameNS(W_NS, 'rPr')[0]
+          if (rPr) {
+            const uEls = Array.from(rPr.getElementsByTagNameNS(W_NS, 'u'))
+            for (const u of uEls) rPr.removeChild(u)
+          }
         }
       }
       // If spacer runs exist between Subject/Category and DOI, normalize so they fit on Line 1
       if (runs.length >= 6) {
+        if (runs[1]) {
+          const rPr = runs[1].getElementsByTagNameNS(W_NS, 'rPr')[0]
+          if (rPr) {
+            const uEls = Array.from(rPr.getElementsByTagNameNS(W_NS, 'u'))
+            for (const u of uEls) rPr.removeChild(u)
+          }
+          setText(doc, runs[1], '')
+        }
         setText(doc, runs[3], '                            ')
         if (runs.length > 4) {
           setText(doc, runs[4], '')
@@ -955,21 +1408,24 @@ export async function renderPublicationDocx({ templateBuffer = null, sourceDocxB
 
     // Journal Title (INTERNATIONAL JOURNAL OF INTELLIGENT DIGITAL COMPUTING RESEARCH)
     if (text.includes('INTERNATIONAL JOURNAL OF INTELLIGENT DIGITAL COMPUTING RESEARCH')) {
-      setParagraphFont(doc, p, 'Cormorant Garamond')
-      const runs = p.getElementsByTagNameNS(W_NS, 'r')
-      for (let i = 0; i < runs.length; i++) {
-        setRunFont(doc, runs[i], 'Cormorant Garamond')
-      }
-    }
-
-    // Replace Dates
-    if (text.includes('Received: 8 August 2019') || text.includes('Received:')) {
-      const runs = p.getElementsByTagNameNS(W_NS, 'r')
-      for (let i = 0; i < runs.length; i++) {
-        const rText = getText(runs[i])
-        if (rText.includes('Received:')) {
-          setText(doc, runs[i], datesLine || 'Received / Accepted')
+      setParagraphFont(doc, p, EB_GARAMOND)
+      setParagraphColor(doc, p, '0B1B3A')
+      setParagraphFontSize(doc, p, 26) // 13pt (increased from 11pt / sz="22") ensures prominent, authoritative header presence
+      const pPr = p.getElementsByTagNameNS(W_NS, 'pPr')[0]
+      if (pPr) {
+        let spacing = pPr.getElementsByTagNameNS(W_NS, 'spacing')[0]
+        if (!spacing) {
+          spacing = doc.createElementNS(W_NS, 'w:spacing')
+          pPr.appendChild(spacing)
         }
+        spacing.setAttributeNS(W_NS, 'w:line', '280')
+        spacing.setAttributeNS(W_NS, 'w:lineRule', 'auto')
+      }
+      const runs = p.getElementsByTagNameNS(W_NS, 'r')
+      for (let i = 0; i < runs.length; i++) {
+        setRunFont(doc, runs[i], EB_GARAMOND)
+        setRunColor(doc, runs[i], '0B1B3A')
+        setRunFontSize(doc, runs[i], 26)
       }
     }
 
@@ -980,18 +1436,22 @@ export async function renderPublicationDocx({ templateBuffer = null, sourceDocxB
         const rText = getText(runs[i])
         if (rText.includes('Article ID:')) {
           setText(doc, runs[i], `Article ID: ${articleId}         Vol. ${volume}, Issue ${issue} (${year})`)
-          setRunFont(doc, runs[i], 'Cormorant Garamond')
+          setRunFont(doc, runs[i], EB_GARAMOND)
         }
       }
     }
 
     // Replace Title
     if (text.includes('AI-ENABLED SMART CAMPUS')) {
-      setParagraphFont(doc, p, 'Cormorant Garamond')
+      setParagraphFont(doc, p, EB_GARAMOND)
+      setParagraphFontSize(doc, p, 28) // 14pt (decreased from 16pt / sz=32 to improve visual hierarchy and line space)
+      setParagraphSpacing(doc, p, { before: 360, after: 120, line: 360, lineRule: 'auto' }) // 18pt space between dates block and title
       const runs = p.getElementsByTagNameNS(W_NS, 'r')
       if (runs.length > 0) {
         setText(doc, runs[0], titleText)
-        setRunFont(doc, runs[0], 'Cormorant Garamond')
+        setRunFont(doc, runs[0], EB_GARAMOND)
+        setRunFontSize(doc, runs[0], 28)
+        setRunColor(doc, runs[0], 'C4A24C') // rgb(196, 162, 76) - Manuscript/Category color
         for (let j = 1; j < runs.length; j++) {
           setText(doc, runs[j], '')
         }
@@ -1002,15 +1462,49 @@ export async function renderPublicationDocx({ templateBuffer = null, sourceDocxB
     if (text.includes('Dr. A. Kumar¹')) {
       const runs = p.getElementsByTagNameNS(W_NS, 'r')
       if (runs.length > 0) {
-        setText(doc, runs[0], authorsLine)
+        if (authorEntries.length <= 1) {
+          setText(doc, runs[0], (authorEntries[0] || authorsLine) + orcidGap(0))
+        } else {
+          setText(doc, runs[0], (authorEntries[0] || authorsLine) + ',' + orcidGap(0))
+        }
+        // Set EB Garamond font and increased size for author names
+        setRunFont(doc, runs[0], EB_GARAMOND)
+        setRunFontSize(doc, runs[0], 24) // 12pt (increased from 11pt template default)
         for (let j = 1; j < runs.length; j++) {
           setText(doc, runs[j], '')
         }
       }
-    } else if (text.includes('Dr. B. Priya²') || text.includes('Mr. C. Arun³')) {
+    } else if (text.includes('Dr. B. Priya²')) {
       const runs = p.getElementsByTagNameNS(W_NS, 'r')
-      for (let j = 0; j < runs.length; j++) {
-        setText(doc, runs[j], '')
+      if (authorEntries.length >= 2) {
+        const comma = authorEntries.length > 2 ? ',' : ''
+        if (runs.length > 0) {
+          setText(doc, runs[0], authorEntries[1] + comma + orcidGap(1))
+          // Set EB Garamond font and increased size for author names
+          setRunFont(doc, runs[0], EB_GARAMOND)
+          setRunFontSize(doc, runs[0], 24)
+          for (let j = 1; j < runs.length; j++) setText(doc, runs[j], '')
+        }
+      } else {
+        for (let j = 0; j < runs.length; j++) setText(doc, runs[j], '')
+      }
+    } else if (text.includes('Mr. C. Arun³')) {
+      const runs = p.getElementsByTagNameNS(W_NS, 'r')
+      if (authorEntries.length >= 3) {
+        const remaining = authorEntries.slice(2).map((entry, relIdx) => {
+          const idx = relIdx + 2
+          const comma = idx < authorEntries.length - 1 ? ',' : ''
+          return `${entry}${comma}${orcidGap(idx)}`
+        }).join(' ')
+        if (runs.length > 0) {
+          setText(doc, runs[0], remaining)
+          // Set EB Garamond font and increased size for author names
+          setRunFont(doc, runs[0], EB_GARAMOND)
+          setRunFontSize(doc, runs[0], 24)
+          for (let j = 1; j < runs.length; j++) setText(doc, runs[j], '')
+        }
+      } else {
+        for (let j = 0; j < runs.length; j++) setText(doc, runs[j], '')
       }
     }
 
@@ -1036,6 +1530,27 @@ export async function renderPublicationDocx({ templateBuffer = null, sourceDocxB
         for (let j = 1; j < runs.length; j++) {
           setText(doc, runs[j], '')
         }
+      }
+    }
+
+    // Ensure column break separates sidebar from ABSTRACT so two-column section never leaves Column 2 empty
+    if (text.includes('ABSTRACT')) {
+      let hasColBr = false
+      const brs = Array.from(p.getElementsByTagNameNS(W_NS, 'br'))
+      for (const br of brs) {
+        const bType = br.getAttributeNS(W_NS, 'type') || br.getAttribute('w:type')
+        if (bType === 'column') {
+          hasColBr = true
+          break
+        }
+      }
+      if (!hasColBr) {
+        const prefix = p.prefix || 'w'
+        const colBrRun = doc.createElementNS(W_NS, `${prefix}:r`)
+        const colBr = doc.createElementNS(W_NS, `${prefix}:br`)
+        colBr.setAttributeNS(W_NS, `${prefix}:type`, 'column')
+        colBrRun.appendChild(colBr)
+        p.insertBefore(colBrRun, p.firstChild)
       }
     }
 
@@ -1094,24 +1609,51 @@ export async function renderPublicationDocx({ templateBuffer = null, sourceDocxB
   // 6.1 Sanitize and fit all tables to prevent overflow outside left/right margins
   sanitizeAndFitTables(doc)
 
-  // 7. Update Footer XML for near-footer logo ASGARD font
+  // 6.2 Enforce EB Garamond as global font across entire document (all paragraphs, runs, tables, headings, body)
+  enforceGlobalFont(doc, EB_GARAMOND)
+
+  // 7. Update Footer XML for near-footer logo ASGARD font and page numbering
   if (footer1XmlStr) {
     const footerDoc = parser.parseFromString(footer1XmlStr, 'text/xml')
-    const footerRuns = Array.from(footerDoc.getElementsByTagNameNS(W_NS, 'r'))
-    for (const r of footerRuns) {
-      if ((r.textContent || '').includes('ASGARD')) {
-        setRunFont(footerDoc, r, 'Cormorant Garamond')
-      }
-    }
+    updateFooter(footerDoc)
+    enforceGlobalFont(footerDoc, EB_GARAMOND)
     targetZip.file('word/footer1.xml', serializer.serializeToString(footerDoc))
   }
 
-  // 8. Ensure Cormorant Garamond is in fontTable.xml
+  // 8. Ensure styles.xml and theme use EB Garamond as global defaults
+  let stylesXmlStr = await targetZip.file('word/styles.xml')?.async('string')
+  if (stylesXmlStr) {
+    stylesXmlStr = stylesXmlStr
+      .replaceAll('Times New Roman', EB_GARAMOND)
+      .replaceAll('Tw Cen MT', EB_GARAMOND)
+      .replaceAll('Calibri', EB_GARAMOND)
+      .replaceAll('Cambria', EB_GARAMOND)
+    targetZip.file('word/styles.xml', stylesXmlStr)
+  }
+  let stylesEffXmlStr = await targetZip.file('word/stylesWithEffects.xml')?.async('string')
+  if (stylesEffXmlStr) {
+    stylesEffXmlStr = stylesEffXmlStr
+      .replaceAll('Times New Roman', EB_GARAMOND)
+      .replaceAll('Tw Cen MT', EB_GARAMOND)
+      .replaceAll('Calibri', EB_GARAMOND)
+      .replaceAll('Cambria', EB_GARAMOND)
+    targetZip.file('word/stylesWithEffects.xml', stylesEffXmlStr)
+  }
+  let themeXmlStr = await targetZip.file('word/theme/theme1.xml')?.async('string')
+  if (themeXmlStr) {
+    themeXmlStr = themeXmlStr
+      .replaceAll('Calibri', EB_GARAMOND)
+      .replaceAll('Cambria', EB_GARAMOND)
+      .replaceAll('Times New Roman', EB_GARAMOND)
+    targetZip.file('word/theme/theme1.xml', themeXmlStr)
+  }
+
+  // 9. Ensure EB Garamond is in fontTable.xml
   if (fontTableXmlStr) {
-    if (!fontTableXmlStr.includes('Cormorant Garamond')) {
+    if (!fontTableXmlStr.includes(EB_GARAMOND)) {
       fontTableXmlStr = fontTableXmlStr.replace(
         '</w:fonts>',
-        '<w:font w:name="Cormorant Garamond"><w:panose1 w:val="02040603050406030204"/><w:charset w:val="00"/><w:family w:val="roman"/><w:pitch w:val="variable"/><w:sig w:usb0="E00002FF" w:usb1="400004FF" w:usb2="00000000" w:usb3="00000000" w:csb0="0000019F" w:csb1="00000000"/></w:font></w:fonts>'
+        `<w:font w:name="${EB_GARAMOND}"><w:panose1 w:val="02040603050406030204"/><w:charset w:val="00"/><w:family w:val="roman"/><w:pitch w:val="variable"/><w:sig w:usb0="E00002FF" w:usb1="400004FF" w:usb2="00000000" w:usb3="00000000" w:csb0="0000019F" w:csb1="00000000"/></w:font></w:fonts>`
       )
     }
     targetZip.file('word/fontTable.xml', fontTableXmlStr)

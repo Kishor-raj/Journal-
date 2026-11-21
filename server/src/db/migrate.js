@@ -32,10 +32,76 @@ function getMigrationFiles() {
     .sort()
 }
 
+async function countPublicTables() {
+  const result = await pool.query(`
+    SELECT count(*)::int AS count
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_type = 'BASE TABLE'
+      AND table_name <> 'schema_migrations'
+  `)
+  return result.rows[0].count
+}
+
+async function baseline() {
+  await ensureSchemaMigrations()
+  const applied = await getAppliedMigrations()
+  const files = getMigrationFiles()
+  const versions = files.map(f => f.replace(/\.sql$/, ''))
+  const pending = versions.filter(v => !applied.includes(v))
+
+  if (pending.length === 0) {
+    console.log('All migrations are already recorded. Nothing to baseline.')
+    await pool.end()
+    return
+  }
+
+  await pool.query('BEGIN')
+  try {
+    for (const version of pending) {
+      await pool.query(
+        'INSERT INTO schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING',
+        [version]
+      )
+    }
+    await pool.query('COMMIT')
+  } catch (err) {
+    await pool.query('ROLLBACK')
+    throw err
+  }
+
+  console.log(`Baselined ${pending.length} migration(s) as already applied:`)
+  for (const version of pending) console.log(`  • ${version}`)
+  await pool.end()
+}
+
 async function migrate() {
   await ensureSchemaMigrations()
   const applied = await getAppliedMigrations()
   const files = getMigrationFiles()
+
+  // Guard against a database whose schema was created/restored outside the
+  // migration runner. Without this check the first migration fails with a
+  // cryptic "type/table already exists" error.
+  if (applied.length === 0) {
+    const tableCount = await countPublicTables()
+    if (tableCount > 0) {
+      console.error(
+        `Database already has ${tableCount} table(s) but schema_migrations is empty.`
+      )
+      console.error(
+        'This usually means the database was restored or created outside the migration runner.'
+      )
+      console.error(
+        'If the schema is already up to date, record it with: npm run migrate:baseline'
+      )
+      console.error(
+        'Otherwise, drop/recreate the database and run: npm run migrate'
+      )
+      await pool.end()
+      process.exit(1)
+    }
+  }
 
   for (const file of files) {
     const key = file.replace(/\.sql$/, '')
@@ -85,8 +151,8 @@ async function rollback() {
   }
 
   const lastVersion = applied[applied.length - 1]
-  const files = getMigrationFiles()
-  const downFile = files.find(f => f.startsWith(lastVersion) && f.includes('.down.sql'))
+  const allFiles = fs.readdirSync(MIGRATIONS_DIR).sort()
+  const downFile = allFiles.find(f => f.startsWith(lastVersion) && f.endsWith('.down.sql'))
 
   if (!downFile) {
     console.log(`No rollback file for migration ${lastVersion}`)
@@ -115,6 +181,8 @@ async function rollback() {
 const command = process.argv[2]
 if (command === 'rollback') {
   rollback().catch(err => { console.error(err); process.exit(1) })
+} else if (command === 'baseline') {
+  baseline().catch(err => { console.error(err); process.exit(1) })
 } else {
   migrate().catch(err => { console.error(err); process.exit(1) })
 }
