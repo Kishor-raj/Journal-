@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { env } from '../../config/env.js'
 import {
   escapeXml,
   extractValidOrcid,
@@ -47,7 +48,7 @@ describe('Crossref Service - Deposit XML Generation (Crossref 5.3.1)', () => {
     journal: {
       title: 'International Journal of Intelligent Digital Computing Research',
       shortTitle: 'IJIDCR',
-      issnOnline: '2654-6725',
+      issnOnline: '2654-6728',
       issnPrint: null,
     },
     publication: {
@@ -80,9 +81,13 @@ describe('Crossref Service - Deposit XML Generation (Crossref 5.3.1)', () => {
   it('generates valid Crossref 5.3.1 XML with required elements', () => {
     const xml = generateCrossrefDepositXml(basePayload)
 
+    // Check XML declaration at the very beginning (index 0, no leading whitespace or BOM)
+    expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true)
+
     // Check schema version and namespace
     expect(xml).toContain('version="5.3.1"')
     expect(xml).toContain('xmlns="http://www.crossref.org/schema/5.3.1"')
+    expect(xml).toContain('xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1"')
 
     // Check depositor
     expect(xml).toContain('<depositor_name>IJIDCR Editorial Office</depositor_name>')
@@ -91,7 +96,7 @@ describe('Crossref Service - Deposit XML Generation (Crossref 5.3.1)', () => {
     // Check journal metadata
     expect(xml).toContain('<full_title>International Journal of Intelligent Digital Computing Research</full_title>')
     expect(xml).toContain('<abbrev_title>IJIDCR</abbrev_title>')
-    expect(xml).toContain('<issn media_type="electronic">2654-6725</issn>')
+    expect(xml).toContain('<issn media_type="electronic">2654-6728</issn>')
 
     // Check journal issue & volume
     expect(xml).toContain('<volume>1</volume>')
@@ -113,6 +118,26 @@ describe('Crossref Service - Deposit XML Generation (Crossref 5.3.1)', () => {
     expect(xml).toContain('<doi>10.68968/IJIDCR_00001</doi>')
     expect(xml).toContain('<resource>https://ijidcr.com/articles/manuscript-uuid-1</resource>')
     expect(xml).toContain('<item_number>IJIDCR-26-0001</item_number>')
+  })
+
+  it('places jats:abstract strictly before publication_date per Crossref schema 5.3.1', () => {
+    const payloadWithAbstract = {
+      ...basePayload,
+      manuscript: {
+        ...basePayload.manuscript,
+        abstract: 'This is a test abstract that must be placed before publication_date.',
+      },
+    }
+
+    const xml = generateCrossrefDepositXml(payloadWithAbstract)
+    expect(xml).toContain('<jats:abstract>')
+    expect(xml).toContain('<jats:p>This is a test abstract that must be placed before publication_date.</jats:p>')
+    expect(xml).toContain('</jats:abstract>')
+
+    const abstractIndex = xml.indexOf('<jats:abstract>')
+    const articlePubDateIndex = xml.lastIndexOf('<publication_date media_type="online">')
+    expect(abstractIndex).toBeGreaterThan(-1)
+    expect(articlePubDateIndex).toBeGreaterThan(abstractIndex)
   })
 
   it('handles single-name author by setting surname per Crossref schema requirements', () => {
@@ -144,8 +169,54 @@ describe('Crossref Service - Deposit XML Generation (Crossref 5.3.1)', () => {
     }
 
     const xml = generateCrossrefDepositXml(printPayload)
-    expect(xml).toContain('<issn media_type="electronic">2654-6725</issn>')
+    expect(xml).toContain('<issn media_type="electronic">2654-6728</issn>')
     expect(xml).toContain('<issn media_type="print">2654-6733</issn>')
+  })
+
+  it('falls back to default valid ISSN 2654-6728 when no ISSN is specified', () => {
+    const noIssnPayload = {
+      ...basePayload,
+      journal: {
+        ...basePayload.journal,
+        issnOnline: null,
+        issnPrint: null,
+      },
+    }
+
+    const xml = generateCrossrefDepositXml(noIssnPayload)
+    expect(xml).toContain('<issn media_type="electronic">2654-6728</issn>')
+  })
+
+  it('normalizes uppercase journal name and strips trailing acronym to match Crossref title registry', () => {
+    const rawJournalPayload = {
+      ...basePayload,
+      journal: {
+        name: 'INTERNATIONAL JOURNAL OF INTELLIGENT DIGITAL COMPUTING RESEARCH (IJIDCR)',
+        short_name: 'IJIDCR',
+        issnOnline: '2654-6728',
+      },
+    }
+
+    const xml = generateCrossrefDepositXml(rawJournalPayload)
+    expect(xml).toContain('<full_title>International Journal of Intelligent Digital Computing Research</full_title>')
+    expect(xml).toContain('<abbrev_title>IJIDCR</abbrev_title>')
+    expect(xml).not.toContain('<full_title>INTERNATIONAL JOURNAL OF INTELLIGENT DIGITAL COMPUTING RESEARCH (IJIDCR)</full_title>')
+  })
+
+  it('dynamically upgrades dev localhost article URLs to production domain when env.PUBLIC_APP_ORIGIN is set', () => {
+    const originalOrigin = env.PUBLIC_APP_ORIGIN
+    try {
+      env.PUBLIC_APP_ORIGIN = 'https://ijidcr-asgard.in'
+      const devPayload = {
+        ...basePayload,
+        articleLandingUrl: 'http://localhost:5173/articles/manuscript-uuid-1',
+      }
+      const xml = generateCrossrefDepositXml(devPayload)
+      expect(xml).toContain('<resource>https://ijidcr-asgard.in/articles/manuscript-uuid-1</resource>')
+      expect(xml).not.toContain('http://localhost:5173')
+    } finally {
+      env.PUBLIC_APP_ORIGIN = originalOrigin
+    }
   })
 
   it('throws error if required fields are missing', () => {

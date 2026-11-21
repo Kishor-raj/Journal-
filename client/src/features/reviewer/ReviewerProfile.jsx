@@ -698,6 +698,7 @@ export default function ReviewerProfile() {
             <div style={S.row}>
               <Field label="First Name" required>
                 <input
+                  maxLength={100}
                   type="text"
                   style={S.input}
                   value={form.first_name}
@@ -708,6 +709,7 @@ export default function ReviewerProfile() {
               </Field>
               <Field label="Last Name" required>
                 <input
+                  maxLength={100}
                   type="text"
                   style={S.input}
                   value={form.last_name}
@@ -720,6 +722,7 @@ export default function ReviewerProfile() {
 
             <Field label="Display Name / Public Citation Name" required>
               <input
+                maxLength={200}
                 type="text"
                 style={S.input}
                 value={form.display_name}
@@ -741,6 +744,7 @@ export default function ReviewerProfile() {
               </Field>
               <Field label="Phone">
                 <input
+                  maxLength={50}
                   type="tel"
                   style={S.input}
                   value={form.phone}
@@ -761,6 +765,7 @@ export default function ReviewerProfile() {
             <div style={S.row}>
               <Field label="Institution / University" required>
                 <input
+                  maxLength={255}
                   type="text"
                   style={S.input}
                   value={form.institution}
@@ -771,6 +776,7 @@ export default function ReviewerProfile() {
               </Field>
               <Field label="College (optional)">
                 <input
+                  maxLength={255}
                   type="text"
                   style={S.input}
                   value={form.college}
@@ -783,6 +789,7 @@ export default function ReviewerProfile() {
             <div style={S.row}>
               <Field label="Department" required>
                 <input
+                  maxLength={255}
                   type="text"
                   style={S.input}
                   value={form.department}
@@ -793,6 +800,7 @@ export default function ReviewerProfile() {
               </Field>
               <Field label="Course / Program (optional)">
                 <input
+                  maxLength={255}
                   type="text"
                   style={S.input}
                   value={form.course}
@@ -805,6 +813,7 @@ export default function ReviewerProfile() {
             <div style={S.row}>
               <Field label="State / Province" required>
                 <input
+                  maxLength={100}
                   type="text"
                   style={S.input}
                   value={form.state}
@@ -815,6 +824,7 @@ export default function ReviewerProfile() {
               </Field>
               <Field label="Country" required>
                 <input
+                  maxLength={100}
                   type="text"
                   style={S.input}
                   value={form.country}
@@ -835,6 +845,7 @@ export default function ReviewerProfile() {
           <div style={S.cardBody}>
             <Field label="ORCID iD">
               <input
+                maxLength={100}
                 type="text"
                 style={S.input}
                 value={form.orcid_id}

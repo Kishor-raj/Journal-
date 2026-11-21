@@ -1,6 +1,12 @@
 export function errorHandler(err, req, res, _next) {
-  const statusCode = err.statusCode || 500
-  const message = err.isOperational ? err.message : 'Internal server error'
+  // Postgres 22001 = value too long for column: that's bad input, not a server bug.
+  const isValueTooLong = err.code === '22001'
+  const statusCode = err.statusCode || (isValueTooLong ? 400 : 500)
+  const message = err.isOperational
+    ? err.message
+    : isValueTooLong
+      ? 'One of the submitted values is too long. Please shorten it and try again.'
+      : 'Internal server error'
 
   if (statusCode === 500) {
     console.error(`[ERROR] ${req.id || '-'} ${req.method} ${req.originalUrl}:`, err)

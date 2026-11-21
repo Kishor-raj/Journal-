@@ -1,0 +1,13 @@
+ALTER TABLE users
+  ALTER COLUMN phone TYPE VARCHAR(30),
+  ALTER COLUMN orcid_id TYPE VARCHAR(30);
+
+ALTER TABLE editorial_applications
+  ALTER COLUMN phone TYPE VARCHAR(30),
+  ALTER COLUMN orcid_id TYPE VARCHAR(50);
+
+ALTER TABLE manuscript_authors
+  ALTER COLUMN orcid_id TYPE VARCHAR(30);
+
+ALTER TABLE reviewer_suggestions
+  ALTER COLUMN orcid_id TYPE VARCHAR(30);

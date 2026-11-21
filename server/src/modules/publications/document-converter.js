@@ -61,6 +61,42 @@ export function isConverterAvailable() {
   return Boolean(detectLibreOfficeRunner())
 }
 
+async function withProcessLock(fn) {
+  const lockFile = path.join(os.tmpdir(), 'libreoffice-converter.lock')
+  const maxWait = 90000
+  const start = Date.now()
+
+  while (true) {
+    try {
+      const handle = await fs.open(lockFile, 'wx')
+      try {
+        return await fn()
+      } finally {
+        await handle.close().catch(() => {})
+        await fs.unlink(lockFile).catch(() => {})
+      }
+    } catch (err) {
+      if (err.code === 'EEXIST') {
+        try {
+          const stats = await fs.stat(lockFile)
+          if (Date.now() - stats.mtimeMs > 90000) {
+            await fs.unlink(lockFile).catch(() => {})
+            continue
+          }
+        } catch {
+          continue
+        }
+        if (Date.now() - start > maxWait) {
+          throw new Error('Timeout waiting for LibreOffice conversion lock.')
+        }
+        await new Promise((r) => setTimeout(r, 100))
+      } else {
+        throw err
+      }
+    }
+  }
+}
+
 /**
  * Converts a DOCX or DOC buffer to PDF buffer using headless LibreOffice.
  *
@@ -71,6 +107,10 @@ export function isConverterAvailable() {
  * @returns {Promise<Buffer>} converted PDF buffer
  */
 export async function convertDocxToPdf(docxBuffer, options = {}) {
+  return withProcessLock(() => executeConvertDocxToPdf(docxBuffer, options))
+}
+
+async function executeConvertDocxToPdf(docxBuffer, options = {}) {
   if (!Buffer.isBuffer(docxBuffer) || docxBuffer.length === 0) {
     throw new Error('Invalid input: DOCX buffer is empty or missing.')
   }

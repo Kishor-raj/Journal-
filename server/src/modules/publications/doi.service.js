@@ -103,7 +103,13 @@ export async function allocateDoiForPublication(
 
   // If a DOI is already assigned, reuse it permanently
   if (existing && existing.doi) {
-    const canonicalArticleUrl = existing.article_url || buildArticleLandingUrl(manuscriptId)
+    let canonicalArticleUrl = existing.article_url || buildArticleLandingUrl(manuscriptId)
+    if (canonicalArticleUrl && (canonicalArticleUrl.includes('localhost') || canonicalArticleUrl.includes('127.0.0.1'))) {
+      const publicOrigin = (env.PUBLIC_APP_ORIGIN || '').trim().replace(/\/+$/, '')
+      if (publicOrigin && !publicOrigin.includes('localhost') && !publicOrigin.includes('127.0.0.1')) {
+        canonicalArticleUrl = canonicalArticleUrl.replace(/^https?:\/\/[^/]+/, publicOrigin)
+      }
+    }
     return {
       publicationId: existing.id,
       doi: existing.doi,

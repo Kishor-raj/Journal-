@@ -8,6 +8,42 @@ import { syncUserProfileFromEditorialApplication, isUserProfileComplete } from '
 
 const router = Router()
 
+// Keep these in sync with the column sizes in the users table (migration 0075).
+// Validating here turns a raw Postgres "value too long" error into a clear 400.
+const PROFILE_FIELD_LIMITS = {
+  first_name: { label: 'First name', max: 100 },
+  last_name: { label: 'Last name', max: 100 },
+  display_name: { label: 'Display name', max: 200 },
+  phone: { label: 'Phone number', max: 50 },
+  institution: { label: 'Institution', max: 255 },
+  college: { label: 'College', max: 255 },
+  department: { label: 'Department', max: 255 },
+  state: { label: 'State', max: 100 },
+  country: { label: 'Country', max: 100 },
+  course: { label: 'Course', max: 255 },
+  orcid_id: { label: 'ORCID iD', max: 100 },
+}
+
+// Accept both the canonical iD (0000-0002-1825-0097) and pasted URLs
+// (https://orcid.org/0000-0002-1825-0097), storing the canonical form.
+function normalizeOrcid(value) {
+  if (value === undefined || value === null) return null
+
+  const trimmed = String(value).trim()
+  if (!trimmed) return ''
+
+  const withoutUrl = trimmed
+    .replace(/^https?:\/\/(?:www\.)?orcid\.org\//i, '')
+    .replace(/\s+/g, '')
+  const digits = withoutUrl.replace(/-/g, '')
+
+  if (/^\d{16}$/.test(digits)) {
+    return digits.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, '$1-$2-$3-$4')
+  }
+
+  return withoutUrl
+}
+
 // Limited lookup used by authors when selecting registered co-authors.
 // Never return credentials, role internals, or security/account metadata.
 router.get('/search', authenticate, requireRole('author'), async (req, res) => {
@@ -190,6 +226,18 @@ router.patch('/me/profile', authenticate, async (req, res) => {
   } = req.body
 
   const parsedCvSize = cv_file_size !== undefined && cv_file_size !== null ? parseInt(cv_file_size, 10) : null
+  const normalizedOrcid = normalizeOrcid(orcid_id)
+
+  const trimmedFields = { first_name, last_name, display_name, phone, institution, college, department, state, country, course, orcid_id: normalizedOrcid }
+  for (const [field, { label, max }] of Object.entries(PROFILE_FIELD_LIMITS)) {
+    const value = trimmedFields[field]
+    if (typeof value === 'string' && value.length > max) {
+      return res.status(400).json({
+        error: `${label} must be ${max} characters or fewer.`,
+        field,
+      })
+    }
+  }
 
   const result = await pool.query(
     `UPDATE users SET
@@ -255,7 +303,7 @@ router.patch('/me/profile', authenticate, async (req, res) => {
       country ?? null,
       course ?? null,
       bio ?? null,
-      orcid_id ?? null,
+      normalizedOrcid ?? null,
       profile_image_url ?? null,
       cv_file_url ?? null,
       cv_file_name ?? null,

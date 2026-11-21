@@ -50,7 +50,15 @@ export function generateCrossrefDepositXml({
   articleLandingUrl: explicitLandingUrl,
 }) {
   const doi = explicitDoi || publication.doi
-  const articleLandingUrl = explicitLandingUrl || publication.articleLandingUrl || publication.article_url
+  let articleLandingUrl = explicitLandingUrl || publication.articleLandingUrl || publication.article_url
+
+  // If article URL was generated or stored as localhost in dev, automatically upgrade to production domain
+  if (articleLandingUrl && (articleLandingUrl.includes('localhost') || articleLandingUrl.includes('127.0.0.1'))) {
+    const publicOrigin = (env.PUBLIC_APP_ORIGIN || '').trim().replace(/\/+$/, '')
+    if (publicOrigin && !publicOrigin.includes('localhost') && !publicOrigin.includes('127.0.0.1')) {
+      articleLandingUrl = articleLandingUrl.replace(/^https?:\/\/[^/]+/, publicOrigin)
+    }
+  }
 
   if (!doi) {
     throw new AppError('Cannot generate Crossref XML: DOI is required', 400)
@@ -66,7 +74,11 @@ export function generateCrossrefDepositXml({
   const cleanRegistrant = escapeXml(registrant)
 
   // Journal Metadata
-  const journalTitle = escapeXml(journal.name || journal.title || 'International Journal of Intelligent Digital Computing Research')
+  let rawJournalTitle = (journal.name || journal.title || 'International Journal of Intelligent Digital Computing Research').trim()
+  if (/^international journal of intelligent digital computing research(\s*\(ijidcr\))?$/i.test(rawJournalTitle)) {
+    rawJournalTitle = 'International Journal of Intelligent Digital Computing Research'
+  }
+  const journalTitle = escapeXml(rawJournalTitle)
   const journalAbbrev = escapeXml(journal.short_name || journal.shortTitle || 'IJIDCR')
   const onlineIssn = journal.issn_online || journal.issnOnline ? String(journal.issn_online || journal.issnOnline).trim() : ''
   const printIssn = journal.issn_print || journal.issnPrint ? String(journal.issn_print || journal.issnPrint).trim() : ''
@@ -80,7 +92,7 @@ export function generateCrossrefDepositXml({
   }
   // Default fallback if neither is available so schema validates
   if (!issnTags) {
-    issnTags = `\n        <issn media_type="electronic">2654-6725</issn>`
+    issnTags = `\n        <issn media_type="electronic">2654-6728</issn>`
   }
 
   // Publication dates
@@ -139,11 +151,11 @@ export function generateCrossrefDepositXml({
       ? `\n          <affiliations>\n            <institution>\n              <institution_name>${escapeXml(affiliation)}</institution_name>\n            </institution>\n          </affiliations>`
       : ''
 
-    return `        <person_name sequence="${sequence}" contributor_role="author">${givenName ? `\n          <given_name>${givenName}</given_name>` : ''}\n          <surname>${surname}</surname>${orcidTag}${affiliationTag}\n        </person_name>`
+    return `        <person_name sequence="${sequence}" contributor_role="author">${givenName ? `\n          <given_name>${givenName}</given_name>` : ''}\n          <surname>${surname}</surname>${affiliationTag}${orcidTag}\n        </person_name>`
   }).join('\n')
 
   const abstractBlock = articleAbstract
-    ? `\n        <jats:abstract xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1">\n          <jats:p>${articleAbstract}</jats:p>\n        </jats:abstract>`
+    ? `\n        <jats:abstract>\n          <jats:p>${articleAbstract}</jats:p>\n        </jats:abstract>`
     : ''
 
   const itemNumber = escapeXml(manuscript.submission_number || manuscript.submissionNumber || '')
@@ -152,7 +164,7 @@ export function generateCrossrefDepositXml({
     : ''
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<doi_batch version="5.3.1" xmlns="http://www.crossref.org/schema/5.3.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.crossref.org/schema/5.3.1 https://www.crossref.org/schemas/crossref5.3.1.xsd">
+<doi_batch version="5.3.1" xmlns="http://www.crossref.org/schema/5.3.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:jats="http://www.ncbi.nlm.nih.gov/JATS1" xsi:schemaLocation="http://www.crossref.org/schema/5.3.1 https://www.crossref.org/schemas/crossref5.3.1.xsd">
   <head>
     <doi_batch_id>${cleanBatchId}</doi_batch_id>
     <timestamp>${cleanTimestamp}</timestamp>
@@ -185,12 +197,12 @@ export function generateCrossrefDepositXml({
         </titles>
         <contributors>
 ${contributorsXml}
-        </contributors>
+        </contributors>${abstractBlock}
         <publication_date media_type="online">
           <month>${pubMonth}</month>
           <day>${pubDay}</day>
           <year>${pubYear}</year>
-        </publication_date>${abstractBlock}${publisherItemBlock}
+        </publication_date>${publisherItemBlock}
         <doi_data>
           <doi>${escapeXml(doi)}</doi>
           <resource>${escapeXml(articleLandingUrl)}</resource>
@@ -222,6 +234,14 @@ export function validateCrossrefConfig(environment = env.CROSSREF_ENV) {
     }
     if (!env.CROSSREF_DOI_PREFIX) {
       throw new AppError('Crossref DOI prefix missing in server environment.', 500)
+    }
+    // In production, the article landing page URL must not be a local/dev address.
+    const publicOrigin = (env.PUBLIC_APP_ORIGIN || '').trim().replace(/\/+$/, '')
+    if (publicOrigin && (publicOrigin === 'http://localhost:5173' || publicOrigin === 'http://127.0.0.1' || publicOrigin.startsWith('http://localhost:'))) {
+      throw new AppError(
+        'Crossref production deposit requires a valid PUBLIC_APP_ORIGIN; localhost is not a valid public URL.',
+        403
+      )
     }
   }
 
@@ -256,7 +276,6 @@ export async function submitCrossrefDeposit({
   formData.append('operation', 'doMDUpload')
   formData.append('login_id', loginId)
   formData.append('login_passwd', loginPassword)
-  formData.append('area', config.isProduction ? 'live' : 'test')
 
   const xmlBlob = new Blob([xmlContent], { type: 'application/xml; charset=utf-8' })
   formData.append('fname', xmlBlob, depositFilename)

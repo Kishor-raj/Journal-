@@ -20,6 +20,51 @@ ALTER TABLE publications
   ADD COLUMN IF NOT EXISTS doi_attempt_count INTEGER NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS doi_error TEXT;
 
+-- 2b. Deduplicate / normalize legacy DOIs before creating unique indexes.
+-- Legacy placeholder values (such as test entries not matching standard DOI format '10.*')
+-- or any duplicate DOIs are migrated to canonical sequential DOIs (10.68968/IJIDCR_#####).
+DO $$
+DECLARE
+  pub RECORD;
+  seq_val INTEGER;
+  padded_suffix TEXT;
+  full_doi TEXT;
+BEGIN
+  -- Backfill doi_suffix from any existing valid DOI
+  UPDATE publications
+  SET doi_suffix = substring(doi from '(?i)IJIDCR_[0-9]+')
+  WHERE doi_suffix IS NULL
+    AND doi ~* 'IJIDCR_[0-9]+';
+
+  -- Resolve any invalid or duplicate DOIs
+  FOR pub IN
+    SELECT p.id, p.manuscript_id, p.doi
+    FROM publications p
+    WHERE p.doi IS NOT NULL
+      AND (
+        p.doi !~* '^10\.' -- not a valid DOI format
+        OR LOWER(p.doi) IN (
+          SELECT LOWER(doi)
+          FROM publications
+          WHERE doi IS NOT NULL
+          GROUP BY LOWER(doi)
+          HAVING COUNT(*) > 1
+        )
+      )
+    ORDER BY p.published_at ASC, p.created_at ASC
+  LOOP
+    seq_val := nextval('doi_suffix_seq');
+    padded_suffix := 'IJIDCR_' || lpad(seq_val::text, 5, '0');
+    full_doi := '10.68968/' || padded_suffix;
+
+    UPDATE publications
+    SET doi = full_doi,
+        doi_suffix = padded_suffix,
+        doi_status = 'reserved'
+    WHERE id = pub.id;
+  END LOOP;
+END $$;
+
 -- 3. Case-insensitive unique indexes on DOI and DOI suffix
 CREATE UNIQUE INDEX IF NOT EXISTS idx_publications_lower_doi
   ON publications(LOWER(doi))
@@ -95,6 +140,12 @@ CREATE INDEX IF NOT EXISTS idx_crossref_jobs_status_next ON crossref_deposit_job
 CREATE INDEX IF NOT EXISTS idx_crossref_jobs_manuscript ON crossref_deposit_jobs(manuscript_id);
 CREATE INDEX IF NOT EXISTS idx_crossref_jobs_publication ON crossref_deposit_jobs(publication_id);
 CREATE INDEX IF NOT EXISTS idx_crossref_jobs_batch ON crossref_deposit_jobs(batch_id);
+
+-- Partial unique index: prevent multiple active deposit jobs for the same publication.
+-- Allows multiple completed/failed jobs (historical), but only one active job per publication.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_crossref_jobs_active_per_publication
+  ON crossref_deposit_jobs (publication_id)
+  WHERE status IN ('queued', 'submitting', 'submitted', 'verifying');
 
 CREATE TRIGGER update_crossref_deposit_jobs_updated_at
   BEFORE UPDATE ON crossref_deposit_jobs

@@ -12,6 +12,8 @@
     "build": "npm run build --workspace=client",
     "lint": "npm run lint --workspace=client && npm run lint --workspace=server",
     "migrate": "npm run migrate --workspace=server",
+    "migrate:baseline": "npm run migrate:baseline --workspace=server",
+    "migrate:rollback": "npm run migrate:rollback --workspace=server",
     "seed": "npm run seed --workspace=server"
   },
   "devDependencies": {
