@@ -145,9 +145,282 @@ function ProgressRing({ pct }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   METADATA & DECLARATIONS (STEP 4) COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+function MetadataDeclarationsCard({ manuscript }) {
+  const [open, setOpen] = useState(true)
+
+  if (!manuscript) return null
+
+  const items = [
+    {
+      num: 1,
+      key: 'conflict_of_interest',
+      label: 'Conflict of Interest',
+      icon: 'fa-handshake-angle',
+      value: manuscript.conflict_of_interest,
+      required: true,
+      placeholder: "No conflict of interest statement provided by author (e.g. 'None declared').",
+      emptyBadge: 'Missing',
+    },
+    {
+      num: 2,
+      key: 'ethics_approval',
+      label: 'Ethics Approval',
+      icon: 'fa-shield-halved',
+      value: manuscript.ethics_approval,
+      required: true,
+      placeholder: "No ethics approval statement provided by author (e.g. committee name and reference, or 'Not applicable').",
+      emptyBadge: 'Missing',
+    },
+    {
+      num: 3,
+      key: 'funding',
+      label: 'Funding Information',
+      icon: 'fa-coins',
+      value: manuscript.funding,
+      required: false,
+      placeholder: 'No external funding declared by author.',
+      emptyBadge: 'None Declared',
+    },
+    {
+      num: 4,
+      key: 'acknowledgements',
+      label: 'Acknowledgements',
+      icon: 'fa-users-line',
+      value: manuscript.acknowledgements,
+      required: false,
+      placeholder: 'No acknowledgements declared by author.',
+      emptyBadge: 'None Declared',
+    },
+    {
+      num: 5,
+      key: 'data_availability',
+      label: 'Data Availability Statement',
+      icon: 'fa-database',
+      value: manuscript.data_availability,
+      required: false,
+      placeholder: 'No data availability statement provided by author.',
+      emptyBadge: 'Not Provided',
+    },
+  ]
+
+  const requiredComplete = items.filter(i => i.required).every(i => Boolean(i.value?.trim()))
+  const filledCount = items.filter(i => Boolean(i.value?.trim())).length
+
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E2E4E8', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
+      {/* Header */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px 18px',
+          cursor: 'pointer',
+          background: open ? '#fff' : '#FAFAFA',
+          userSelect: 'none',
+          borderBottom: open ? '1px solid #E2E4E8' : 'none',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <i className="fas fa-file-contract" style={{ fontSize: '14px', color: '#1B2A4A', width: '16px', textAlign: 'center' }} />
+          <div>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#1A1A2E' }}>
+              Metadata & Declarations
+            </span>
+            <span style={{ fontSize: '11px', color: '#8B8F9A', marginLeft: '8px' }}>
+              (Step 4 Author Disclosures)
+            </span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            padding: '2px 8px',
+            borderRadius: '10px',
+            background: requiredComplete ? '#E8F5EC' : '#FCECEC',
+            color: requiredComplete ? '#2B7A4B' : '#B83333',
+          }}>
+            {requiredComplete ? 'Declarations Complete' : 'Missing Required Declarations'}
+          </span>
+          <span style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            padding: '2px 8px',
+            borderRadius: '10px',
+            background: '#F4F5F7',
+            color: '#5A5E6B',
+          }}>
+            {filledCount}/5 Provided
+          </span>
+          <i className={`fas fa-chevron-${open ? 'up' : 'down'}`} style={{ fontSize: '11px', color: '#8B8F9A', transition: 'transform 0.2s' }} />
+        </div>
+      </div>
+
+      {/* Body */}
+      {open && (
+        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '14px', background: '#FAFBFC' }}>
+          <div style={{ fontSize: '12px', color: '#5A5E6B', lineHeight: 1.5, background: '#EBF4FB', border: '1px solid #D0E1F0', borderRadius: '6px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <i className="fas fa-info-circle" style={{ color: '#2E6B9E', flexShrink: 0 }} />
+            <span>
+              Below are the declarations submitted by the author during submission (Step 4). Review and verify these details against journal ethics guidelines before deciding on the manuscript.
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+            {items.map(item => {
+              const hasVal = Boolean(item.value?.trim())
+              return (
+                <div key={item.key} style={{ background: '#fff', border: '1px solid #E2E4E8', borderRadius: '6px', overflow: 'hidden' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '9px 14px',
+                    background: '#F9FAFB',
+                    borderBottom: '1px solid #ECEEF1',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        background: '#1B2A4A',
+                        color: '#fff',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        {item.num}
+                      </span>
+                      <i className={`fas ${item.icon}`} style={{ fontSize: '12px', color: '#5A5E6B' }} />
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#1A1A2E' }}>
+                        {item.label}
+                      </span>
+                      {item.required && (
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#B83333' }}>* Required</span>
+                      )}
+                    </div>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      background: hasVal ? '#E8F5EC' : (item.required ? '#FCECEC' : '#F4F5F7'),
+                      color: hasVal ? '#2B7A4B' : (item.required ? '#B83333' : '#8B8F9A'),
+                    }}>
+                      {hasVal ? 'Declared' : item.emptyBadge}
+                    </span>
+                  </div>
+                  <div style={{
+                    padding: '12px 14px',
+                    fontSize: '13px',
+                    lineHeight: 1.6,
+                    color: hasVal ? '#1A1A2E' : '#8B8F9A',
+                    fontStyle: hasVal ? 'normal' : 'italic',
+                    whiteSpace: 'pre-wrap',
+                    background: '#fff',
+                  }}>
+                    {hasVal ? item.value : item.placeholder}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EthicsDeclarationsReference({ manuscript }) {
+  const [expanded, setExpanded] = useState(true)
+
+  const items = [
+    { label: 'Conflict of Interest', val: manuscript?.conflict_of_interest, req: true, icon: 'fa-handshake-angle' },
+    { label: 'Ethics Approval', val: manuscript?.ethics_approval, req: true, icon: 'fa-shield-halved' },
+    { label: 'Funding Information', val: manuscript?.funding, req: false, icon: 'fa-coins' },
+    { label: 'Acknowledgements', val: manuscript?.acknowledgements, req: false, icon: 'fa-users-line' },
+    { label: 'Data Availability', val: manuscript?.data_availability, req: false, icon: 'fa-database' },
+  ]
+
+  return (
+    <div style={{ margin: '14px 0 16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', overflow: 'hidden' }}>
+      <div
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 14px',
+          background: '#EDF2F7',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        <span style={{ fontSize: '12px', fontWeight: 700, color: '#1B2A4A', display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <i className="fas fa-clipboard-check" style={{ color: '#2B7A4B' }} />
+          Author's Submitted Declarations (Quick Reference)
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', color: '#5A5E6B' }}>
+            {expanded ? 'Hide' : 'Show'}
+          </span>
+          <i className={`fas fa-chevron-${expanded ? 'up' : 'down'}`} style={{ fontSize: '10px', color: '#5A5E6B' }} />
+        </div>
+      </div>
+      {expanded && (
+        <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {items.map(f => {
+            const has = Boolean(f.val?.trim())
+            return (
+              <div key={f.label} style={{ fontSize: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: '#1B2A4A', marginBottom: '2px' }}>
+                  <i className={`fas ${f.icon}`} style={{ fontSize: '11px', color: '#5A5E6B', width: '14px' }} />
+                  <span>{f.label}</span>
+                  {f.req && <span style={{ color: '#B83333' }}>*</span>}
+                  <span style={{
+                    marginLeft: 'auto',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    background: has ? '#E8F5EC' : (f.req ? '#FCECEC' : '#F4F5F7'),
+                    color: has ? '#2B7A4B' : (f.req ? '#B83333' : '#8B8F9A'),
+                  }}>
+                    {has ? 'Declared' : (f.req ? 'Missing' : 'None declared')}
+                  </span>
+                </div>
+                <div style={{
+                  padding: '6px 10px',
+                  background: '#fff',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '4px',
+                  color: has ? '#1A1A2E' : '#8B8F9A',
+                  fontStyle: has ? 'normal' : 'italic',
+                  lineHeight: 1.45,
+                  whiteSpace: 'pre-wrap',
+                }}>
+                  {has ? f.val : (f.req ? 'No statement provided by author' : 'None declared')}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    COLLAPSIBLE SECTION
    ═══════════════════════════════════════════════════════════════════════════ */
-function ChecklistSection({ section, form, update }) {
+function ChecklistSection({ section, form, update, manuscript }) {
   const [open, setOpen] = useState(true)
 
   // Badge: how many items checked / radio selected
@@ -197,6 +470,11 @@ function ChecklistSection({ section, form, update }) {
               <i className="fas fa-info-circle" style={{ marginTop: '1px', flexShrink: 0 }} />
               <span>{section.infoBanner}</span>
             </div>
+          )}
+
+          {/* Quick-reference declarations for Section 4 (Publication Ethics) */}
+          {section.id === 'ethics' && manuscript && (
+            <EthicsDeclarationsReference manuscript={manuscript} />
           )}
 
           {/* Radio buttons (scope) */}
@@ -622,6 +900,14 @@ export default function ChecklistForm() {
             </div>
           ))}
         </div>
+        {manuscript.abstract && (
+          <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #F4F5F7' }}>
+            <div style={{ fontSize: '10px', fontWeight: 600, color: '#8B8F9A', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Abstract</div>
+            <div style={{ fontSize: '13px', color: '#1A1A2E', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              {manuscript.abstract}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Files ──────────────────────────────────────────────────────── */}
@@ -652,6 +938,9 @@ export default function ChecklistForm() {
         </div>
       )}
 
+      {/* ── Metadata & Declarations (Step 4) ─────────────────────────────── */}
+      <MetadataDeclarationsCard manuscript={manuscript} />
+
       {/* ── Progress ring ──────────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', background: scopeFail ? '#FCECEC' : '#fff', border: `1px solid ${scopeFail ? '#E8B8B8' : '#E2E4E8'}`, borderRadius: '8px', marginBottom: '20px' }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -674,11 +963,11 @@ export default function ChecklistForm() {
 
       {/* ── 6 Checklist sections ───────────────────────────────────────── */}
       {/* Always show Section 1 (Scope Assessment) */}
-      <ChecklistSection key="scope" section={SECTIONS[0]} form={form} update={update} />
+      <ChecklistSection key="scope" section={SECTIONS[0]} form={form} update={update} manuscript={manuscript} />
 
       {/* Sections 2–6: only when scope is NOT fail */}
       {!scopeFail && SECTIONS.slice(1).map(section => (
-        <ChecklistSection key={section.id} section={section} form={form} update={update} />
+        <ChecklistSection key={section.id} section={section} form={form} update={update} manuscript={manuscript} />
       ))}
 
       {/* ── Sticky decision bar ────────────────────────────────────────── */}
